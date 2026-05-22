@@ -1,0 +1,157 @@
+use axum::{
+    Json, extract::{Path, Query, State}, Router, routing::get,
+};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::error::AppError;
+use crate::models::{AvailabilitySlot, DoctorWithName};
+use crate::state::AppState;
+
+#[derive(Deserialize)]
+pub struct AvailabilityQuery {
+    pub date: String,
+    pub patient_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct SlotResponse {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub slot_date: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub is_booked: bool,
+    pub is_blocked: bool,
+}
+
+#[derive(Serialize)]
+pub struct SlotWithDoctor {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub slot_date: String,
+    pub start_time: String,
+    pub end_time: String,
+    pub doctor_name: String,
+    pub specialization: String,
+    pub is_booked: bool,
+    pub is_blocked: bool,
+}
+
+async fn load_blocked_times(
+    state: &AppState,
+    patient_id: Option<Uuid>,
+    date: chrono::NaiveDate,
+) -> Result<Vec<chrono::NaiveTime>, AppError> {
+    let Some(pid) = patient_id else { return Ok(vec![]) };
+    let rows = sqlx::query_as::<_, (chrono::NaiveTime,)>(
+        "SELECT s.start_time
+         FROM appointments a
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date = $2"
+    )
+    .bind(pid)
+    .bind(date)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+    Ok(rows.into_iter().map(|(t,)| t).collect())
+}
+
+fn is_blocked(slot_time: chrono::NaiveTime, existing_times: &[chrono::NaiveTime], min_gap_minutes: i64) -> bool {
+    existing_times.iter().any(|et| (slot_time - *et).num_minutes().abs() < min_gap_minutes)
+}
+
+pub async fn list_doctors(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<DoctorWithName>>, AppError> {
+    let doctors = sqlx::query_as::<_, DoctorWithName>(
+        "SELECT id, first_name, last_name, specialization FROM doctors ORDER BY first_name"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(doctors))
+}
+
+pub async fn get_availability(
+    State(state): State<AppState>,
+    Path(doctor_id): Path<Uuid>,
+    Query(query): Query<AvailabilityQuery>,
+) -> Result<Json<Vec<SlotResponse>>, AppError> {
+    let date = chrono::NaiveDate::parse_from_str(&query.date, "%Y-%m-%d")
+        .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
+
+    let slots = sqlx::query_as::<_, AvailabilitySlot>(
+        "SELECT * FROM availability_slots WHERE doctor_id = $1 AND slot_date = $2 ORDER BY start_time"
+    )
+    .bind(doctor_id)
+    .bind(date)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
+
+    let response: Vec<SlotResponse> = slots
+        .into_iter()
+        .map(|s| SlotResponse {
+            id: s.id,
+            doctor_id: s.doctor_id,
+            slot_date: s.slot_date.to_string(),
+            start_time: s.start_time.format("%H:%M").to_string(),
+            end_time: s.end_time.format("%H:%M").to_string(),
+            is_booked: s.is_booked,
+            is_blocked: s.is_booked || is_blocked(s.start_time, &blocked_times, state.min_gap_minutes),
+        })
+        .collect();
+
+    Ok(Json(response))
+}
+
+pub async fn get_all_availability(
+    State(state): State<AppState>,
+    Query(query): Query<AvailabilityQuery>,
+) -> Result<Json<Vec<SlotWithDoctor>>, AppError> {
+    let date = chrono::NaiveDate::parse_from_str(&query.date, "%Y-%m-%d")
+        .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
+
+    let rows = sqlx::query_as::<_, (Uuid, Uuid, chrono::NaiveDate, chrono::NaiveTime, chrono::NaiveTime, String, String, bool)>(
+        "SELECT s.id, s.doctor_id, s.slot_date, s.start_time, s.end_time, d.first_name || ' ' || d.last_name, d.specialization, s.is_booked
+         FROM availability_slots s
+         JOIN doctors d ON d.id = s.doctor_id
+         WHERE s.slot_date = $1
+         ORDER BY s.doctor_id, s.start_time"
+    )
+    .bind(date)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
+
+    let slots = rows
+        .into_iter()
+        .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked)| SlotWithDoctor {
+            id,
+            doctor_id,
+            slot_date: slot_date.to_string(),
+            start_time: start_time.format("%H:%M").to_string(),
+            end_time: end_time.format("%H:%M").to_string(),
+            doctor_name,
+            specialization,
+            is_booked,
+            is_blocked: is_booked || is_blocked(start_time, &blocked_times, state.min_gap_minutes),
+        })
+        .collect();
+
+    Ok(Json(slots))
+}
+
+pub fn doctor_routes() -> Router<AppState> {
+    Router::new()
+        .route("/api/doctors", get(list_doctors))
+        .route("/api/doctors/:id/availability", get(get_availability))
+        .route("/api/availability", get(get_all_availability))
+}
