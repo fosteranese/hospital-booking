@@ -7,32 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertAction } from '@/components/ui/alert';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Mail01Icon, CallIcon } from '@hugeicons/core-free-icons';
-
-const COUNTRY_CODES = [
-  { code: '+61', flag: '🇦🇺', countryCode: 'AU', name: 'Australia' },
-  { code: '+55', flag: '🇧🇷', countryCode: 'BR', name: 'Brazil' },
-  { code: '+86', flag: '🇨🇳', countryCode: 'CN', name: 'China' },
-  { code: '+20', flag: '🇪🇬', countryCode: 'EG', name: 'Egypt' },
-  { code: '+33', flag: '🇫🇷', countryCode: 'FR', name: 'France' },
-  { code: '+49', flag: '🇩🇪', countryCode: 'DE', name: 'Germany' },
-  { code: '+233', flag: '🇬🇭', countryCode: 'GH', name: 'Ghana' },
-  { code: '+91', flag: '🇮🇳', countryCode: 'IN', name: 'India' },
-  { code: '+39', flag: '🇮🇹', countryCode: 'IT', name: 'Italy' },
-  { code: '+81', flag: '🇯🇵', countryCode: 'JP', name: 'Japan' },
-  { code: '+31', flag: '🇳🇱', countryCode: 'NL', name: 'Netherlands' },
-  { code: '+234', flag: '🇳🇬', countryCode: 'NG', name: 'Nigeria' },
-  { code: '+7', flag: '🇷🇺', countryCode: 'RU', name: 'Russia' },
-  { code: '+966', flag: '🇸🇦', countryCode: 'SA', name: 'Saudi Arabia' },
-  { code: '+27', flag: '🇿🇦', countryCode: 'ZA', name: 'South Africa' },
-  { code: '+82', flag: '🇰🇷', countryCode: 'KR', name: 'South Korea' },
-  { code: '+34', flag: '🇪🇸', countryCode: 'ES', name: 'Spain' },
-  { code: '+46', flag: '🇸🇪', countryCode: 'SE', name: 'Sweden' },
-  { code: '+971', flag: '🇦🇪', countryCode: 'AE', name: 'United Arab Emirates' },
-  { code: '+44', flag: '🇬🇧', countryCode: 'UK', name: 'United Kingdom' },
-  { code: '+1', flag: '🇺🇸', countryCode: 'US', name: 'United States' },
-];
+import { COUNTRY_CODES } from '@/lib/country-codes';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -150,10 +128,6 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
 
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
-      <CardHeader className="px-0">
-        <CardTitle className="text-foreground">Book an Appointment</CardTitle>
-        <CardDescription>Enter your email or phone to receive a verification code</CardDescription>
-      </CardHeader>
       <CardContent className="px-0 space-y-5">
         <AnimatePresence mode="wait">
           {step === 'input' ? (
@@ -165,6 +139,10 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               transition={{ duration: 0.15 }}
               className="space-y-5"
             >
+              <CardHeader className="px-0">
+                <CardTitle className="text-foreground">Book an Appointment</CardTitle>
+                <CardDescription>Enter your email or phone to receive a verification code</CardDescription>
+              </CardHeader>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <div className="flex gap-2">
@@ -236,61 +214,102 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
           ) : (
             <motion.div
               key="otp"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="space-y-5"
-            >
-              <div className="rounded-lg bg-primary/5 border border-primary/10 px-4 py-3 text-sm text-muted-foreground text-center">
-                Code sent to <span className="font-medium text-foreground">{identifier}</span>
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+              >
+              <div className="space-y-3 pb-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-base font-medium text-foreground">OTP Verification</p>
+                    <p className="text-sm text-muted-foreground">
+                      {email && phoneNumber
+                        ? <>The verification code has been sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span> and email to <span className="font-medium text-foreground/90">{email}</span></>
+                        : phoneNumber
+                          ? <>Code sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
+                          : <>Code sent via email to <span className="font-medium text-foreground/90">{email}</span></>
+                      }
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" className="shrink-0 mt-0.5 bg-white/80" onClick={() => setStep('input')}>
+                    Change
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="otp" className="text-center block">Verification Code</Label>
+
+              <div className="space-y-5">
+                <Label htmlFor="otp" className="text-center block text-base font-medium">Enter Verification Code</Label>
                 <div className="flex justify-center">
-                  <InputOTP
-                    id="otp"
-                    maxLength={6}
-                    inputSize="xl"
-                    value={otp}
-                    onChange={(value) => setOtp(value)}
-                    onComplete={() => handleVerifyOtp()}
-                  >
-                    <InputOTPGroup>
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                    </InputOTPGroup>
-                    <InputOTPSeparator />
-                    <InputOTPGroup>
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-              </div>
-              {error && (
-                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-              <Button className="w-full h-12 text-base" onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}>
-                {loading ? 'Verifying...' : 'Verify OTP'}
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" className="flex-1" onClick={() => setStep('input')}>
-                  Change email/phone
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="flex-1"
-                  onClick={handleResendOtp}
-                  disabled={resending || cooldown > 0}
+                <InputOTP
+                  id="otp"
+                  maxLength={6}
+                  inputSize="xl"
+                  value={otp}
+                  onChange={(value) => { setError(''); setOtp(value); }}
+                  onComplete={() => handleVerifyOtp()}
+                  autoFocus
                 >
-                  {resending ? 'Sending...' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend OTP'}
-                </Button>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                  </InputOTPGroup>
+                  <InputOTPSeparator />
+                  <InputOTPGroup>
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                  </InputOTPGroup>
+                  <InputOTPSeparator />
+                  <InputOTPGroup>
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
+            </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2.5 text-sm text-destructive text-center"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <div className="text-center text-xs text-muted-foreground">
+                {cooldown > 0 ? (
+                  <p>Didn't receive the code? <span className="text-foreground/60">Resend in {cooldown}s</span></p>
+                ) : (
+                  <p>
+                    Didn't receive the code?{' '}
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resending}
+                      className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default"
+                    >
+                      {resending ? 'Sending...' : 'Resend'}
+                    </button>
+                  </p>
+                )}
+              </div>
+
+              <Button className="w-full h-12 text-base shadow-sm" onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Verifying...
+                  </span>
+                ) : 'Verify'}
+              </Button>
+
+
             </motion.div>
           )}
         </AnimatePresence>

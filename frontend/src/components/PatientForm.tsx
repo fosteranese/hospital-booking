@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { CallIcon } from '@hugeicons/core-free-icons';
+import { COUNTRY_CODES } from '@/lib/country-codes';
 
 interface PatientFormProps {
   defaultFirstName: string;
@@ -16,20 +20,30 @@ interface PatientFormProps {
 export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, defaultEmail, otpIdentifier, onComplete }: PatientFormProps) {
   const [firstName, setFirstName] = useState(defaultFirstName);
   const [lastName, setLastName] = useState(defaultLastName);
-  const [phone, setPhone] = useState(defaultPhone);
+  const [countryCode, setCountryCode] = useState('+233');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState(defaultEmail);
 
   useEffect(() => {
     setFirstName(defaultFirstName);
     setLastName(defaultLastName);
-    setPhone(defaultPhone);
     setEmail(defaultEmail);
+    if (defaultPhone) {
+      const match = defaultPhone.match(/^(\+\d+)(\d*)$/);
+      if (match) {
+        setCountryCode(match[1]);
+        setPhoneNumber(match[2]);
+      } else {
+        setPhoneNumber(defaultPhone);
+      }
+    }
   }, [defaultFirstName, defaultLastName, defaultPhone, defaultEmail]);
 
-  const isEmailReadonly = otpIdentifier?.includes('@') ?? false;
-  const isPhoneReadonly = otpIdentifier ? !otpIdentifier.includes('@') : false;
+  const usedEmail = otpIdentifier?.includes('@') ?? false;
+  const usedPhone = otpIdentifier ? !otpIdentifier.includes('@') : false;
 
-  const allFilled = firstName && lastName && phone && email;
+  const phone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+  const allFilled = firstName && lastName && (usedPhone || phoneNumber) && (usedEmail || email);
 
   const handleSubmit = () => {
     if (!allFilled) return;
@@ -46,25 +60,59 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>
-            <Input id="firstName" inputSize="xl" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white" />
+            <Input id="firstName" inputSize="xl" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white data-[size=xl]:pl-4" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="lastName">Last Name</Label>
-            <Input id="lastName" inputSize="xl" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-white" />
+            <Input id="lastName" inputSize="xl" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} className="bg-white data-[size=xl]:pl-4" />
           </div>
         </div>
+        {!usedPhone && (
         <div className="space-y-2">
           <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            inputSize="xl"
-            placeholder="+1234567890"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            readOnly={isPhoneReadonly}
-            className={`bg-white ${isPhoneReadonly ? 'bg-muted cursor-not-allowed' : ''}`}
-          />
+          <div className="flex border border-input rounded-lg overflow-hidden bg-white focus-within:ring-3 focus-within:ring-ring/50 focus-within:border-ring">
+            <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
+              <SelectTrigger size="xl" className="w-[120px] shrink-0 border-0 rounded-none shadow-none bg-white pl-3">
+                <SelectValue>
+                  {(() => {
+                    const c = COUNTRY_CODES.find((c) => c.code === countryCode);
+                    return c ? <> <span>{c.flag}</span> <span className="ps-2">{c.code} </span> </>: null;
+                  })()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectGroup>
+                  <SelectLabel>Countries</SelectLabel>
+                {COUNTRY_CODES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    <span className="flex items-center gap-2">
+                      <span className="text-base leading-none">{c.flag}</span>
+                      <span>{c.name} ({c.code})</span>
+                    </span>
+                  </SelectItem>
+                ))}</SelectGroup>
+              </SelectContent>
+            </Select>
+            <div className="shrink-0 self-stretch flex flex-col w-px">
+              <div className="w-px h-[10px] bg-[#f5f3ef]" />
+              <div className="w-px bg-border flex-1" />
+              <div className="w-px h-[10px] bg-[#f5f3ef]" />
+            </div>
+            <div className="flex-1">
+              <Input
+                id="phone"
+                type="tel"
+                inputSize="xl"
+                placeholder="Phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
+                className="border-0 rounded-none shadow-none bg-white data-[size=xl]:pl-4"
+              />
+            </div>
+          </div>
         </div>
+        )}
+        {!usedEmail && (
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -73,10 +121,10 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
             placeholder="john@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            readOnly={isEmailReadonly}
-            className={`bg-white ${isEmailReadonly ? 'bg-muted cursor-not-allowed' : ''}`}
+            className="bg-white data-[size=xl]:pl-4"
           />
         </div>
+        )}
         <Button className="w-full h-12 text-base" onClick={handleSubmit} disabled={!allFilled}>
           Continue
         </Button>
