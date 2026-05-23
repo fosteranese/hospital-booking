@@ -7,9 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertAction } from '@/components/ui/alert';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Mail01Icon, CallIcon } from '@hugeicons/core-free-icons';
+import { Mail01Icon, CallIcon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { COUNTRY_CODES } from '@/lib/country-codes';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,6 +25,7 @@ interface AuthFlowProps {
 }
 
 export function AuthFlow({ onVerified }: AuthFlowProps) {
+  const [method, setMethod] = useState<'phone' | 'email'>('phone');
   const [step, setStep] = useState<'input' | 'otp'>('input');
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+233');
@@ -37,16 +37,10 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
   const [cooldown, setCooldown] = useState(0);
 
   function getIdentifier(): string | null {
-    const hasEmail = email.trim().length > 0;
-    const hasPhone = phoneNumber.trim().length > 0;
-
-    if (!hasEmail && !hasPhone) return null;
-
-    if (hasEmail) {
+    if (method === 'email') {
       if (!EMAIL_RE.test(email.trim())) return null;
       return email.trim().toLowerCase();
     }
-
     const code = countryCode.trim();
     const number = phoneNumber.trim();
     if (!isValidPhone(code, number)) return null;
@@ -54,22 +48,20 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
   }
 
   function getFieldError(): string | null {
-    const hasEmail = email.trim().length > 0;
-    const hasPhone = phoneNumber.trim().length > 0;
-
-    if (!hasEmail && !hasPhone) return 'Enter an email or phone number';
-
-    if (hasEmail && !EMAIL_RE.test(email.trim())) return 'Invalid email format';
-
-    if (hasPhone && !isValidPhone(countryCode, phoneNumber.trim())) return 'Invalid phone number';
-
+    if (method === 'email') {
+      if (!email.trim()) return 'Enter your email address';
+      if (!EMAIL_RE.test(email.trim())) return 'Invalid email format';
+      return null;
+    }
+    if (!phoneNumber.trim()) return 'Enter your phone number';
+    if (!isValidPhone(countryCode, phoneNumber.trim())) return 'Invalid phone number';
     return null;
   }
 
   const handleRequestOtp = async () => {
     const id = getIdentifier();
     if (!id) {
-      setError(getFieldError() || 'Enter an email or phone number');
+      setError(getFieldError() || 'Enter a valid identifier');
       return;
     }
     setLoading(true);
@@ -126,6 +118,12 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
 
   const identifier = getIdentifier();
 
+  const switchMethod = () => {
+    setMethod(method === 'phone' ? 'email' : 'phone');
+    setStep('input');
+    setError('');
+  };
+
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardContent className="px-0 space-y-5">
@@ -141,67 +139,69 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
             >
               <CardHeader className="px-0">
                 <CardTitle className="text-foreground">Book an Appointment</CardTitle>
-                <CardDescription>Enter your email or phone to receive a verification code</CardDescription>
+                <CardDescription>
+                  {method === 'phone'
+                    ? 'Enter your phone number to receive a verification code'
+                    : 'Enter your email to receive a verification code'}
+                </CardDescription>
               </CardHeader>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <div className="flex gap-2">
-                  <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
-                    <SelectTrigger size="xl" className="w-[160px] shrink-0 bg-white">
-                      <SelectValue>
-                        {(() => {
-                          const c = COUNTRY_CODES.find((c) => c.code === countryCode);
-                          return c ? <> <span>{c.flag}</span> <span className="ps-2">{c.code} </span> </>: null;
-                        })()}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectGroup>
-                        <SelectLabel>Countries</SelectLabel>
-                      {COUNTRY_CODES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          <span className="flex items-center gap-2">
-                            <span className="text-base leading-none">{c.flag}</span>
-                            <span>{c.name} ({c.code})</span>
-                          </span>
-                        </SelectItem>
-                      ))}</SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <div className="relative flex-1">
-                    <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              {method === 'phone' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <div className="flex gap-2">
+                    <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
+                      <SelectTrigger size="xl" className="w-[160px] shrink-0 bg-white">
+                        <SelectValue>
+                          {(() => {
+                            const c = COUNTRY_CODES.find((c) => c.code === countryCode);
+                            return c ? <> <span>{c.flag}</span> <span className="ps-2">{c.code} </span> </>: null;
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectGroup>
+                          <SelectLabel>Countries</SelectLabel>
+                        {COUNTRY_CODES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            <span className="flex items-center gap-2">
+                              <span className="text-base leading-none">{c.flag}</span>
+                              <span>{c.name} ({c.code})</span>
+                            </span>
+                          </SelectItem>
+                        ))}</SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <div className="relative flex-1">
+                      <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        inputSize="xl"
+                        placeholder="Phone number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                     <Input
-                      id="phone"
-                      type="tel"
+                      id="email"
+                      type="email"
                       inputSize="xl"
-                      placeholder="Phone number"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value.replace(/[^\d\s\-()]/g, ''))}
+                      placeholder="email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="bg-white"
                     />
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">or</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="email"
-                    type="email"
-                    inputSize="xl"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white"
-                  />
-                </div>
-              </div>
+              )}
               {error && (
                 <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
@@ -209,6 +209,17 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               )}
               <Button className="w-full h-12 text-base" onClick={handleRequestOtp} disabled={loading || !identifier}>
                 {loading ? 'Sending...' : 'Send OTP'}
+              </Button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              <Button variant="outline" className="w-full h-12 text-base" onClick={switchMethod}>
+                {method === 'phone' ? 'Use email instead' : 'Use phone instead'}
               </Button>
             </motion.div>
           ) : (
@@ -220,23 +231,25 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
               >
-              <div className="space-y-3 pb-8">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="text-base font-medium text-foreground">OTP Verification</p>
-                    <p className="text-sm text-muted-foreground">
-                      {email && phoneNumber
-                        ? <>The verification code has been sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span> and email to <span className="font-medium text-foreground/90">{email}</span></>
-                        : phoneNumber
-                          ? <>Code sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
-                          : <>Code sent via email to <span className="font-medium text-foreground/90">{email}</span></>
-                      }
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" className="shrink-0 mt-0.5 bg-white/80" onClick={() => setStep('input')}>
-                    Change
-                  </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" onClick={() => setStep('input')}>
+                  <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
+                  Back
+                </Button>
+              </div>
+              <div className="flex items-start justify-between gap-4 mb-10">
+                <div className="space-y-1">
+                  <p className="text-base font-medium text-foreground">OTP Verification</p>
+                  <p className="text-sm text-muted-foreground">
+                    {method === 'phone'
+                      ? <>Code sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
+                      : <>Code sent via email to <span className="font-medium text-foreground/90">{email}</span></>
+                    }
+                  </p>
                 </div>
+                <Button variant="outline" size="sm" className="shrink-0 mt-0.5 bg-white/80" onClick={switchMethod}>
+                  {method === 'phone' ? 'Use email' : 'Use phone'}
+                </Button>
               </div>
 
               <div className="space-y-5">
