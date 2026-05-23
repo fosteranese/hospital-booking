@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,18 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const otpContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (step !== 'otp') return;
+    const el = otpContainerRef.current;
+    if (!el) return;
+    const timer = setTimeout(() => {
+      const input = el.querySelector('input');
+      if (input) input.focus();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [step]);
 
   function getIdentifier(): string | null {
     if (method === 'email') {
@@ -225,6 +237,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
           ) : (
             <motion.div
               key="otp"
+              ref={otpContainerRef}
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}

@@ -49,9 +49,10 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     let start_date = today + Duration::days(1);
     let end_date = today + Duration::days(days_ahead);
 
-    // Trim unbooked slots beyond the window
+    // Trim unbooked slots beyond the window (skip slots still referenced by any appointment)
     sqlx::query(
-        "DELETE FROM availability_slots WHERE slot_date > $1 AND is_booked = FALSE"
+        "DELETE FROM availability_slots WHERE slot_date > $1 AND is_booked = FALSE
+         AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
     )
     .bind(end_date)
     .execute(pool)
@@ -67,7 +68,8 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
         match day_hours[day_idx] {
             None => {
                 sqlx::query(
-                    "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE"
+                    "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE
+                     AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
                 )
                 .bind(current)
                 .execute(pool)
@@ -75,9 +77,10 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
                 .map_err(|e| AppError::Database(e))?;
             }
             Some((start, end)) => {
-                // Clear unbooked slots for this day
+                // Clear unbooked slots for this day (skip slots still referenced by any appointment)
                 sqlx::query(
-                    "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE"
+                    "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE
+                     AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
                 )
                 .bind(current)
                 .execute(pool)

@@ -101,7 +101,7 @@ export const api = {
     return request<TimeSlot[]>(url);
   },
 
-  createAppointment: (data: { doctor_id: string; slot_id: string }, token: string) =>
+  createAppointment: (data: { doctor_id: string; slot_id: string; patient_id?: string }, token: string) =>
     request<Appointment>('/appointments', {
       method: 'POST',
       body: JSON.stringify(data),

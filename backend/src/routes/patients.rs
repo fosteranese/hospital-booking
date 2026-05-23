@@ -37,9 +37,23 @@ pub async fn create_patient(
         return Err(AppError::Validation("Phone and email are required".to_string()));
     }
 
+    let existing = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM patients WHERE email = $1 OR phone = $2"
+    )
+    .bind(&email)
+    .bind(&phone)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    if existing > 0 {
+        return Err(AppError::BadRequest(
+            "A patient with this email or phone number already exists".to_string()
+        ));
+    }
+
     let patient = sqlx::query_as::<_, Patient>(
         "INSERT INTO patients (first_name, last_name, phone, email) VALUES ($1, $2, $3, $4)
-         ON CONFLICT (email) DO UPDATE SET first_name = $1, last_name = $2, phone = $3
          RETURNING *"
     )
     .bind(&first_name)
@@ -90,8 +104,8 @@ pub async fn get_last_doctor(
          FROM appointments a
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
-         WHERE a.patient_id = $1 AND a.status = 'confirmed'
-         ORDER BY a.created_at DESC
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date < CURRENT_DATE
+         ORDER BY s.slot_date DESC, s.start_time DESC
          LIMIT 1"
     )
     .bind(patient_id)

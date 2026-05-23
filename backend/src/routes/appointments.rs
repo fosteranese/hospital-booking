@@ -11,6 +11,7 @@ use crate::state::AppState;
 pub struct CreateAppointmentRequest {
     pub doctor_id: Option<Uuid>,
     pub slot_id: Uuid,
+    pub patient_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -35,7 +36,18 @@ pub async fn create_appointment(
     _auth: AuthUser,
     Json(body): Json<CreateAppointmentRequest>,
 ) -> Result<Json<AppointmentResponse>, AppError> {
-    let patient = get_patient_from_auth(&state, &_auth).await?;
+    let patient = if let Some(pid) = body.patient_id {
+        sqlx::query_as::<_, crate::models::Patient>(
+            "SELECT * FROM patients WHERE id = $1"
+        )
+        .bind(pid)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?
+    } else {
+        get_patient_from_auth(&state, &_auth).await?
+    };
 
     let slot = sqlx::query_as::<_, crate::models::AvailabilitySlot>(
         "SELECT * FROM availability_slots WHERE id = $1 AND is_booked = FALSE FOR UPDATE"
@@ -216,10 +228,12 @@ pub async fn update_appointment(
         if new_status == "cancelled" {
             let updated = sqlx::query_as::<_, Appointment>(
                 "WITH cancelled AS (
-                    UPDATE appointments SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING slot_id
+                    UPDATE appointments SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *
+                ),
+                freed AS (
+                    UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
                 )
-                UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
-                RETURNING *"
+                SELECT id, patient_id, doctor_id, slot_id, status, created_at, updated_at FROM cancelled"
             )
             .bind(id)
             .fetch_one(&state.pool)

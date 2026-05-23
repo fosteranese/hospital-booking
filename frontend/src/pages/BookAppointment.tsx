@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, Patient, LastDoctorInfo, UpcomingAppointment } from '@/lib/api';
+import { api, Patient, LastDoctorInfo } from '@/lib/api';
 import { AuthFlow } from '@/components/AuthFlow';
 import { PatientForm } from '@/components/PatientForm';
 import { DoctorSelect } from '@/components/DoctorSelect';
@@ -17,14 +17,19 @@ import { CheckmarkCircle01Icon, ArrowLeft01Icon } from '@hugeicons/core-free-ico
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
 
+function stepIndex(s: Step) {
+  return STEPS.indexOf(s);
+}
+
 const stepVariants = {
-  initial: { opacity: 0, x: 24 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -24 },
+  enter: (dir: number) => ({ opacity: 0, x: dir * 24 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -24 }),
 };
 
 export default function BookAppointment() {
   const [step, setStep] = useState<Step>('auth');
+  const [direction, setDirection] = useState(1);
 
   const [token, setToken] = useState('');
   const [otpIdentifier, setOtpIdentifier] = useState('');
@@ -43,15 +48,52 @@ export default function BookAppointment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(false);
   const [rescheduling, setRescheduling] = useState<{ appointmentId: string; doctorId?: string; doctorName?: string } | null>(null);
 
   const isReschedule = rescheduling !== null;
 
+  const resetAll = useCallback(() => {
+    setStep('auth');
+    setDirection(1);
+    setToken('');
+    setOtpIdentifier('');
+    setPatientFirstName('');
+    setPatientLastName('');
+    setPatientPhone('');
+    setPatientEmail('');
+    setExistingPatient(null);
+    setLastDoctor(null);
+    setDoctorCount(0);
+    setDoctorId(null);
+    setDoctorName('Auto-assigned');
+    setSlotId('');
+    setBookDate('');
+    setBookTime('');
+    setLoading(false);
+    setError('');
+    setUpcomingAppointments([]);
+    setUpcomingLoading(false);
+    setRescheduling(null);
+  }, []);
+
+  useEffect(() => {
+    if (step === 'review' && existingPatient && token) {
+      setUpcomingLoading(true);
+      api.getUpcomingAppointments(existingPatient.id, token)
+        .then(setUpcomingAppointments)
+        .catch(() => setUpcomingAppointments([]))
+        .finally(() => setUpcomingLoading(false));
+    }
+  }, [step, existingPatient, token]);
+
   const goToStep = (s: Step) => {
+    setDirection(stepIndex(s) > stepIndex(step) ? 1 : -1);
     setStep(s);
   };
 
   const goBack = () => {
+    setDirection(-1);
     switch (step) {
       case 'patient':
       case 'review':
@@ -96,10 +138,7 @@ export default function BookAppointment() {
         setDoctorName(`Dr. ${doctors[0].first_name} ${doctors[0].last_name}`);
       }
 
-      api.getUpcomingAppointments(patientData.id, newToken)
-        .then(setUpcomingAppointments)
-        .catch(() => {})
-        .finally(() => goToStep('review'));
+      goToStep('review');
     } catch {
       goToStep('patient');
     }
@@ -113,10 +152,9 @@ export default function BookAppointment() {
     goToStep('doctor');
   };
 
-  const handleRebookWithLastDoctor = (docId: string) => {
-    const last = lastDoctor!;
+  const handleRebookWithLastDoctor = (docId: string, docName: string) => {
     setDoctorId(docId);
-    setDoctorName(`Dr. ${last.doctor_name}`);
+    setDoctorName(`Dr. ${docName}`);
     goToStep('datetime');
   };
 
@@ -170,18 +208,20 @@ export default function BookAppointment() {
           token
         );
       } else {
-        if (!existingPatient) {
-          await api.createPatient(
+        let pid = existingPatient?.id;
+        if (!pid) {
+          const created = await api.createPatient(
             { first_name: patientFirstName, last_name: patientLastName, phone: patientPhone, email: patientEmail },
             token
           );
+          pid = created.id;
         }
         await api.createAppointment(
-          { doctor_id: doctorId!, slot_id: slotId },
+          { doctor_id: doctorId!, slot_id: slotId, patient_id: pid },
           token
         );
       }
-      setStep('success');
+      goToStep('success');
     } catch (err: any) {
       setError(err.message || 'Booking failed. Please try again.');
     } finally {
@@ -195,27 +235,27 @@ export default function BookAppointment() {
 
       <main className="flex-1 overflow-y-auto bg-gradient-to-b from-white via-white to-primary/[0.03]">
         <div className="flex min-h-full">
-          <div className="flex flex-col items-center justify-center flex-1 p-4 xl:p-10 gap-6 max-w-xl mx-auto">
+          <div className="flex flex-col items-center justify-center flex-1 p-4 xl:p-10 max-w-xl mx-auto">
+            <div className="w-full space-y-2">
+              {step !== 'auth' && step !== 'success' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goBack}
+                  className="-ml-2 text-muted-foreground hover:text-foreground"
+                >
+                  <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
+                  Back
+                </Button>
+              )}
 
-            {step !== 'auth' && step !== 'success' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={goBack}
-                className="self-start -mb-2 text-muted-foreground hover:text-foreground"
-              >
-                <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
-                Back
-              </Button>
-            )}
-
-            <div className="w-full">
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={step}
+                  custom={direction}
                   variants={stepVariants}
-                  initial="initial"
-                  animate="animate"
+                  initial="enter"
+                  animate="center"
                   exit="exit"
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                 >
@@ -229,6 +269,7 @@ export default function BookAppointment() {
                       lastDoctor={lastDoctor}
                       doctorCount={doctorCount}
                       upcomingAppointments={upcomingAppointments}
+                      upcomingLoading={upcomingLoading}
                       onRebookWithLastDoctor={handleRebookWithLastDoctor}
                       onChangeDoctor={handleChangeDoctor}
                       onRescheduleTime={handleRescheduleTime}
@@ -271,7 +312,7 @@ export default function BookAppointment() {
                       loading={loading}
                       error={error}
                       onConfirm={handleConfirm}
-                      onBack={() => setStep('datetime')}
+                      onBack={() => { setDirection(-1); setStep('datetime'); }}
                     />
                   )}
 
@@ -304,7 +345,7 @@ export default function BookAppointment() {
                               {doctorName} on {bookDate} at {bookTime}
                             </CardDescription>
                           </div>
-                          <Button onClick={() => window.location.reload()} size="lg" className="mt-2 shadow-md">
+                          <Button onClick={resetAll} size="lg" className="mt-2 shadow-md">
                             Book Another Appointment
                           </Button>
                         </CardContent>
