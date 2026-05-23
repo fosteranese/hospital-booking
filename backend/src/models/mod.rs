@@ -63,3 +63,14 @@ pub struct LastDoctorInfo {
     pub last_appointment_date: chrono::NaiveDate,
     pub last_appointment_time: chrono::NaiveTime,
 }
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct UpcomingAppointment {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub doctor_name: String,
+    pub specialization: String,
+    pub slot_date: chrono::NaiveDate,
+    pub start_time: chrono::NaiveTime,
+    pub status: String,
+}

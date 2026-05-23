@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api, Patient, LastDoctorInfo } from '@/lib/api';
+import { api, Patient, LastDoctorInfo, UpcomingAppointment } from '@/lib/api';
 import { AuthFlow } from '@/components/AuthFlow';
 import { PatientForm } from '@/components/PatientForm';
 import { DoctorSelect } from '@/components/DoctorSelect';
 import { BookingForm } from '@/components/BookingForm';
 import { AppointmentSummary } from '@/components/AppointmentSummary';
-import { ExistingPatientReview, ExistingPatientData } from '@/components/ExistingPatientReview';
+import { ExistingPatientReview, ExistingPatientData, UpcomingAppointmentData } from '@/components/ExistingPatientReview';
 import { LeftPanel } from '@/components/LeftPanel';
 
 import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,6 +42,10 @@ export default function BookAppointment() {
   const [bookTime, setBookTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>([]);
+  const [rescheduling, setRescheduling] = useState<{ appointmentId: string; doctorId?: string; doctorName?: string } | null>(null);
+
+  const isReschedule = rescheduling !== null;
 
   const goToStep = (s: Step) => {
     setStep(s);
@@ -54,10 +58,12 @@ export default function BookAppointment() {
         setStep('auth');
         break;
       case 'doctor':
-        setStep(existingPatient ? 'review' : 'patient');
+        setStep(isReschedule ? 'review' : (existingPatient ? 'review' : 'patient'));
+        setRescheduling(null);
         break;
       case 'datetime':
-        setStep('doctor');
+        setStep(isReschedule ? 'review' : 'doctor');
+        setRescheduling(null);
         break;
       case 'confirm':
         setStep('datetime');
@@ -88,11 +94,12 @@ export default function BookAppointment() {
       if (doctors.length === 1) {
         setDoctorId(doctors[0].id);
         setDoctorName(`Dr. ${doctors[0].first_name} ${doctors[0].last_name}`);
-        goToStep('datetime');
-        return;
       }
 
-      goToStep('review');
+      api.getUpcomingAppointments(patientData.id, newToken)
+        .then(setUpcomingAppointments)
+        .catch(() => {})
+        .finally(() => goToStep('review'));
     } catch {
       goToStep('patient');
     }
@@ -117,6 +124,27 @@ export default function BookAppointment() {
     goToStep('doctor');
   };
 
+  const handleRescheduleTime = (appt: UpcomingAppointmentData) => {
+    setRescheduling({ appointmentId: appt.id, doctorId: appt.doctor_id, doctorName: appt.doctor_name });
+    setDoctorId(appt.doctor_id);
+    setDoctorName(`Dr. ${appt.doctor_name}`);
+    goToStep('datetime');
+  };
+
+  const handleRescheduleDoctor = (appt: UpcomingAppointmentData) => {
+    setRescheduling({ appointmentId: appt.id });
+    goToStep('doctor');
+  };
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    try {
+      await api.updateAppointment(appointmentId, { status: 'cancelled' }, token);
+      setUpcomingAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
+    } catch {
+      // silently fail — appointment list stays unchanged
+    }
+  };
+
   const handleDoctorSelect = (id: string | null, name?: string) => {
     setDoctorId(id);
     setDoctorName(name || 'Auto-assigned');
@@ -135,16 +163,24 @@ export default function BookAppointment() {
     setLoading(true);
     setError('');
     try {
-      if (!existingPatient) {
-        await api.createPatient(
-          { first_name: patientFirstName, last_name: patientLastName, phone: patientPhone, email: patientEmail },
+      if (isReschedule) {
+        await api.updateAppointment(
+          rescheduling.appointmentId,
+          { slot_id: slotId, doctor_id: doctorId ?? undefined },
+          token
+        );
+      } else {
+        if (!existingPatient) {
+          await api.createPatient(
+            { first_name: patientFirstName, last_name: patientLastName, phone: patientPhone, email: patientEmail },
+            token
+          );
+        }
+        await api.createAppointment(
+          { doctor_id: doctorId!, slot_id: slotId },
           token
         );
       }
-      await api.createAppointment(
-        { doctor_id: doctorId!, slot_id: slotId },
-        token
-      );
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'Booking failed. Please try again.');
@@ -192,8 +228,12 @@ export default function BookAppointment() {
                       patient={existingPatient}
                       lastDoctor={lastDoctor}
                       doctorCount={doctorCount}
+                      upcomingAppointments={upcomingAppointments}
                       onRebookWithLastDoctor={handleRebookWithLastDoctor}
                       onChangeDoctor={handleChangeDoctor}
+                      onRescheduleTime={handleRescheduleTime}
+                      onRescheduleDoctor={handleRescheduleDoctor}
+                      onCancelAppointment={handleCancelAppointment}
                     />
                   )}
 
@@ -257,7 +297,9 @@ export default function BookAppointment() {
                             />
                           </motion.div>
                           <div className="space-y-2">
-                            <CardTitle className="text-2xl">Appointment Booked!</CardTitle>
+                            <CardTitle className="text-2xl">
+                              {isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!'}
+                            </CardTitle>
                             <CardDescription className="text-base">
                               {doctorName} on {bookDate} at {bookTime}
                             </CardDescription>

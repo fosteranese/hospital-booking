@@ -56,6 +56,16 @@ export interface LastDoctorInfo {
   last_appointment_time: string;
 }
 
+export interface UpcomingAppointment {
+  id: string;
+  doctor_id: string;
+  doctor_name: string;
+  specialization: string;
+  slot_date: string;
+  start_time: string;
+  status: string;
+}
+
 export const api = {
   requestOtp: (identifier: string) =>
     request<{ message: string }>('/auth/request-otp', {
@@ -110,6 +120,18 @@ export const api = {
 
   getLastDoctor: (patientId: string, token: string) =>
     request<LastDoctorInfo | null>(`/patients/${patientId}/last-doctor`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getUpcomingAppointments: (patientId: string, token: string) =>
+    request<UpcomingAppointment[]>(`/patients/${patientId}/upcoming-appointments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string }, token: string) =>
+    request<Appointment>(`/appointments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

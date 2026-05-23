@@ -94,9 +94,9 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
               </SelectContent>
             </Select>
             <div className="shrink-0 self-stretch flex flex-col w-px">
-              <div className="w-px h-[10px] bg-[#f5f3ef]" />
+              <div className="w-px h-[10px] bg-transparent" />
               <div className="w-px bg-border flex-1" />
-              <div className="w-px h-[10px] bg-[#f5f3ef]" />
+              <div className="w-px h-[10px] bg-transparent" />
             </div>
             <div className="flex-1">
               <Input

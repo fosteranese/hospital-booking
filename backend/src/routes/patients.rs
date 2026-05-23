@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::AuthUser;
-use crate::models::{LastDoctorInfo, Patient};
+use crate::models::{LastDoctorInfo, Patient, UpcomingAppointment};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -108,9 +108,32 @@ pub async fn get_last_doctor(
     })))
 }
 
+pub async fn get_upcoming_appointments(
+    State(state): State<AppState>,
+    _auth: AuthUser,
+    axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
+) -> Result<Json<Vec<UpcomingAppointment>>, AppError> {
+    let appointments = sqlx::query_as::<_, UpcomingAppointment>(
+        "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
+                d.specialization, s.slot_date, s.start_time, a.status
+         FROM appointments a
+         JOIN doctors d ON d.id = a.doctor_id
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE
+         ORDER BY s.slot_date ASC, s.start_time ASC"
+    )
+    .bind(patient_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(appointments))
+}
+
 pub fn patient_routes() -> Router<AppState> {
     Router::new()
         .route("/api/patients", post(create_patient))
         .route("/api/patients/lookup", get(lookup_patient))
         .route("/api/patients/:id/last-doctor", get(get_last_doctor))
+        .route("/api/patients/:id/upcoming-appointments", get(get_upcoming_appointments))
 }
