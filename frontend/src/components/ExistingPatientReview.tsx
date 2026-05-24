@@ -253,10 +253,10 @@ export function ExistingPatientReview({
         </CardHeader>
         <CardContent className="px-0 space-y-5">
           <Card className="overflow-hidden shadow-sm ring-1 ring-foreground/5 pt-0">
-            <div className="h-20 bg-gradient-to-br from-primary/10 via-primary/5 to-muted sm:h-24" />
+            <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-muted" />
             <CardContent className="relative pb-0">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-5 ">
-                <Avatar className="size-20 border-4 border-[#ffffff] shadow-lg sm:-mt-12 sm:size-28">
+              <div className="flex flex-row items-start gap-5">
+                <Avatar className="border-4 border-[#ffffff] shadow-lg -mt-12 size-28">
                   <AvatarFallback className="bg-slate-300 text-xl font-semibold text-slate-900">
                     {getInitials(patient.first_name, patient.last_name)}
                   </AvatarFallback>

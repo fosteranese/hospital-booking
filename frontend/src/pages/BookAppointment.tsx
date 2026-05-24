@@ -254,7 +254,7 @@ export default function BookAppointment() {
 
       <main className="flex-1 overflow-y-auto bg-gradient-to-b from-white via-white to-primary/[0.03]">
         <div className="flex min-h-full">
-          <div className="flex flex-col items-center justify-center flex-1 p-4 xl:p-10 max-w-xl mx-auto">
+          <div className="flex flex-col items-center justify-center flex-1 p-8 xl:p-10 max-w-xl mx-auto">
             <div className="w-full space-y-2">
               {step !== 'auth' && step !== 'success' && (
                 <Button
