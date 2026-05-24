@@ -1,8 +1,10 @@
 use std::sync::Arc;
-use axum::Router;
+use axum::{Router, body::Body, http::Response};
 use tower_http::cors::{CorsLayer, Any};
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use std::time::Duration;
+use tracing::Span;
 
 mod db;
 mod error;
@@ -85,6 +87,19 @@ async fn main() {
         .merge(routes::appointments::appointment_routes())
         .merge(routes::settings::settings_routes())
         .layer(cors)
+        .layer(
+            TraceLayer::new_for_http()
+                .on_response(|response: &Response<Body>, latency: Duration, _span: &Span| {
+                    let status = response.status();
+                    if status.is_server_error() {
+                        tracing::error!(status = status.as_u16(), latency_ms = latency.as_millis(), "internal error");
+                    } else if status.is_client_error() {
+                        tracing::warn!(status = status.as_u16(), latency_ms = latency.as_millis(), "bad request");
+                    } else {
+                        tracing::info!(status = status.as_u16(), latency_ms = latency.as_millis(), "request completed");
+                    }
+                }),
+        )
         .with_state(state);
 
     let addr = "0.0.0.0:3000";

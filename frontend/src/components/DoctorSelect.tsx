@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface DoctorSelectProps {
   onSelect: (doctorId: string | null, doctorName?: string) => void;
+  excludeDoctorId?: string;
 }
 
 const container = {
@@ -22,7 +23,7 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export function DoctorSelect({ onSelect }: DoctorSelectProps) {
+export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,31 +34,37 @@ export function DoctorSelect({ onSelect }: DoctorSelectProps) {
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = excludeDoctorId ? doctors.filter((d) => d.id !== excludeDoctorId) : doctors;
+
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
         <CardTitle className="text-foreground">Select a Doctor</CardTitle>
-        <CardDescription>Choose a doctor or let us auto-assign</CardDescription>
+        <CardDescription>
+          {excludeDoctorId ? 'Choose a new doctor' : 'Choose a doctor or let us auto-assign'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="px-0 space-y-3">
         <motion.div variants={container} initial="hidden" animate="show">
-          <motion.div variants={item}>
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
-              onClick={() => onSelect(null)}
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="border-2 border-dashed border-muted-foreground/30">
-                  <AvatarFallback className="bg-transparent text-muted-foreground">AU</AvatarFallback>
-                </Avatar>
-                <div className="text-left">
-                  <p className="font-medium text-base">Auto-assign</p>
-                  <p className="text-sm text-muted-foreground">Let us pick the best available doctor</p>
+          {!excludeDoctorId && (
+            <motion.div variants={item}>
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
+                onClick={() => onSelect(null)}
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="border-2 border-dashed border-muted-foreground/30">
+                    <AvatarFallback className="bg-transparent text-muted-foreground">AU</AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <p className="font-medium text-base">Auto-assign</p>
+                    <p className="text-sm text-muted-foreground">Let us pick the best available doctor</p>
+                  </div>
                 </div>
-              </div>
-            </Button>
-          </motion.div>
+              </Button>
+            </motion.div>
+          )}
 
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
@@ -72,7 +79,7 @@ export function DoctorSelect({ onSelect }: DoctorSelectProps) {
               </motion.div>
             ))
           ) : (
-            doctors.map((doc) => (
+            filtered.map((doc) => (
               <motion.div key={doc.id} variants={item}>
                 <Button
                   key={doc.id}

@@ -15,7 +15,7 @@ chrono = { version = "0.4", features = ["serde"] }
 jsonwebtoken = "9"
 lettre = { version = "0.11", features = ["builder", "tokio1-native-tls"] }
 dotenvy = "0.15"
-tower-http = { version = "0.5", features = ["cors"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
 rand = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

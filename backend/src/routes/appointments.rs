@@ -224,6 +224,34 @@ pub async fn update_appointment(
         }));
     }
 
+    if let Some(new_doctor_id) = body.doctor_id {
+        tracing::info!("Updating doctor for appointment {} to {}", id, new_doctor_id);
+        sqlx::query("SELECT id FROM doctors WHERE id = $1")
+            .bind(new_doctor_id)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::BadRequest("Doctor not found".to_string()))?;
+
+        let updated = sqlx::query_as::<_, Appointment>(
+            "UPDATE appointments SET doctor_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
+        )
+        .bind(id)
+        .bind(new_doctor_id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?;
+
+        return Ok(Json(AppointmentResponse {
+            id: updated.id,
+            patient_id: updated.patient_id,
+            doctor_id: updated.doctor_id,
+            slot_id: updated.slot_id,
+            status: updated.status,
+            created_at: updated.created_at,
+        }));
+    }
+
     if let Some(new_status) = &body.status {
         if new_status == "cancelled" {
             let updated = sqlx::query_as::<_, Appointment>(
@@ -251,6 +279,10 @@ pub async fn update_appointment(
         }
     }
 
+    tracing::warn!(
+        "No valid update for appointment {} — slot_id={:?}, doctor_id={:?}, status={:?}",
+        id, body.slot_id, body.doctor_id, body.status
+    );
     Err(AppError::BadRequest("No valid update provided".to_string()))
 }
 

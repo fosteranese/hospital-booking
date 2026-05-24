@@ -1,13 +1,25 @@
 const API_BASE = '/api';
 
+function friendlyError(msg: string): string {
+  if (/network|connect|refused|unreachable|econnrefused|enotfound|econnreset|failed to fetch|load failed/i.test(msg)) {
+    return 'Unable to reach the server. Please check your internet connection and try again.';
+  }
+  return msg;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
+    });
+  } catch {
+    throw new Error('Unable to reach the server. Please check your internet connection and try again.');
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error || 'Request failed');
+    throw new Error(friendlyError(body.error || 'Something went wrong. Please try again.'));
   }
   return res.json();
 }

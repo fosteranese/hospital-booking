@@ -12,7 +12,6 @@ import {
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel,
@@ -135,15 +134,21 @@ function UpcomingAppointmentsModal({
     if (appointments.length === 0) onClose();
   }, [appointments.length, onClose]);
 
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const cancellingAppt = appointments.find((a) => a.id === pendingCancelId) ?? null;
+
   const confirmCancel = async () => {
     if (!pendingCancelId) return;
     const id = pendingCancelId;
     setPendingCancelId(null);
+    setIsCancelling(true);
     setCancellingId(id);
     try {
       await onCancelAppointment(id);
     } finally {
       setCancellingId(null);
+      setIsCancelling(false);
     }
   };
 
@@ -198,16 +203,39 @@ function UpcomingAppointmentsModal({
 
     <AlertDialog open={pendingCancelId !== null} onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel appointment</AlertDialogTitle>
-          <AlertDialogDescription>Are you sure you want to cancel this appointment?</AlertDialogDescription>
+        <AlertDialogHeader className="space-y-3">
+          <AlertDialogTitle className="text-base">Cancel appointment</AlertDialogTitle>
+          <p className="text-xs text-muted-foreground">Are you sure? This cannot be undone.</p>
+          {cancellingAppt && (
+            <div className="border-l-2 border-destructive/50 pl-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold">Dr. {cancellingAppt.doctor_name}</p>
+                <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">{cancellingAppt.specialization}</Badge>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
+                <span>{cancellingAppt.slot_date} &middot; {cancellingAppt.start_time?.slice(0, 5)}</span>
+              </div>
+            </div>
+          )}
         </AlertDialogHeader>
-        <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-6">
+        <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-2">
           <AlertDialogCancel>No, keep it</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={confirmCancel}>Yes, cancel</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {isCancelling && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-black/60"
+      >
+        <div className="size-10 rounded-full border-[3px] border-white/30 border-t-white animate-spin" />
+        <p className="text-sm font-medium text-white">Cancelling appointment...</p>
+      </motion.div>
+    )}
   </>
   );
 }
@@ -226,20 +254,25 @@ export function ExistingPatientReview({
 }: ExistingPatientReviewProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
   const [showAllModal, setShowAllModal] = useState(false);
 
   const showTabs = lastDoctor !== null;
 
+  const cancellingAppt = upcomingAppointments.find((a) => a.id === pendingCancelId) ?? null;
+
   const confirmCancel = async () => {
     if (!pendingCancelId) return;
     const id = pendingCancelId;
     setPendingCancelId(null);
+    setIsCancelling(true);
     setCancellingId(id);
     try {
       await onCancelAppointment(id);
     } finally {
       setCancellingId(null);
+      setIsCancelling(false);
     }
   };
 
@@ -448,16 +481,39 @@ export function ExistingPatientReview({
 
       <AlertDialog open={pendingCancelId !== null} onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel appointment</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to cancel this appointment?</AlertDialogDescription>
+          <AlertDialogHeader className="space-y-3">
+            <AlertDialogTitle className="text-base">Cancel appointment</AlertDialogTitle>
+            <p className="text-xs text-muted-foreground">Are you sure? This cannot be undone.</p>
+            {cancellingAppt && (
+              <div className="border-l-2 border-destructive/50 pl-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">Dr. {cancellingAppt.doctor_name}</p>
+                  <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">{cancellingAppt.specialization}</Badge>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
+                  <span>{cancellingAppt.slot_date} &middot; {cancellingAppt.start_time?.slice(0, 5)}</span>
+                </div>
+              </div>
+            )}
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-6">
+          <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-2">
             <AlertDialogCancel>No, keep it</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmCancel}>Yes, cancel</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isCancelling && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-black/60"
+        >
+          <div className="size-10 rounded-full border-[3px] border-white/30 border-t-white animate-spin" />
+          <p className="text-sm font-medium text-white">Cancelling appointment...</p>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

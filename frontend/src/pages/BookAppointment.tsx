@@ -49,7 +49,7 @@ export default function BookAppointment() {
   const [error, setError] = useState('');
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>([]);
   const [upcomingLoading, setUpcomingLoading] = useState(false);
-  const [rescheduling, setRescheduling] = useState<{ appointmentId: string; doctorId?: string; doctorName?: string } | null>(null);
+  const [rescheduling, setRescheduling] = useState<{ appointmentId: string; doctorId?: string; doctorName?: string; excludeDoctorId?: string } | null>(null);
 
   const isReschedule = rescheduling !== null;
 
@@ -170,7 +170,7 @@ export default function BookAppointment() {
   };
 
   const handleRescheduleDoctor = (appt: UpcomingAppointmentData) => {
-    setRescheduling({ appointmentId: appt.id });
+    setRescheduling({ appointmentId: appt.id, excludeDoctorId: appt.doctor_id });
     goToStep('doctor');
   };
 
@@ -183,9 +183,26 @@ export default function BookAppointment() {
     }
   };
 
-  const handleDoctorSelect = (id: string | null, name?: string) => {
+  const handleDoctorSelect = async (id: string | null, name?: string) => {
     setDoctorId(id);
     setDoctorName(name || 'Auto-assigned');
+
+    if (isReschedule && !rescheduling.doctorId) {
+      if (!id) return;
+      setLoading(true);
+      setError('');
+      try {
+        await api.updateAppointment(rescheduling.appointmentId, { doctor_id: id }, token);
+        setRescheduling(null);
+        goToStep('review');
+      } catch (err: any) {
+        setError(err.message || 'Failed to change doctor. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     goToStep('datetime');
   };
 
@@ -290,7 +307,29 @@ export default function BookAppointment() {
                   )}
 
                   {step === 'doctor' && (
-                    <DoctorSelect onSelect={handleDoctorSelect} />
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <DoctorSelect onSelect={handleDoctorSelect} excludeDoctorId={rescheduling?.excludeDoctorId} />
+                        {loading && (
+                          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70">
+                            <div className="flex items-center gap-2.5">
+                              <div className="size-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                              <span className="text-sm text-muted-foreground">Updating doctor...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {isReschedule && !rescheduling?.doctorId && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          Your current time slot will be kept. Only the doctor will change.
+                        </p>
+                      )}
+                      {error && (
+                        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                          {error}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {step === 'datetime' && (

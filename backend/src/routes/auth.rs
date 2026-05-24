@@ -42,16 +42,16 @@ pub async fn request_otp(
 
     let code = create_otp(&state.pool, &identifier, otp_length)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to create OTP: {}", e)))?;
+        .map_err(|_| AppError::Internal("We couldn't send your verification code. Please try again.".to_string()))?;
 
-    if identifier.contains('@') {
-        state.email_service.send_otp(&identifier, &code)
-            .await
-            .map_err(|e| AppError::Internal(e))?;
+    let delivery_ok = if identifier.contains('@') {
+        state.email_service.send_otp(&identifier, &code).await
     } else {
-        state.sms_service.send_otp(&identifier, &code)
-            .await
-            .map_err(|e| AppError::Internal(e))?;
+        state.sms_service.send_otp(&identifier, &code).await
+    };
+
+    if delivery_ok.is_err() {
+        tracing::warn!("OTP delivery failed but code was stored");
     }
 
     Ok(Json(RequestOtpResponse {
