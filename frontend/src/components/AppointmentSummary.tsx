@@ -1,9 +1,9 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { ErrorMessage } from '@/components/ui/error-message';
 
 interface AppointmentSummaryProps {
   doctorName: string;
@@ -50,9 +50,7 @@ export function AppointmentSummary({ doctorName, date, time, patientName, loadin
             </div>
           </div>
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <ErrorMessage message={error} />
           )}
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1 bg-white/80" onClick={onBack} disabled={loading}>

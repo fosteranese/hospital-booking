@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api, Doctor } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
   useEffect(() => {
     api.getDoctors()
       .then(setDoctors)
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

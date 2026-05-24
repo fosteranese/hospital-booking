@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/comp
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Mail01Icon, CallIcon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { Spinner } from '@/components/ui/spinner';
 import { COUNTRY_CODES } from '@/lib/country-codes';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -215,9 +217,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                 </div>
               )}
               {error && (
-                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </div>
+                <ErrorMessage message={error} />
               )}
               <Button className="w-full h-12 text-base" onClick={handleRequestOtp} disabled={loading || !identifier}>
                 {loading ? 'Sending...' : 'Send OTP'}
@@ -299,9 +299,8 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2.5 text-sm text-destructive text-center"
                 >
-                  {error}
+                  <ErrorMessage message={error} variant="bordered" />
                 </motion.div>
               )}
 
@@ -326,10 +325,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               <Button className="w-full h-12 text-base shadow-sm" onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}>
                 {loading ? (
                   <span className="flex items-center gap-2">
-                    <svg className="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
+                    <Spinner />
                     Verifying...
                   </span>
                 ) : 'Verify'}

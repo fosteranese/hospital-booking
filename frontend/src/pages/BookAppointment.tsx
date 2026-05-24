@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, Patient, LastDoctorInfo } from '@/lib/api';
 import { AuthFlow } from '@/components/AuthFlow';
@@ -13,6 +13,8 @@ import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/c
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CheckmarkCircle01Icon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingOverlay } from '@/components/loading-overlay';
 
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
@@ -163,7 +165,7 @@ export default function BookAppointment() {
   };
 
   const handleRescheduleTime = (appt: UpcomingAppointmentData) => {
-    setRescheduling({ appointmentId: appt.id, doctorId: appt.doctor_id, doctorName: appt.doctor_name });
+    setRescheduling({ appointmentId: appt.id, doctorId: appt.doctor_id });
     setDoctorId(appt.doctor_id);
     setDoctorName(`Dr. ${appt.doctor_name}`);
     goToStep('datetime');
@@ -310,14 +312,7 @@ export default function BookAppointment() {
                     <div className="space-y-3">
                       <div className="relative">
                         <DoctorSelect onSelect={handleDoctorSelect} excludeDoctorId={rescheduling?.excludeDoctorId} />
-                        {loading && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70">
-                            <div className="flex items-center gap-2.5">
-                              <div className="size-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                              <span className="text-sm text-muted-foreground">Updating doctor...</span>
-                            </div>
-                          </div>
-                        )}
+                        <LoadingOverlay loading={loading} message="Updating doctor..." variant="inset" />
                       </div>
                       {isReschedule && !rescheduling?.doctorId && (
                         <p className="text-xs text-muted-foreground text-center">
@@ -325,9 +320,7 @@ export default function BookAppointment() {
                         </p>
                       )}
                       {error && (
-                        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                          {error}
-                        </div>
+                        <ErrorMessage message={error} />
                       )}
                     </div>
                   )}
@@ -337,7 +330,6 @@ export default function BookAppointment() {
                       doctorId={doctorId}
                       defaultDate={bookDate}
                       patientId={existingPatient?.id}
-                      token={token}
                       onSelectSlot={handleSlotSelect}
                     />
                   )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { api, TimeSlot } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ interface BookingFormProps {
   doctorId: string | null;
   defaultDate?: string;
   patientId?: string;
-  token?: string;
   onSelectSlot: (slotId: string, date: string, startTime: string, doctorId?: string) => void;
 }
 
@@ -20,7 +19,7 @@ function SlotSkeleton() {
   );
 }
 
-export function BookingForm({ doctorId, defaultDate = '', patientId, token, onSelectSlot }: BookingFormProps) {
+export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlot }: BookingFormProps) {
   const [date, setDate] = useState(defaultDate);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +34,7 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, token, onSe
       : api.getAllAvailability(date, patientId);
     fetch
       .then(setSlots)
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [date, doctorId, patientId]);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,15 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Mail01Icon, CallIcon, Clock01Icon, Appointment01Icon, ArrowRight02Icon, Time02Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog';
+import { CancelAppointmentDialog } from '@/components/cancel-appointment-dialog';
+import { Spinner } from '@/components/ui/spinner';
 
 export interface ExistingPatientData {
   id: string;
@@ -194,48 +187,18 @@ function UpcomingAppointmentsModal({
               cancelling={cancellingId === appt.id}
             />
           ))}
-          {appointments.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-6">No appointments to show.</p>
-          )}
+          
         </div>
       </motion.div>
     </motion.div>
 
-    <AlertDialog open={pendingCancelId !== null} onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}>
-      <AlertDialogContent>
-        <AlertDialogHeader className="space-y-3">
-          <AlertDialogTitle className="text-base">Cancel appointment</AlertDialogTitle>
-          <p className="text-xs text-muted-foreground">Are you sure? This cannot be undone.</p>
-          {cancellingAppt && (
-            <div className="border-l-2 border-destructive/50 pl-3 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold">Dr. {cancellingAppt.doctor_name}</p>
-                <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">{cancellingAppt.specialization}</Badge>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
-                <span>{cancellingAppt.slot_date} &middot; {cancellingAppt.start_time?.slice(0, 5)}</span>
-              </div>
-            </div>
-          )}
-        </AlertDialogHeader>
-        <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-2">
-          <AlertDialogCancel>No, keep it</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={confirmCancel}>Yes, cancel</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {isCancelling && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-black/60"
-      >
-        <div className="size-10 rounded-full border-[3px] border-white/30 border-t-white animate-spin" />
-        <p className="text-sm font-medium text-white">Cancelling appointment...</p>
-      </motion.div>
-    )}
+    <CancelAppointmentDialog
+      open={pendingCancelId !== null}
+      onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}
+      appointment={cancellingAppt}
+      onConfirm={confirmCancel}
+      isCancelling={isCancelling}
+    />
   </>
   );
 }
@@ -255,10 +218,7 @@ export function ExistingPatientReview({
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
   const [showAllModal, setShowAllModal] = useState(false);
-
-  const showTabs = lastDoctor !== null;
 
   const cancellingAppt = upcomingAppointments.find((a) => a.id === pendingCancelId) ?? null;
 
@@ -291,7 +251,7 @@ export function ExistingPatientReview({
           <CardTitle className="text-lg text-foreground">Welcome back, {patient.first_name}!</CardTitle>
           <CardDescription>We found your details — review and continue below</CardDescription>
         </CardHeader>
-        <CardContent className="px-0 space-y-6">
+        <CardContent className="px-0 space-y-5">
           <Card className="overflow-hidden shadow-sm ring-1 ring-foreground/5 pt-0">
             <div className="h-20 bg-gradient-to-br from-primary/10 via-primary/5 to-muted sm:h-24" />
             <CardContent className="relative pb-0">
@@ -342,103 +302,59 @@ export function ExistingPatientReview({
             )}
           </Card>
 
-          <div>
-              {showTabs && (
-                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+          <div className="mt-6">
+            <div className="space-y-3">
+              {upcomingAppointments.length > 0 && (
+                <div className="flex items-center justify-between gap-4 min-h-5 mt-2">
+                
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <HugeiconsIcon icon={Time02Icon} strokeWidth={2} className="size-3.5 text-primary shrink-0" />
+                    Upcoming appointments
+                    <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{upcomingAppointments.length}</span>
+                  </p>
+                
+                {restCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => setActiveTab('upcoming')}
-                    className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${
-                      activeTab === 'upcoming' ? 'bg-white text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    onClick={() => setShowAllModal(true)}
+                    className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors shrink-0 ml-auto"
                   >
-                    Upcoming {upcomingAppointments.length > 0 && `(${upcomingAppointments.length})`}
+                    View all ({upcomingAppointments.length})
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('history')}
-                    className={`flex-1 text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${
-                      activeTab === 'history' ? 'bg-white text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    History
-                  </button>
-                </div>
+                )}
+              </div>
               )}
-
-              <div className="pt-4">
               {upcomingLoading ? (
                 <div className="flex items-center justify-center gap-2.5 py-5">
-                  <div className="size-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                  <Spinner />
                   <span className="text-xs text-muted-foreground">Loading appointments...</span>
                 </div>
               ) : (
                 <>
-                  {(!showTabs || activeTab === 'upcoming') && (
-                    <div className="space-y-3">
-                      {(!showTabs || restCount > 0 || upcomingAppointments.length === 0) && (
-                        <div className="flex items-center justify-between gap-4 min-h-[20px]">
-                          {!showTabs && upcomingAppointments.length > 0 && (
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                              <HugeiconsIcon icon={Time02Icon} strokeWidth={2} className="size-3.5 text-primary shrink-0" />
-                              Upcoming appointments
-                              <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{upcomingAppointments.length}</span>
-                            </p>
-                          )}
-                          {restCount > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setShowAllModal(true)}
-                              className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors shrink-0 ml-auto"
-                            >
-                              View all ({upcomingAppointments.length})
-                            </button>
-                          )}
-                        </div>
-                      )}
+                  <AnimatePresence>
+                    {soonest && (
+                      <motion.div
+                        key={soonest.id}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <AppointmentCard
+                          appointment={soonest}
+                          onRescheduleTime={() => onRescheduleTime(soonest)}
+                          onRescheduleDoctor={() => onRescheduleDoctor(soonest)}
+                          onCancel={() => setPendingCancelId(soonest.id)}
+                          cancelling={cancellingId === soonest.id}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                      <AnimatePresence>
-                        {soonest && (
-                          <motion.div
-                            key={soonest.id}
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <AppointmentCard
-                              appointment={soonest}
-                              onRescheduleTime={() => onRescheduleTime(soonest)}
-                              onRescheduleDoctor={() => onRescheduleDoctor(soonest)}
-                              onCancel={() => setPendingCancelId(soonest.id)}
-                              cancelling={cancellingId === soonest.id}
-                            />
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {upcomingAppointments.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-5">No upcoming appointments</p>
-                      )}
-                    </div>
-                  )}
-
-                  {lastDoctor && activeTab === 'history' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <HugeiconsIcon icon={Appointment01Icon} strokeWidth={2} className="size-4 text-primary shrink-0" />
-                        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Last visit</p>
-                      </div>
-                      <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/5 space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-foreground">Dr. {lastDoctor.doctor_name}</p>
-                          <Badge variant="outline" className="text-[10px] font-normal">{lastDoctor.specialization}</Badge>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
-                          <span>{lastDoctor.last_appointment_date} &middot; {lastDoctor.last_appointment_time?.slice(0,5)}</span>
-                        </div>
-                      </div>
+                  {upcomingAppointments.length === 0 && (
+                    <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-6 px-4">
+                      <HugeiconsIcon icon={Appointment01Icon} strokeWidth={2} className="size-6 text-muted-foreground/40 shrink-0" />
+                      <p className="text-xs text-muted-foreground">No upcoming appointments</p>
                     </div>
                   )}
                 </>
@@ -479,41 +395,13 @@ export function ExistingPatientReview({
         )}
       </AnimatePresence>
 
-      <AlertDialog open={pendingCancelId !== null} onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader className="space-y-3">
-            <AlertDialogTitle className="text-base">Cancel appointment</AlertDialogTitle>
-            <p className="text-xs text-muted-foreground">Are you sure? This cannot be undone.</p>
-            {cancellingAppt && (
-              <div className="border-l-2 border-destructive/50 pl-3 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold">Dr. {cancellingAppt.doctor_name}</p>
-                  <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">{cancellingAppt.specialization}</Badge>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
-                  <span>{cancellingAppt.slot_date} &middot; {cancellingAppt.start_time?.slice(0, 5)}</span>
-                </div>
-              </div>
-            )}
-          </AlertDialogHeader>
-          <AlertDialogFooter className="bg-muted/40 px-6 py-4 -mx-6 -mb-6 rounded-b-xl border-t border-foreground/5 mt-2">
-            <AlertDialogCancel>No, keep it</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirmCancel}>Yes, cancel</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {isCancelling && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-black/60"
-        >
-          <div className="size-10 rounded-full border-[3px] border-white/30 border-t-white animate-spin" />
-          <p className="text-sm font-medium text-white">Cancelling appointment...</p>
-        </motion.div>
-      )}
+      <CancelAppointmentDialog
+        open={pendingCancelId !== null}
+        onOpenChange={(open) => { if (!open) setPendingCancelId(null); }}
+        appointment={cancellingAppt}
+        onConfirm={confirmCancel}
+        isCancelling={isCancelling}
+      />
     </motion.div>
   );
 }
