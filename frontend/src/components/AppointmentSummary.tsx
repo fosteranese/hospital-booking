@@ -11,10 +11,12 @@ interface AppointmentSummaryProps {
   date: string;
   time: string;
   patientName: string;
+  notes: string;
   loading: boolean;
   error?: string;
   onConfirm: () => void;
   onBack: () => void;
+  onNotesChange: (notes: string) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -37,7 +39,7 @@ function formatTime(timeStr: string): string {
   }
 }
 
-export function AppointmentSummary({ doctorName, specialization, date, time, patientName, loading, error, onConfirm, onBack }: AppointmentSummaryProps) {
+export function AppointmentSummary({ doctorName, specialization, date, time, patientName, notes, loading, error, onConfirm, onBack, onNotesChange }: AppointmentSummaryProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -105,6 +107,19 @@ export function AppointmentSummary({ doctorName, specialization, date, time, pat
                   <p className="text-sm font-medium text-foreground mt-0.5">{formatTime(time)}</p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border overflow-hidden">
+            <div className="px-5 py-4 space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Reason for visit (optional)</p>
+              <textarea
+                value={notes}
+                onChange={(e) => onNotesChange(e.target.value)}
+                placeholder="Briefly describe your reason for visit..."
+                className="w-full min-h-[80px] resize-none rounded-lg border border-foreground/10 bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-colors"
+                disabled={loading}
+              />
             </div>
           </div>
 

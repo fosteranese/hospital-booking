@@ -12,6 +12,7 @@ pub struct CreateAppointmentRequest {
     pub doctor_id: Option<Uuid>,
     pub slot_id: Uuid,
     pub patient_id: Option<Uuid>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -28,6 +29,7 @@ pub struct AppointmentResponse {
     pub doctor_id: Uuid,
     pub slot_id: Uuid,
     pub status: String,
+    pub notes: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -87,20 +89,25 @@ pub async fn create_appointment(
         }
     }
 
+    let notes = body.notes.unwrap_or_default();
+
     let appointment = sqlx::query_as::<_, Appointment>(
         "WITH booked_slot AS (
             UPDATE availability_slots SET is_booked = TRUE WHERE id = $1 RETURNING *
         )
-        INSERT INTO appointments (patient_id, doctor_id, slot_id)
-        VALUES ($2, $3, $1)
+        INSERT INTO appointments (patient_id, doctor_id, slot_id, notes)
+        VALUES ($2, $3, $1, $4)
         RETURNING *"
     )
     .bind(body.slot_id)
     .bind(patient.id)
     .bind(doctor_id)
+    .bind(&notes)
     .fetch_one(&state.pool)
     .await
     .map_err(|e| AppError::Database(e))?;
+
+    let _ = send_confirmation_email(&state, &patient, &appointment, &slot, &doctor_id).await;
 
     Ok(Json(AppointmentResponse {
         id: appointment.id,
@@ -108,6 +115,7 @@ pub async fn create_appointment(
         doctor_id: appointment.doctor_id,
         slot_id: appointment.slot_id,
         status: appointment.status,
+        notes: appointment.notes,
         created_at: appointment.created_at,
     }))
 }
@@ -132,6 +140,7 @@ pub async fn get_appointment(
         doctor_id: appointment.doctor_id,
         slot_id: appointment.slot_id,
         status: appointment.status,
+        notes: appointment.notes,
         created_at: appointment.created_at,
     }))
 }
@@ -220,6 +229,7 @@ pub async fn update_appointment(
             doctor_id: updated.doctor_id,
             slot_id: updated.slot_id,
             status: updated.status,
+            notes: updated.notes,
             created_at: updated.created_at,
         }));
     }
@@ -248,6 +258,7 @@ pub async fn update_appointment(
             doctor_id: updated.doctor_id,
             slot_id: updated.slot_id,
             status: updated.status,
+            notes: updated.notes,
             created_at: updated.created_at,
         }));
     }
@@ -261,7 +272,7 @@ pub async fn update_appointment(
                 freed AS (
                     UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
                 )
-                SELECT id, patient_id, doctor_id, slot_id, status, created_at, updated_at FROM cancelled"
+                SELECT * FROM cancelled"
             )
             .bind(id)
             .fetch_one(&state.pool)
@@ -274,6 +285,7 @@ pub async fn update_appointment(
                 doctor_id: updated.doctor_id,
                 slot_id: updated.slot_id,
                 status: updated.status,
+                notes: updated.notes,
                 created_at: updated.created_at,
             }));
         }
@@ -309,6 +321,37 @@ async fn get_patient_from_auth(
     .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?;
 
     Ok(patient)
+}
+
+async fn send_confirmation_email(
+    state: &AppState,
+    patient: &crate::models::Patient,
+    _appointment: &crate::models::Appointment,
+    slot: &crate::models::AvailabilitySlot,
+    doctor_id: &Uuid,
+) -> Result<(), String> {
+    let doctor = sqlx::query_as::<_, (String, String)>(
+        "SELECT first_name, last_name FROM doctors WHERE id = $1"
+    )
+    .bind(doctor_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| format!("Failed to fetch doctor: {}", e))?
+    .ok_or_else(|| "Doctor not found".to_string())?;
+
+    let doctor_name = format!("Dr. {} {}", doctor.0, doctor.1);
+    let patient_name = format!("{} {}", patient.first_name, patient.last_name);
+    let date = slot.slot_date.format("%A, %B %d, %Y").to_string();
+    let time = format!("{}:00 - {}:00", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
+
+    state.email_service.send_appointment_confirmation(
+        &patient.email,
+        &patient_name,
+        &doctor_name,
+        &date,
+        &time,
+        &_appointment.notes,
+    ).await
 }
 
 pub fn appointment_routes() -> Router<AppState> {

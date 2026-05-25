@@ -113,7 +113,20 @@ export interface Appointment {
   doctor_id: string;
   slot_id: string;
   status: string;
+  notes: string;
   created_at: string;
+}
+
+export interface AppointmentHistoryItem {
+  id: string;
+  doctor_id: string;
+  doctor_name: string;
+  specialization: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes: string;
 }
 
 export interface LastDoctorInfo {
@@ -183,7 +196,7 @@ export const api = {
     return request<TimeSlot[]>(url);
   },
 
-  createAppointment: (data: { doctor_id: string; slot_id: string; patient_id?: string }, token: string) =>
+  createAppointment: (data: { doctor_id: string; slot_id: string; patient_id?: string; notes?: string }, token: string) =>
     request<Appointment>('/appointments', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -213,6 +226,18 @@ export const api = {
   updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string }, token: string) =>
     request<Appointment>(`/appointments/${id}`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getAppointmentHistory: (patientId: string, token: string) =>
+    request<AppointmentHistoryItem[]>(`/patients/${patientId}/history`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  updatePatient: (id: string, data: { first_name?: string; last_name?: string; phone?: string; email?: string }, token: string) =>
+    request<Patient>(`/patients/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },
     }),

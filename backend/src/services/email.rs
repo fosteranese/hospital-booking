@@ -62,4 +62,49 @@ impl EmailService {
 
         Ok(())
     }
+
+    pub async fn send_appointment_confirmation(
+        &self,
+        to_email: &str,
+        patient_name: &str,
+        doctor_name: &str,
+        date: &str,
+        time: &str,
+        notes: &str,
+    ) -> Result<(), String> {
+        let notes_section = if notes.is_empty() {
+            String::new()
+        } else {
+            format!("\n\nReason for visit: {}", notes)
+        };
+
+        let body = format!(
+            "Dear {},\n\nYour appointment has been confirmed.\n\nDoctor: {}\nDate: {}\nTime: {}\n\nLocation: MEDIPORT FERTILITY SERVICES\nBissau Avenue, East-Legon, Accra{}{}",
+            patient_name, doctor_name, date, time, notes_section,
+            "\n\nPlease arrive 15 minutes before your scheduled time.\n\nIf you need to reschedule or cancel, please contact us at +233 24 138 2827."
+        );
+
+        if let Some(transport) = &self.transport {
+            match Message::builder()
+                .from(self.from_email.parse().map_err(|e| format!("Invalid from email: {}", e))?)
+                .to(to_email.parse().map_err(|e| format!("Invalid to email: {}", e))?)
+                .subject("Appointment Confirmed - Mediport Fertility Services")
+                .header(ContentType::TEXT_PLAIN)
+                .body(body.clone())
+            {
+                Ok(email) => {
+                    if let Err(e) = transport.send(email).await {
+                        info!("[EMAIL FALLBACK] Confirmation send failed ({}), logging for {}: {}", e, to_email, patient_name);
+                    }
+                }
+                Err(e) => {
+                    info!("[EMAIL FALLBACK] Confirmation build failed ({}), logging for {}: {}", e, to_email, patient_name);
+                }
+            }
+        } else {
+            info!("[EMAIL MOCK] Confirmation for {} <{}>: {}", patient_name, to_email, body);
+        }
+
+        Ok(())
+    }
 }

@@ -33,6 +33,7 @@ interface BookingSnapshot {
   patientLastName: string;
   patientPhone: string;
   patientEmail: string;
+  notes: string;
   existingPatient: ExistingPatientData | null;
   lastDoctor: LastDoctorInfo | null;
   doctorCount: number;
@@ -104,6 +105,7 @@ export default function BookAppointment() {
   const [bookDate, setBookDate] = useState(initialData?.bookDate ?? '');
   const [bookTime, setBookTime] = useState(initialData?.bookTime ?? '');
   const [bookEndTime, setBookEndTime] = useState(initialData?.bookEndTime ?? '');
+  const [notes, setNotes] = useState(initialData?.notes ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>(initialData?.upcomingAppointments ?? []);
@@ -133,6 +135,7 @@ export default function BookAppointment() {
     setBookDate('');
     setBookTime('');
     setBookEndTime('');
+    setNotes('');
     setLoading(false);
     setError('');
     setUpcomingAppointments([]);
@@ -168,6 +171,7 @@ export default function BookAppointment() {
         patientLastName,
         patientPhone,
         patientEmail,
+        notes,
         existingPatient,
         lastDoctor,
         doctorCount,
@@ -186,6 +190,7 @@ export default function BookAppointment() {
   }, [
     step, token, otpIdentifier,
     patientFirstName, patientLastName, patientPhone, patientEmail,
+    notes,
     existingPatient, lastDoctor, doctorCount,
     doctorId, doctorName,
     slotId, bookDate, bookTime, bookEndTime,
@@ -289,6 +294,14 @@ export default function BookAppointment() {
     }
   };
 
+  const handlePatientUpdated = (updatedPatient: Patient) => {
+    setExistingPatient(updatedPatient);
+    setPatientFirstName(updatedPatient.first_name);
+    setPatientLastName(updatedPatient.last_name);
+    setPatientPhone(updatedPatient.phone);
+    setPatientEmail(updatedPatient.email);
+  };
+
   const handleDoctorSelect = async (id: string | null, name?: string) => {
     setDoctorId(id);
     setDoctorName(name || 'Auto-assigned');
@@ -341,7 +354,7 @@ export default function BookAppointment() {
           pid = created.id;
         }
         await api.createAppointment(
-          { doctor_id: doctorId!, slot_id: slotId, patient_id: pid },
+          { doctor_id: doctorId!, slot_id: slotId, patient_id: pid, notes: notes || undefined },
           token
         );
       }
@@ -394,11 +407,13 @@ export default function BookAppointment() {
                       doctorCount={doctorCount}
                       upcomingAppointments={upcomingAppointments}
                       upcomingLoading={upcomingLoading}
+                      token={token}
                       onRebookWithLastDoctor={handleRebookWithLastDoctor}
                       onChangeDoctor={handleChangeDoctor}
                       onRescheduleTime={handleRescheduleTime}
                       onRescheduleDoctor={handleRescheduleDoctor}
                       onCancelAppointment={handleCancelAppointment}
+                      onPatientUpdated={handlePatientUpdated}
                     />
                   )}
 
@@ -445,10 +460,12 @@ export default function BookAppointment() {
                       date={bookDate}
                       time={bookTime}
                       patientName={`${patientFirstName} ${patientLastName}`}
+                      notes={notes}
                       loading={loading}
                       error={error}
                       onConfirm={handleConfirm}
                       onBack={() => { setDirection(-1); setStep('datetime'); }}
+                      onNotesChange={setNotes}
                     />
                   )}
 

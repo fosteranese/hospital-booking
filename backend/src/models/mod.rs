@@ -32,8 +32,22 @@ pub struct Appointment {
     pub doctor_id: Uuid,
     pub slot_id: Uuid,
     pub status: String,
+    pub notes: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+pub struct AppointmentHistoryItem {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub doctor_name: String,
+    pub specialization: String,
+    pub slot_date: chrono::NaiveDate,
+    pub start_time: chrono::NaiveTime,
+    pub end_time: chrono::NaiveTime,
+    pub status: String,
+    pub notes: String,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]

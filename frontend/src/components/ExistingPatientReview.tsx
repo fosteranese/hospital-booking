@@ -6,9 +6,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Mail01Icon, CallIcon, Clock01Icon, Appointment01Icon, ArrowRight02Icon, Time02Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { Mail01Icon, CallIcon, Clock01Icon, Appointment01Icon, ArrowRight02Icon, Time02Icon, Cancel01Icon, Edit01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 import { CancelAppointmentDialog } from '@/components/cancel-appointment-dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { api, AppointmentHistoryItem } from '@/lib/api';
 
 export interface ExistingPatientData {
   id: string;
@@ -42,11 +44,13 @@ interface ExistingPatientReviewProps {
   doctorCount: number;
   upcomingAppointments: UpcomingAppointmentData[];
   upcomingLoading?: boolean;
+  token: string;
   onRebookWithLastDoctor: (doctorId: string, doctorName: string) => void;
   onChangeDoctor: () => void;
   onRescheduleTime: (appointment: UpcomingAppointmentData) => void;
   onRescheduleDoctor: (appointment: UpcomingAppointmentData) => void;
   onCancelAppointment: (appointmentId: string) => Promise<void>;
+  onPatientUpdated: (patient: ExistingPatientData) => void;
 }
 
 function getInitials(first: string, last: string): string {
@@ -105,6 +109,26 @@ function AppointmentCard({
           </div>
         </div>
     );
+}
+
+function HistoryCard({ item }: { item: AppointmentHistoryItem }) {
+  const [h, m] = item.start_time.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  const timeStr = `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+
+  return (
+    <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border p-4 space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-foreground">Dr. {item.doctor_name}</p>
+        <Badge variant="outline" className="text-[10px] font-normal">{item.specialization}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">{item.slot_date} &middot; {timeStr}</p>
+      {item.notes && (
+        <p className="text-xs text-muted-foreground/60 italic mt-1">{item.notes}</p>
+      )}
+    </div>
+  );
 }
 
 function UpcomingAppointmentsModal({
@@ -209,16 +233,38 @@ export function ExistingPatientReview({
   doctorCount,
   upcomingAppointments,
   upcomingLoading = false,
+  token,
   onRebookWithLastDoctor,
   onChangeDoctor,
   onRescheduleTime,
   onRescheduleDoctor,
   onCancelAppointment,
+  onPatientUpdated,
 }: ExistingPatientReviewProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showAllModal, setShowAllModal] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(patient.first_name);
+  const [editLastName, setEditLastName] = useState(patient.last_name);
+  const [editPhone, setEditPhone] = useState(patient.phone);
+  const [editEmail, setEditEmail] = useState(patient.email);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [history, setHistory] = useState<AppointmentHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    if (showHistory && history.length === 0 && !historyLoading) {
+      setHistoryLoading(true);
+      api.getAppointmentHistory(patient.id, token)
+        .then(setHistory)
+        .catch(() => setHistory([]))
+        .finally(() => setHistoryLoading(false));
+    }
+  }, [showHistory, patient.id, token, history.length, historyLoading]);
 
   const cancellingAppt = upcomingAppointments.find((a) => a.id === pendingCancelId) ?? null;
 
@@ -233,6 +279,29 @@ export function ExistingPatientReview({
     } finally {
       setCancellingId(null);
       setIsCancelling(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      setEditError('First and last name are required');
+      return;
+    }
+    setSaving(true);
+    setEditError('');
+    try {
+      const updated = await api.updatePatient(patient.id, {
+        first_name: editFirstName.trim(),
+        last_name: editLastName.trim(),
+        phone: editPhone.trim(),
+        email: editEmail.trim(),
+      }, token);
+      onPatientUpdated(updated);
+      setEditing(false);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -263,18 +332,80 @@ export function ExistingPatientReview({
                 </Avatar>
                 <div className="flex-1 pb-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold leading-tight">{patient.first_name} {patient.last_name}</h3>
-                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5">Returning</Badge>
+                    {editing ? (
+                      <div className="flex gap-2 flex-1">
+                        <input
+                          value={editFirstName}
+                          onChange={(e) => setEditFirstName(e.target.value)}
+                          className="flex-1 min-w-0 rounded-lg border border-foreground/10 px-2.5 py-1.5 text-sm font-semibold bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="First name"
+                        />
+                        <input
+                          value={editLastName}
+                          onChange={(e) => setEditLastName(e.target.value)}
+                          className="flex-1 min-w-0 rounded-lg border border-foreground/10 px-2.5 py-1.5 text-sm font-semibold bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="Last name"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-semibold leading-tight">{patient.first_name} {patient.last_name}</h3>
+                        <Badge variant="secondary" className="text-[10px] px-2 py-0.5">Returning</Badge>
+                      </>
+                    )}
                   </div>
-                  <div className="space-y-0.5 pt-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-3">
-                      <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} className="size-4 shrink-0" />
-                      <span>{patient.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="size-4 shrink-0" />
-                      <span>{patient.phone}</span>
-                    </div>
+                  <div className="space-y-0.5 pt-2 text-sm text-muted-foreground">
+                    {editing ? (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} className="size-4 shrink-0" />
+                          <input
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            className="flex-1 min-w-0 rounded-lg border border-foreground/10 px-2.5 py-1.5 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            placeholder="Email"
+                          />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="size-4 shrink-0" />
+                          <input
+                            value={editPhone}
+                            onChange={(e) => setEditPhone(e.target.value)}
+                            className="flex-1 min-w-0 rounded-lg border border-foreground/10 px-2.5 py-1.5 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            placeholder="Phone"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleSaveProfile} disabled={saving}>
+                            <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3.5" />
+                            {saving ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setEditing(false); setEditFirstName(patient.first_name); setEditLastName(patient.last_name); setEditPhone(patient.phone); setEditEmail(patient.email); setEditError(''); }}>
+                            Cancel
+                          </Button>
+                        </div>
+                        {editError && <ErrorMessage message={editError} />}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} className="size-4 shrink-0" />
+                          <span>{patient.email}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="size-4 shrink-0" />
+                          <span>{patient.phone}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setEditing(true); setEditFirstName(patient.first_name); setEditLastName(patient.last_name); setEditPhone(patient.phone); setEditEmail(patient.email); }}
+                          className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors mt-1"
+                        >
+                          <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="size-3 inline mr-1" />
+                          Edit profile
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -360,6 +491,35 @@ export function ExistingPatientReview({
                 </>
               )}
             </div>
+          </div>
+
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
+              {showHistory ? 'Hide' : 'View'} appointment history
+            </button>
+            {showHistory && (
+              <div className="mt-3 space-y-2">
+                {historyLoading ? (
+                  <div className="flex items-center justify-center gap-2.5 py-4">
+                    <Spinner />
+                    <span className="text-xs text-muted-foreground">Loading history...</span>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-6 px-4">
+                    <p className="text-xs text-muted-foreground">No past appointments</p>
+                  </div>
+                ) : (
+                  history.map((item) => (
+                    <HistoryCard key={item.id} item={item} />
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           {!upcomingLoading && rebookDoctor && (
