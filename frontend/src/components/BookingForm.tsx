@@ -123,12 +123,12 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
-        <CardTitle className="text-foreground">{doctorId ? 'Select Date & Time' : 'Select a date'}</CardTitle>
+        <CardTitle className="text-foreground">{doctorId ? 'Choose your date & time' : 'Pick a date'}</CardTitle>
       </CardHeader>
       <CardContent className="px-0 space-y-5">
         {availableDates.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Pick a date</p>
+              <p className="text-xs text-muted-foreground">Select a date</p>
             <div className="relative">
               <div
                 ref={stripRef}

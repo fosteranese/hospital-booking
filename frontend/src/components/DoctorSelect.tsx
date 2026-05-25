@@ -26,9 +26,9 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
-        <CardTitle className="text-foreground">Select a Doctor</CardTitle>
+        <CardTitle className="text-foreground">Choose your specialist</CardTitle>
         <CardDescription>
-          {excludeDoctorId ? 'Choose a new doctor' : 'Choose a doctor or let us auto-assign'}
+          {excludeDoctorId ? 'Pick a new doctor for your appointment' : 'Pick a doctor you\'re comfortable with, or let us auto-assign'}
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0 space-y-3">
@@ -50,7 +50,7 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
                   </Avatar>
                   <div className="text-left">
                     <p className="font-medium text-base">Auto-assign</p>
-                    <p className="text-sm text-muted-foreground">Let us pick the best available doctor</p>
+                    <p className="text-sm text-muted-foreground">We'll match you with the doctor who's best for you</p>
                   </div>
                 </div>
               </Button>

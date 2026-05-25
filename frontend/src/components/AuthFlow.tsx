@@ -152,11 +152,11 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               className="space-y-5"
             >
               <CardHeader className="px-0">
-                <CardTitle className="text-foreground">Book an Appointment</CardTitle>
+                <CardTitle className="text-foreground">Welcome</CardTitle>
                 <CardDescription>
                   {method === 'phone'
-                    ? 'Enter your phone number to receive a verification code'
-                    : 'Enter your email to receive a verification code'}
+                    ? 'Enter your phone number and we\'ll send you a verification code'
+                    : 'Enter your email and we\'ll send you a verification code'}
                 </CardDescription>
               </CardHeader>
               {method === 'phone' ? (
@@ -252,11 +252,13 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               </div>
               <div className="flex items-start justify-between gap-4 mb-10">
                 <div className="space-y-1">
-                  <p className="text-base font-medium text-foreground">OTP Verification</p>
+                  <p className="text-base font-medium text-foreground">
+                    {method === 'phone' ? 'Check your phone' : 'Check your email'}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {method === 'phone'
-                      ? <>Code sent via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
-                      : <>Code sent via email to <span className="font-medium text-foreground/90">{email}</span></>
+                      ? <>We sent a code via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
+                      : <>We sent a code via email to <span className="font-medium text-foreground/90">{email}</span></>
                     }
                   </p>
                 </div>

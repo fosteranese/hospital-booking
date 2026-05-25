@@ -16,12 +16,41 @@ import { Doctor01Icon, Calendar01Icon, Clock01Icon, ArrowLeft01Icon } from '@hug
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingOverlay } from '@/components/loading-overlay';
 import { AddToCalendar } from '@/components/AddToCalendar';
+import { useSearchParams } from 'react-router-dom';
+import { saveBooking, loadBooking, clearBooking } from '@/lib/booking-storage';
 
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
 
 function stepIndex(s: Step) {
   return STEPS.indexOf(s);
+}
+
+interface BookingSnapshot {
+  token: string;
+  otpIdentifier: string;
+  patientFirstName: string;
+  patientLastName: string;
+  patientPhone: string;
+  patientEmail: string;
+  existingPatient: ExistingPatientData | null;
+  lastDoctor: LastDoctorInfo | null;
+  doctorCount: number;
+  doctorId: string | null;
+  doctorName: string;
+  slotId: string;
+  bookDate: string;
+  bookTime: string;
+  bookEndTime: string;
+  rescheduling: ReschedulingState | null;
+  upcomingAppointments: UpcomingAppointmentData[];
+}
+
+interface ReschedulingState {
+  appointmentId: string;
+  doctorId?: string;
+  doctorName?: string;
+  excludeDoctorId?: string;
 }
 
 const stepVariants = {
@@ -31,33 +60,61 @@ const stepVariants = {
 };
 
 export default function BookAppointment() {
-  const [step, setStep] = useState<Step>('auth');
-  const [direction, setDirection] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [token, setToken] = useState('');
-  const [otpIdentifier, setOtpIdentifier] = useState('');
-  const [patientFirstName, setPatientFirstName] = useState('');
-  const [patientLastName, setPatientLastName] = useState('');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [patientEmail, setPatientEmail] = useState('');
-  const [existingPatient, setExistingPatient] = useState<ExistingPatientData | null>(null);
-  const [lastDoctor, setLastDoctor] = useState<LastDoctorInfo | null>(null);
-  const [doctorCount, setDoctorCount] = useState(0);
-  const [doctorId, setDoctorId] = useState<string | null>(null);
-  const [doctorName, setDoctorName] = useState('Auto-assigned');
-  const [slotId, setSlotId] = useState('');
-  const [bookDate, setBookDate] = useState('');
-  const [bookTime, setBookTime] = useState('');
-  const [bookEndTime, setBookEndTime] = useState('');
+  const initialStep = (() => {
+    const s = searchParams.get('step') as Step;
+    if (!s || !STEPS.includes(s)) return 'auth';
+    const data = loadBooking<BookingSnapshot>();
+    if (!data) return 'auth';
+    switch (s) {
+      case 'success':
+      case 'confirm':
+        if (!data.slotId || !data.doctorId) return 'datetime';
+        break;
+      case 'doctor':
+      case 'datetime':
+        break;
+      case 'review':
+      case 'patient':
+        if (!data.token) return 'auth';
+        break;
+    }
+    return s;
+  })();
+
+  const [step, setStep] = useState<Step>(initialStep);
+  const [direction, setDirection] = useState(initialStep === 'auth' ? 1 : 0);
+
+  const initialData = initialStep !== 'auth' ? loadBooking<BookingSnapshot>() : null;
+  if (initialData?.token) tokenStore.set(initialData.token);
+
+  const [token, setToken] = useState(initialData?.token ?? '');
+  const [otpIdentifier, setOtpIdentifier] = useState(initialData?.otpIdentifier ?? '');
+  const [patientFirstName, setPatientFirstName] = useState(initialData?.patientFirstName ?? '');
+  const [patientLastName, setPatientLastName] = useState(initialData?.patientLastName ?? '');
+  const [patientPhone, setPatientPhone] = useState(initialData?.patientPhone ?? '');
+  const [patientEmail, setPatientEmail] = useState(initialData?.patientEmail ?? '');
+  const [existingPatient, setExistingPatient] = useState<ExistingPatientData | null>(initialData?.existingPatient ?? null);
+  const [lastDoctor, setLastDoctor] = useState<LastDoctorInfo | null>(initialData?.lastDoctor ?? null);
+  const [doctorCount, setDoctorCount] = useState(initialData?.doctorCount ?? 0);
+  const [doctorId, setDoctorId] = useState<string | null>(initialData?.doctorId ?? null);
+  const [doctorName, setDoctorName] = useState(initialData?.doctorName ?? 'Auto-assigned');
+  const [slotId, setSlotId] = useState(initialData?.slotId ?? '');
+  const [bookDate, setBookDate] = useState(initialData?.bookDate ?? '');
+  const [bookTime, setBookTime] = useState(initialData?.bookTime ?? '');
+  const [bookEndTime, setBookEndTime] = useState(initialData?.bookEndTime ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>([]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>(initialData?.upcomingAppointments ?? []);
   const [upcomingLoading, setUpcomingLoading] = useState(false);
-  const [rescheduling, setRescheduling] = useState<{ appointmentId: string; doctorId?: string; doctorName?: string; excludeDoctorId?: string } | null>(null);
+  const [rescheduling, setRescheduling] = useState<ReschedulingState | null>(initialData?.rescheduling ?? null);
 
   const isReschedule = rescheduling !== null;
 
   const resetAll = useCallback(() => {
+    clearBooking();
+    setSearchParams({}, { replace: true });
     setStep('auth');
     setDirection(1);
     setToken('');
@@ -92,6 +149,48 @@ export default function BookAppointment() {
         .finally(() => setUpcomingLoading(false));
     }
   }, [step, existingPatient, token]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (step !== 'auth') {
+      params.set('step', step);
+      if (token) tokenStore.set(token);
+    } else {
+      tokenStore.clear();
+    }
+    setSearchParams(params, { replace: true });
+
+    if (step !== 'auth') {
+      saveBooking({
+        token,
+        otpIdentifier,
+        patientFirstName,
+        patientLastName,
+        patientPhone,
+        patientEmail,
+        existingPatient,
+        lastDoctor,
+        doctorCount,
+        doctorId,
+        doctorName,
+        slotId,
+        bookDate,
+        bookTime,
+        bookEndTime,
+        rescheduling,
+        upcomingAppointments,
+      });
+    } else {
+      clearBooking();
+    }
+  }, [
+    step, token, otpIdentifier,
+    patientFirstName, patientLastName, patientPhone, patientEmail,
+    existingPatient, lastDoctor, doctorCount,
+    doctorId, doctorName,
+    slotId, bookDate, bookTime, bookEndTime,
+    rescheduling, upcomingAppointments,
+  ]);
 
   const goToStep = (s: Step) => {
     setDirection(stepIndex(s) > stepIndex(step) ? 1 : -1);
@@ -258,7 +357,7 @@ export default function BookAppointment() {
     <div className="flex h-screen">
       <LeftPanel />
 
-      <main className="flex-1 overflow-y-auto bg-gradient-to-b from-white via-white to-primary/[0.03]">
+      <main className="flex-1 overflow-y-auto bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
         <div className="flex min-h-full">
           <div className="flex flex-col items-center justify-center flex-1 p-8 xl:p-10 max-w-xl mx-auto">
             <div className="w-full space-y-2">
@@ -366,7 +465,7 @@ export default function BookAppointment() {
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             transition={{ delay: 0.15, type: 'spring', stiffness: 250, damping: 14 }}
-                            className="mx-auto size-20 rounded-full bg-primary/8 flex items-center justify-center"
+                            className="mx-auto size-20 rounded-full bg-gradient-to-br from-amber-50 to-primary/10 flex items-center justify-center shadow-lg shadow-primary/5"
                           >
                             <div className="relative">
                               <svg className="size-12 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -380,12 +479,14 @@ export default function BookAppointment() {
                             </div>
                           </motion.div>
 
-                          <div className="text-center space-y-1.5">
+                          <div className="text-center space-y-2">
                             <CardTitle className="text-2xl text-foreground">
                               {isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!'}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground/70">
-                              Your appointment has been {isReschedule ? 'rescheduled' : 'booked'} successfully
+                            <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
+                              {isReschedule
+                                ? 'Your appointment has been rescheduled. We look forward to seeing you.'
+                                : 'Your appointment is all set. We look forward to seeing you.'}
                             </p>
                           </div>
 
@@ -430,7 +531,7 @@ export default function BookAppointment() {
                           <AddToCalendar
                             title={`Appointment with ${doctorName}`}
                             description={`Patient: ${patientFirstName} ${patientLastName}\nDoctor: ${doctorName}`}
-                            location="Hospital"
+                            location="MEDIPORT FERTILITY SERVICES, Accra, Ghana"
                             startDate={bookDate}
                             startTime={bookTime}
                             endTime={bookEndTime}

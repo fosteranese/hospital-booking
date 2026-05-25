@@ -248,12 +248,12 @@ export function ExistingPatientReview({
     >
       <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
         <CardHeader className="px-0">
-          <CardTitle className="text-lg text-foreground">Welcome back, {patient.first_name}!</CardTitle>
-          <CardDescription>We found your details — review and continue below</CardDescription>
+          <CardTitle className="text-xl text-foreground">Welcome back, {patient.first_name}</CardTitle>
+          <CardDescription>Great to see you again — here's your information</CardDescription>
         </CardHeader>
         <CardContent className="px-0 space-y-5">
           <Card className="overflow-hidden shadow-sm border pt-0">
-            <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-muted" />
+            <div className="h-24 bg-gradient-to-br from-amber-50 via-rose-50/60 to-primary/5" />
             <CardContent className="relative pb-0">
               <div className="flex flex-row items-start gap-5">
                 <Avatar className="border-4 border-[#ffffff] shadow-lg -mt-12 size-28">

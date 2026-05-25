@@ -46,12 +46,12 @@ export function AppointmentSummary({ doctorName, specialization, date, time, pat
     >
       <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
         <CardHeader className="px-0">
-          <CardTitle className="text-foreground">Confirm Appointment</CardTitle>
+          <CardTitle className="text-foreground">Almost there</CardTitle>
         </CardHeader>
         <CardContent className="px-0 space-y-6">
           <div className="rounded-xl bg-white shadow-sm border overflow-hidden">
-            <div className="relative bg-gradient-to-br from-primary/8 to-primary/3 px-5 py-5 flex items-center gap-3.5 overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,oklch(var(--primary)/0.06),transparent_60%)]" />
+            <div className="relative bg-gradient-to-br from-amber-50 via-rose-50/50 to-primary/8 px-5 py-5 flex items-center gap-3.5 overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,oklch(0.75 0.08 50/0.12),transparent_60%)]" />
               <motion.div
                 initial={{ scale: 0, rotate: -30 }}
                 animate={{ scale: 1, rotate: 0 }}

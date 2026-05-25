@@ -39,42 +39,48 @@
   --color-sidebar-accent-foreground: oklch(var(--sidebar-accent-foreground));
   --color-sidebar-border: oklch(var(--sidebar-border));
   --color-sidebar-ring: oklch(var(--sidebar-ring));
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 }
 
 :root {
-  --background: 0.99 0.003 90;
-  --foreground: 0.15 0.01 90;
+  --background: 0.985 0.005 75;
+  --foreground: 0.18 0.008 75;
   --card: 1 0 0;
-  --card-foreground: 0.15 0.01 90;
+  --card-foreground: 0.18 0.008 75;
   --popover: 1 0 0;
-  --popover-foreground: 0.15 0.01 90;
-  --primary: 0.66 0.19 145;
+  --popover-foreground: 0.18 0.008 75;
+  --primary: 0.63 0.17 155;
   --primary-foreground: 0.985 0 0;
-  --secondary: 0.97 0.02 140;
-  --secondary-foreground: 0.28 0.08 145;
-  --muted: 0.96 0.01 90;
-  --muted-foreground: 0.52 0.02 90;
-  --accent: 0.94 0.04 145;
-  --accent-foreground: 0.28 0.08 145;
+  --secondary: 0.965 0.015 145;
+  --secondary-foreground: 0.28 0.08 150;
+  --muted: 0.965 0.008 75;
+  --muted-foreground: 0.5 0.015 75;
+  --accent: 0.94 0.035 150;
+  --accent-foreground: 0.28 0.08 150;
   --destructive: 0.58 0.2 30;
   --destructive-foreground: 0.985 0 0;
-  --border: 0.9 0.02 90;
-  --input: 0.9 0.02 90;
-  --ring: 0.66 0.19 145;
-  --chart-1: 0.66 0.19 145;
-  --chart-2: 0.55 0.16 145;
-  --chart-3: 0.7 0.15 140;
-  --chart-4: 0.5 0.2 145;
-  --chart-5: 0.45 0.15 140;
+  --border: 0.88 0.015 75;
+  --input: 0.88 0.015 75;
+  --ring: 0.63 0.17 155;
+  --chart-1: 0.63 0.17 155;
+  --chart-2: 0.55 0.16 150;
+  --chart-3: 0.7 0.14 145;
+  --chart-4: 0.5 0.2 150;
+  --chart-5: 0.45 0.15 145;
   --sidebar: 0.985 0 0;
-  --sidebar-foreground: 0.15 0.01 90;
-  --sidebar-primary: 0.66 0.19 145;
+  --sidebar-foreground: 0.18 0.008 75;
+  --sidebar-primary: 0.63 0.17 155;
   --sidebar-primary-foreground: 0.985 0 0;
-  --sidebar-accent: 0.94 0.04 145;
-  --sidebar-accent-foreground: 0.28 0.08 145;
-  --sidebar-border: 0.9 0.02 90;
-  --sidebar-ring: 0.66 0.19 145;
+  --sidebar-accent: 0.94 0.035 150;
+  --sidebar-accent-foreground: 0.28 0.08 150;
+  --sidebar-border: 0.88 0.015 75;
+  --sidebar-ring: 0.63 0.17 155;
+}
+
+@layer base {
+  * {
+    scrollbar-color: oklch(0.8 0.01 75) transparent;
+  }
 }
 
 * {

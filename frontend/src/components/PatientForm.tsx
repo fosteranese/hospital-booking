@@ -53,8 +53,8 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
   return (
     <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
-        <CardTitle className="text-foreground">Your Details</CardTitle>
-        <CardDescription>Enter your personal information</CardDescription>
+        <CardTitle className="text-foreground">Tell us about yourself</CardTitle>
+        <CardDescription>We just need a few details to get started</CardDescription>
       </CardHeader>
       <CardContent className="px-0 space-y-5">
         <div className="grid grid-cols-2 gap-4">
