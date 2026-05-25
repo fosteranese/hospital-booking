@@ -83,7 +83,7 @@ pub async fn create_patient(
         };
 
         if existing > 0 {
-            return Err(AppError::BadRequest(
+            return Err(AppError::Conflict(
                 "A patient with this email or phone number already exists".to_string()
             ));
         }
@@ -235,7 +235,7 @@ pub async fn update_patient(
         .map_err(|e| AppError::Database(e))?;
 
         if existing > 0 {
-            return Err(AppError::BadRequest(
+            return Err(AppError::Conflict(
                 "A patient with this email or phone number already exists".to_string()
             ));
         }
