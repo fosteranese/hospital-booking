@@ -114,6 +114,7 @@ export interface Appointment {
   slot_id: string;
   status: string;
   notes: string;
+  attended: boolean | null;
   created_at: string;
 }
 
@@ -127,6 +128,7 @@ export interface AppointmentHistoryItem {
   end_time: string;
   status: string;
   notes: string;
+  attended: boolean | null;
 }
 
 export interface LastDoctorInfo {
@@ -223,7 +225,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string }, token: string) =>
+  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string; attended?: boolean }, token: string) =>
     request<Appointment>(`/appointments/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

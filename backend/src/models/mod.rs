@@ -33,6 +33,7 @@ pub struct Appointment {
     pub slot_id: Uuid,
     pub status: String,
     pub notes: String,
+    pub attended: Option<bool>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -48,6 +49,7 @@ pub struct AppointmentHistoryItem {
     pub end_time: chrono::NaiveTime,
     pub status: String,
     pub notes: String,
+    pub attended: Option<bool>,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]

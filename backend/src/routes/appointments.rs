@@ -20,6 +20,7 @@ pub struct UpdateAppointmentRequest {
     pub slot_id: Option<Uuid>,
     pub doctor_id: Option<Uuid>,
     pub status: Option<String>,
+    pub attended: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -30,6 +31,7 @@ pub struct AppointmentResponse {
     pub slot_id: Uuid,
     pub status: String,
     pub notes: String,
+    pub attended: Option<bool>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -116,6 +118,7 @@ pub async fn create_appointment(
         slot_id: appointment.slot_id,
         status: appointment.status,
         notes: appointment.notes,
+        attended: appointment.attended,
         created_at: appointment.created_at,
     }))
 }
@@ -141,6 +144,7 @@ pub async fn get_appointment(
         slot_id: appointment.slot_id,
         status: appointment.status,
         notes: appointment.notes,
+        attended: appointment.attended,
         created_at: appointment.created_at,
     }))
 }
@@ -230,6 +234,7 @@ pub async fn update_appointment(
             slot_id: updated.slot_id,
             status: updated.status,
             notes: updated.notes,
+            attended: updated.attended,
             created_at: updated.created_at,
         }));
     }
@@ -259,6 +264,7 @@ pub async fn update_appointment(
             slot_id: updated.slot_id,
             status: updated.status,
             notes: updated.notes,
+            attended: updated.attended,
             created_at: updated.created_at,
         }));
     }
@@ -286,14 +292,37 @@ pub async fn update_appointment(
                 slot_id: updated.slot_id,
                 status: updated.status,
                 notes: updated.notes,
+                attended: updated.attended,
                 created_at: updated.created_at,
             }));
         }
     }
 
+    if let Some(attended) = body.attended {
+        let updated = sqlx::query_as::<_, Appointment>(
+            "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
+        )
+        .bind(id)
+        .bind(attended)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?;
+
+        return Ok(Json(AppointmentResponse {
+            id: updated.id,
+            patient_id: updated.patient_id,
+            doctor_id: updated.doctor_id,
+            slot_id: updated.slot_id,
+            status: updated.status,
+            notes: updated.notes,
+            attended: updated.attended,
+            created_at: updated.created_at,
+        }));
+    }
+
     tracing::warn!(
-        "No valid update for appointment {} — slot_id={:?}, doctor_id={:?}, status={:?}",
-        id, body.slot_id, body.doctor_id, body.status
+        "No valid update for appointment {} — slot_id={:?}, doctor_id={:?}, status={:?}, attended={:?}",
+        id, body.slot_id, body.doctor_id, body.status, body.attended
     );
     Err(AppError::BadRequest("No valid update provided".to_string()))
 }

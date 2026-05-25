@@ -188,7 +188,7 @@ pub async fn get_appointment_history(
 ) -> Result<Json<Vec<AppointmentHistoryItem>>, AppError> {
     let appointments = sqlx::query_as::<_, AppointmentHistoryItem>(
         "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
-                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes
+                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended
          FROM appointments a
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id

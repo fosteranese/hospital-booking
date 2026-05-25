@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Mail01Icon, CallIcon, Clock01Icon, Appointment01Icon, ArrowRight02Icon, Time02Icon, Cancel01Icon, Edit01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 import { CancelAppointmentDialog } from '@/components/cancel-appointment-dialog';
+import { HistoryModal } from '@/components/HistoryModal';
 import { Spinner } from '@/components/ui/spinner';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { api, AppointmentHistoryItem } from '@/lib/api';
@@ -111,26 +112,6 @@ function AppointmentCard({
     );
 }
 
-function HistoryCard({ item }: { item: AppointmentHistoryItem }) {
-  const [h, m] = item.start_time.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  const timeStr = `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-
-  return (
-    <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border p-4 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">Dr. {item.doctor_name}</p>
-        <Badge variant="outline" className="text-[10px] font-normal">{item.specialization}</Badge>
-      </div>
-      <p className="text-xs text-muted-foreground">{item.slot_date} &middot; {timeStr}</p>
-      {item.notes && (
-        <p className="text-xs text-muted-foreground/60 italic mt-1">{item.notes}</p>
-      )}
-    </div>
-  );
-}
-
 function UpcomingAppointmentsModal({
   appointments,
   onClose,
@@ -184,10 +165,10 @@ function UpcomingAppointmentsModal({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="relative w-full max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="relative w-full max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-white px-5 pt-4 pb-3 border-b border-foreground/5">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-white px-5 pt-4 pb-3 border-b border-foreground/5 shrink-0">
           <p className="text-sm font-semibold text-foreground">
             All upcoming appointments ({appointments.length})
           </p>
@@ -200,7 +181,7 @@ function UpcomingAppointmentsModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5 space-y-3">
+        <div className="overflow-y-auto flex-1 p-5 space-y-3">
           {appointments.map((appt) => (
             <AppointmentCard
               key={appt.id}
@@ -254,17 +235,17 @@ export function ExistingPatientReview({
   const [editError, setEditError] = useState('');
   const [history, setHistory] = useState<AppointmentHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   useEffect(() => {
-    if (showHistory && history.length === 0 && !historyLoading) {
+    if (showHistoryModal && history.length === 0 && !historyLoading) {
       setHistoryLoading(true);
       api.getAppointmentHistory(patient.id, token)
         .then(setHistory)
         .catch(() => setHistory([]))
         .finally(() => setHistoryLoading(false));
     }
-  }, [showHistory, patient.id, token, history.length, historyLoading]);
+  }, [showHistoryModal, patient.id, token, history.length, historyLoading]);
 
   const cancellingAppt = upcomingAppointments.find((a) => a.id === pendingCancelId) ?? null;
 
@@ -280,6 +261,11 @@ export function ExistingPatientReview({
       setCancellingId(null);
       setIsCancelling(false);
     }
+  };
+
+  const handleMarkAttendance = async (appointmentId: string, attended: boolean) => {
+    await api.updateAppointment(appointmentId, { attended }, token);
+    setHistory((prev) => prev.map((h) => (h.id === appointmentId ? { ...h, attended } : h)));
   };
 
   const handleSaveProfile = async () => {
@@ -437,22 +423,29 @@ export function ExistingPatientReview({
             <div className="space-y-3">
               {upcomingAppointments.length > 0 && (
                 <div className="flex items-center justify-between gap-4 min-h-5 mt-2">
-                
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <HugeiconsIcon icon={Time02Icon} strokeWidth={2} className="size-3.5 text-primary shrink-0" />
                     Upcoming appointments
                     <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{upcomingAppointments.length}</span>
                   </p>
-                
-                {restCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllModal(true)}
-                    className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors shrink-0 ml-auto"
-                  >
-                    View all ({upcomingAppointments.length})
-                  </button>
-                )}
+                  <div className="flex items-center gap-3">
+                    {restCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllModal(true)}
+                        className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors shrink-0"
+                      >
+                        View all ({upcomingAppointments.length})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowHistoryModal(true)}
+                      className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors shrink-0"
+                    >
+                      History
+                    </button>
+                  </div>
               </div>
               )}
               {upcomingLoading ? (
@@ -486,40 +479,18 @@ export function ExistingPatientReview({
                     <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-10 px-4">
                       <HugeiconsIcon icon={Appointment01Icon} strokeWidth={2} className="size-6 text-muted-foreground/40 shrink-0" />
                       <p className="text-xs text-muted-foreground">No upcoming appointments</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowHistoryModal(true)}
+                        className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors mt-1"
+                      >
+                        View past appointments
+                      </button>
                     </div>
                   )}
                 </>
               )}
             </div>
-          </div>
-
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
-              {showHistory ? 'Hide' : 'View'} appointment history
-            </button>
-            {showHistory && (
-              <div className="mt-3 space-y-2">
-                {historyLoading ? (
-                  <div className="flex items-center justify-center gap-2.5 py-4">
-                    <Spinner />
-                    <span className="text-xs text-muted-foreground">Loading history...</span>
-                  </div>
-                ) : history.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-6 px-4">
-                    <p className="text-xs text-muted-foreground">No past appointments</p>
-                  </div>
-                ) : (
-                  history.map((item) => (
-                    <HistoryCard key={item.id} item={item} />
-                  ))
-                )}
-              </div>
-            )}
           </div>
 
           {!upcomingLoading && rebookDoctor && (
@@ -562,6 +533,17 @@ export function ExistingPatientReview({
         onConfirm={confirmCancel}
         isCancelling={isCancelling}
       />
+
+      <AnimatePresence>
+        {showHistoryModal && (
+          <HistoryModal
+            history={history}
+            loading={historyLoading}
+            onClose={() => setShowHistoryModal(false)}
+            onMarkAttendance={handleMarkAttendance}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
