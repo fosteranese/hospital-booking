@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Mail01Icon, CallIcon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { Mail01Icon, CallIcon, ArrowLeft01Icon, Hospital01Icon } from '@hugeicons/core-free-icons';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Spinner } from '@/components/ui/spinner';
 import { COUNTRY_CODES } from '@/lib/country-codes';
@@ -151,14 +151,18 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               transition={{ duration: 0.15 }}
               className="space-y-5"
             >
-              <CardHeader className="px-0">
-                <CardTitle className="text-foreground">Welcome</CardTitle>
-                <CardDescription>
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary/[0.06] px-4 py-1.5 text-xs font-medium text-primary ring-1 ring-primary/[0.08]">
+                  <HugeiconsIcon icon={Hospital01Icon} strokeWidth={2} className="size-4" />
+                  Mediport
+                </div>
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome to Mediport</h1>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                   {method === 'phone'
                     ? 'Enter your phone number and we\'ll send you a verification code'
                     : 'Enter your email and we\'ll send you a verification code'}
-                </CardDescription>
-              </CardHeader>
+                </p>
+              </div>
               {method === 'phone' ? (
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
@@ -279,20 +283,30 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                   onComplete={() => handleVerifyOtp()}
                   autoFocus
                 >
-                  <InputOTPGroup>
+                  <InputOTPGroup className="sm:hidden">
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
-                  </InputOTPGroup>
-                  <InputOTPSeparator />
-                  <InputOTPGroup>
                     <InputOTPSlot index={2} />
                     <InputOTPSlot index={3} />
-                  </InputOTPGroup>
-                  <InputOTPSeparator />
-                  <InputOTPGroup>
                     <InputOTPSlot index={4} />
                     <InputOTPSlot index={5} />
                   </InputOTPGroup>
+                  <div className="hidden sm:flex items-center gap-0">
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                    </InputOTPGroup>
+                    <InputOTPSeparator />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                    </InputOTPGroup>
+                    <InputOTPSeparator />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </div>
                 </InputOTP>
               </div>
             </div>

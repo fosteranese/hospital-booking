@@ -24,7 +24,7 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
   const filtered = excludeDoctorId ? doctors.filter((d) => d.id !== excludeDoctorId) : doctors;
 
   return (
-    <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
+    <Card className="w-full mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
         <CardTitle className="text-foreground">Choose your specialist</CardTitle>
         <CardDescription>

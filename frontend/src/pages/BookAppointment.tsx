@@ -9,7 +9,6 @@ import { AppointmentSummary } from '@/components/AppointmentSummary';
 import { ExistingPatientReview, ExistingPatientData, UpcomingAppointmentData } from '@/components/ExistingPatientReview';
 import { LeftPanel } from '@/components/LeftPanel';
 
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Doctor01Icon, Calendar01Icon, Clock01Icon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
@@ -18,6 +17,7 @@ import { LoadingOverlay } from '@/components/loading-overlay';
 import { AddToCalendar } from '@/components/AddToCalendar';
 import { useSearchParams } from 'react-router-dom';
 import { saveBooking, loadBooking, clearBooking } from '@/lib/booking-storage';
+import { cn } from '@/lib/utils';
 
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
@@ -355,11 +355,11 @@ export default function BookAppointment() {
 
   return (
     <div className="flex h-screen">
-      <LeftPanel />
+      <LeftPanel step={step} wide={step === 'auth' || step === 'success'} />
 
-      <main className="flex-1 overflow-y-auto bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
-        <div className="flex min-h-full">
-          <div className="flex flex-col items-center justify-center flex-1 p-8 xl:p-10 max-w-xl mx-auto">
+      <main className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
+        <div className="flex min-h-full min-w-0">
+          <div className={cn("flex flex-col items-center justify-center flex-1 min-w-0 p-8 xl:p-10 mx-auto", step === 'auth' || step === 'success' ? "max-w-xl" : "max-w-2xl")}>
             <div className="w-full space-y-2">
               {step !== 'auth' && step !== 'success' && (
                 <Button
@@ -454,96 +454,92 @@ export default function BookAppointment() {
 
                   {step === 'success' && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       transition={{ duration: 0.35, ease: 'easeOut' }}
-                      className="mt-8"
+                      className="py-12"
                     >
-                      <Card className="w-full max-w-md mx-auto ring-0 shadow-none bg-transparent overflow-visible">
-                        <CardContent className="px-0 space-y-6">
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.15, type: 'spring', stiffness: 250, damping: 14 }}
-                            className="mx-auto size-20 rounded-full bg-gradient-to-br from-amber-50 to-primary/10 flex items-center justify-center shadow-lg shadow-primary/5"
-                          >
-                            <div className="relative">
-                              <svg className="size-12 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <motion.path
-                                  d="M20 6L9 17L4 12"
-                                  initial={{ pathLength: 0 }}
-                                  animate={{ pathLength: 1 }}
-                                  transition={{ delay: 0.4, duration: 0.5, ease: 'easeInOut' }}
-                                />
-                              </svg>
-                            </div>
-                          </motion.div>
-
-                          <div className="text-center space-y-2">
-                            <CardTitle className="text-2xl text-foreground">
-                              {isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!'}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
-                              {isReschedule
-                                ? 'Your appointment has been rescheduled. We look forward to seeing you.'
-                                : 'Your appointment is all set. We look forward to seeing you.'}
-                            </p>
+                      <div className="flex flex-col items-center gap-8 max-w-lg mx-auto">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.15, type: 'spring', stiffness: 250, damping: 14 }}
+                          className="mx-auto size-24 rounded-full bg-gradient-to-br from-amber-50 to-primary/15 flex items-center justify-center shadow-lg shadow-primary/8"
+                        >
+                          <div className="relative">
+                            <svg className="size-14 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <motion.path
+                                d="M20 6L9 17L4 12"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ delay: 0.4, duration: 0.5, ease: 'easeInOut' }}
+                              />
+                            </svg>
                           </div>
+                        </motion.div>
 
-                          <div className="rounded-xl bg-white shadow-sm border overflow-hidden">
-                            <div className="divide-y divide-foreground/5">
-                              <div className="flex items-center gap-3.5 px-5 py-4">
-                                <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
-                                  <HugeiconsIcon icon={Doctor01Icon} strokeWidth={2} className="size-4.5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Doctor</p>
-                                  <p className="text-sm font-medium text-foreground mt-0.5">{doctorName}</p>
-                                </div>
+                        <div className="text-center space-y-2">
+                          <h2 className="text-2xl font-bold text-foreground">
+                            {isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!'}
+                          </h2>
+                          <p className="text-sm text-muted-foreground/70 max-w-xs mx-auto">
+                            {isReschedule
+                              ? 'Your appointment has been rescheduled. We look forward to seeing you.'
+                              : 'Your appointment is all set. We look forward to seeing you.'}
+                          </p>
+                        </div>
+
+                        <div className="w-full rounded-xl bg-white shadow-sm shadow-black/[0.03] border overflow-hidden">
+                          <div className="divide-y divide-foreground/5">
+                            <div className="flex items-center gap-3.5 px-5 py-4">
+                              <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
+                                <HugeiconsIcon icon={Doctor01Icon} strokeWidth={2} className="size-4.5 text-primary" />
                               </div>
-                              <div className="flex items-center gap-3.5 px-5 py-4">
-                                <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
-                                  <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2} className="size-4.5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Date</p>
-                                  <p className="text-sm font-medium text-foreground mt-0.5">{new Date(bookDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                                </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Doctor</p>
+                                <p className="text-sm font-medium text-foreground mt-0.5">{doctorName}</p>
                               </div>
-                              <div className="flex items-center gap-3.5 px-5 py-4">
-                                <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
-                                  <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-4.5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Time</p>
-                                  <p className="text-sm font-medium text-foreground mt-0.5">
-                                    {(() => {
-                                      const [h, m] = bookTime.split(':').map(Number);
-                                      const p = h >= 12 ? 'PM' : 'AM';
-                                      return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${p}`;
-                                    })()}
-                                  </p>
-                                </div>
+                            </div>
+                            <div className="flex items-center gap-3.5 px-5 py-4">
+                              <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
+                                <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2} className="size-4.5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Date</p>
+                                <p className="text-sm font-medium text-foreground mt-0.5">{new Date(bookDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3.5 px-5 py-4">
+                              <div className="size-9 rounded-xl bg-primary/[0.06] flex items-center justify-center shrink-0 ring-1 ring-primary/[0.04]">
+                                <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-4.5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Time</p>
+                                <p className="text-sm font-medium text-foreground mt-0.5">
+                                  {(() => {
+                                    const [h, m] = bookTime.split(':').map(Number);
+                                    const p = h >= 12 ? 'PM' : 'AM';
+                                    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${p}`;
+                                  })()}
+                                </p>
                               </div>
                             </div>
                           </div>
+                        </div>
 
-                          <AddToCalendar
-                            title={`Appointment with ${doctorName}`}
-                            description={`Patient: ${patientFirstName} ${patientLastName}\nDoctor: ${doctorName}`}
-                            location="MEDIPORT FERTILITY SERVICES, Accra, Ghana"
-                            startDate={bookDate}
-                            startTime={bookTime}
-                            endTime={bookEndTime}
-                          />
+                        <AddToCalendar
+                          title={`Appointment with ${doctorName}`}
+                          description={`Patient: ${patientFirstName} ${patientLastName}\nDoctor: ${doctorName}`}
+                          location="MEDIPORT FERTILITY SERVICES, Accra, Ghana"
+                          startDate={bookDate}
+                          startTime={bookTime}
+                          endTime={bookEndTime}
+                        />
 
-                          <div className="flex flex-col gap-2 pt-1">
-                            <Button onClick={resetAll} className="w-full h-11 text-base shadow-xs">
-                              Book Another Appointment
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        <Button onClick={resetAll} className="w-full h-11 text-base shadow-xs">
+                          Book Another Appointment
+                        </Button>
+                      </div>
                     </motion.div>
                   )}
                 </motion.div>

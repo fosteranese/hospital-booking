@@ -121,7 +121,7 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
+    <Card className="w-full mx-auto bg-transparent ring-0 shadow-none overflow-visible">
       <CardHeader className="px-0">
         <CardTitle className="text-foreground">{doctorId ? 'Choose your date & time' : 'Pick a date'}</CardTitle>
       </CardHeader>
@@ -147,14 +147,14 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
                       whileTap={{ scale: 0.93 }}
                       onClick={() => setDate(d)}
                       className={cn(
-                        'flex flex-col items-center gap-0.5 min-w-[72px] sm:min-w-[68px] py-3 sm:py-3 px-2.5 sm:px-2 rounded-xl border transition-all shrink-0',
+                        'flex flex-col items-center gap-0.5 min-w-[56px] sm:min-w-[68px] py-2.5 sm:py-3 px-2 sm:px-2.5 rounded-xl border transition-all shrink-0',
                         isSelected
                           ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
                           : 'bg-white text-foreground border-foreground/10 hover:border-primary/40 hover:text-primary',
                       )}
                     >
                       <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">{dayName}</span>
-                      <span className="text-xl font-semibold leading-tight">{dayNum}</span>
+                      <span className="text-lg sm:text-xl font-semibold leading-tight">{dayNum}</span>
                       <span className="text-[10px] font-medium opacity-70">{month}</span>
                     </motion.button>
                   );
@@ -245,14 +245,15 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
                           animate={{ opacity: 1, y: 0 }}
                           onClick={() => handleSlotClick(slot)}
                           className={cn(
-                            'relative flex items-center justify-center w-full text-center rounded-xl border px-3 sm:px-2.5 py-3 sm:py-2.5 transition-all overflow-hidden',
+                            'relative flex items-center justify-center w-full text-center rounded-xl border px-2 sm:px-2.5 py-2.5 sm:py-2.5 transition-all overflow-hidden',
                             isSelected
                               ? 'bg-primary text-white border-primary shadow-xs'
                               : 'bg-white text-foreground border-foreground/10 hover:border-primary/40 active:scale-[0.98]',
                           )}
                         >
                           <span className={cn('text-xs font-medium', isSelected && 'text-white')}>
-                            {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                            <span className="sm:hidden">{slot.start_time.slice(0, 5)}</span>
+                            <span className="hidden sm:inline">{slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}</span>
                           </span>
                           {isSelected && (
                             <motion.div

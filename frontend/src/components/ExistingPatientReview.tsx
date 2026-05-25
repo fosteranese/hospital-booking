@@ -67,7 +67,7 @@ function AppointmentCard({
   cancelling: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-white shadow-sm border p-4 space-y-2.5">
+    <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border p-4 space-y-2.5">
       <div className="space-y-0.5">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">Dr. {appointment.doctor_name}</p>
@@ -160,7 +160,7 @@ function UpcomingAppointmentsModal({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="relative w-full sm:max-w-lg max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="relative w-full max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between bg-white px-5 pt-4 pb-3 border-b border-foreground/5">
@@ -246,13 +246,13 @@ export function ExistingPatientReview({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <Card className="w-full max-w-lg mx-auto bg-transparent ring-0 shadow-none overflow-visible">
+      <Card className="w-full mx-auto bg-transparent ring-0 shadow-none overflow-visible">
         <CardHeader className="px-0">
           <CardTitle className="text-xl text-foreground">Welcome back, {patient.first_name}</CardTitle>
           <CardDescription>Great to see you again — here's your information</CardDescription>
         </CardHeader>
         <CardContent className="px-0 space-y-5">
-          <Card className="overflow-hidden shadow-sm border pt-0">
+          <Card className="overflow-hidden shadow-sm shadow-black/[0.03] border pt-0">
             <div className="h-24 bg-gradient-to-br from-amber-50 via-rose-50/60 to-primary/5" />
             <CardContent className="relative pb-0">
               <div className="flex flex-row items-start gap-5">
