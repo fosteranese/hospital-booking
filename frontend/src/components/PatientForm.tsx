@@ -125,7 +125,7 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
           />
         </div>
         )}
-        <Button className="w-full h-12 text-base" onClick={handleSubmit} disabled={!allFilled}>
+        <Button className="w-full h-11 text-base shadow-xs" onClick={handleSubmit} disabled={!allFilled}>
           Continue
         </Button>
       </CardContent>

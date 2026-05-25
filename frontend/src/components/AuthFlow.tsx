@@ -219,7 +219,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               {error && (
                 <ErrorMessage message={error} />
               )}
-              <Button className="w-full h-12 text-base" onClick={handleRequestOtp} disabled={loading || !identifier}>
+              <Button className="w-full h-11 text-base shadow-xs" onClick={handleRequestOtp} disabled={loading || !identifier}>
                 {loading ? 'Sending...' : 'Send OTP'}
               </Button>
               <div className="relative">
@@ -230,7 +230,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                   <span className="bg-background px-2 text-muted-foreground">or</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full h-12 text-base" onClick={switchMethod}>
+              <Button variant="outline" className="w-full h-11 text-base" onClick={switchMethod}>
                 {method === 'phone' ? 'Use email instead' : 'Use phone instead'}
               </Button>
             </motion.div>
@@ -322,7 +322,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                 )}
               </div>
 
-              <Button className="w-full h-12 text-base shadow-sm" onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}>
+              <Button className="w-full h-11 text-base shadow-xs" onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}>
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <Spinner />

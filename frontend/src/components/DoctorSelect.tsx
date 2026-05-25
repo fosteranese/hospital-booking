@@ -10,19 +10,6 @@ interface DoctorSelectProps {
   excludeDoctorId?: string;
 }
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0 },
-};
-
 export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +32,13 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0 space-y-3">
-        <motion.div variants={container} initial="hidden" animate="show">
+        <div className="space-y-2">
           {!excludeDoctorId && (
-            <motion.div variants={item}>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0 }}
+            >
               <Button
                 variant="outline"
                 className="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
@@ -68,7 +59,12 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
 
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <motion.div key={`skel-${i}`} variants={item}>
+              <motion.div
+                key={`skel-${i}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+              >
                 <div className="w-full flex items-center gap-3 py-4 px-4 rounded-4xl bg-white/50 mb-2">
                   <div className="size-12 rounded-full bg-muted animate-skeleton shrink-0" />
                   <div className="space-y-2 flex-1">
@@ -79,10 +75,14 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
               </motion.div>
             ))
           ) : (
-            filtered.map((doc) => (
-              <motion.div key={doc.id} variants={item}>
+            filtered.map((doc, i) => (
+              <motion.div
+                key={doc.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+              >
                 <Button
-                  key={doc.id}
                   variant="outline"
                   className="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
                   onClick={() => onSelect(doc.id, `Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization})`)}
@@ -102,7 +102,7 @@ export function DoctorSelect({ onSelect, excludeDoctorId }: DoctorSelectProps) {
               </motion.div>
             ))
           )}
-        </motion.div>
+        </div>
       </CardContent>
     </Card>
   );

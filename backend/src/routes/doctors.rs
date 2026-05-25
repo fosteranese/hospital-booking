@@ -149,9 +149,83 @@ pub async fn get_all_availability(
     Ok(Json(slots))
 }
 
+#[derive(Deserialize)]
+pub struct MaxDateQuery {
+    pub doctor_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct MaxDateResponse {
+    pub max_date: Option<String>,
+}
+
+pub async fn get_max_availability_date(
+    State(state): State<AppState>,
+    Query(query): Query<MaxDateQuery>,
+) -> Result<Json<MaxDateResponse>, AppError> {
+    let row = if let Some(did) = query.doctor_id {
+        sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
+            "SELECT MAX(slot_date) FROM availability_slots WHERE doctor_id = $1 AND slot_date >= CURRENT_DATE AND NOT is_booked"
+        )
+        .bind(did)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    } else {
+        sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
+            "SELECT MAX(slot_date) FROM availability_slots WHERE slot_date >= CURRENT_DATE AND NOT is_booked"
+        )
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    };
+
+    Ok(Json(MaxDateResponse {
+        max_date: row.0.map(|d| d.to_string()),
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct AvailableDatesQuery {
+    pub doctor_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct AvailableDatesResponse {
+    pub dates: Vec<String>,
+}
+
+pub async fn get_available_dates(
+    State(state): State<AppState>,
+    Query(query): Query<AvailableDatesQuery>,
+) -> Result<Json<AvailableDatesResponse>, AppError> {
+    let rows = if let Some(did) = query.doctor_id {
+        sqlx::query_as::<_, (chrono::NaiveDate,)>(
+            "SELECT DISTINCT slot_date FROM availability_slots WHERE doctor_id = $1 AND slot_date >= CURRENT_DATE AND NOT is_booked ORDER BY slot_date"
+        )
+        .bind(did)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    } else {
+        sqlx::query_as::<_, (chrono::NaiveDate,)>(
+            "SELECT DISTINCT slot_date FROM availability_slots WHERE slot_date >= CURRENT_DATE AND NOT is_booked ORDER BY slot_date"
+        )
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    };
+
+    Ok(Json(AvailableDatesResponse {
+        dates: rows.into_iter().map(|(d,)| d.to_string()).collect(),
+    }))
+}
+
 pub fn doctor_routes() -> Router<AppState> {
     Router::new()
         .route("/api/doctors", get(list_doctors))
         .route("/api/doctors/:id/availability", get(get_availability))
         .route("/api/availability", get(get_all_availability))
+        .route("/api/availability/max-date", get(get_max_availability_date))
+        .route("/api/availability/dates", get(get_available_dates))
 }

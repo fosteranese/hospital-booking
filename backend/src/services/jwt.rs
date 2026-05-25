@@ -35,3 +35,14 @@ pub fn verify_token(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::e
     )?;
     Ok(token_data.claims)
 }
+
+pub fn verify_token_ignore_expiry(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    let mut validation = Validation::default();
+    validation.validate_exp = false;
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &validation,
+    )?;
+    Ok(token_data.claims)
+}

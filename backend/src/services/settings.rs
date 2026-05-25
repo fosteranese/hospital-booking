@@ -133,6 +133,7 @@ impl SettingsService {
         Ok(row)
     }
 
+    #[allow(dead_code)]
     pub async fn get_raw(&self, group: &str, name: &str) -> Result<Option<String>, AppError> {
         let row = sqlx::query_as::<_, Setting>(
             "SELECT id, group_name, name, value, is_sensitive, description FROM settings WHERE group_name = $1 AND name = $2"

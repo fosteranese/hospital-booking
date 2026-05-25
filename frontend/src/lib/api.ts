@@ -1,10 +1,54 @@
 const API_BASE = '/api';
 
+class TokenStore {
+  private _token = '';
+  private _refreshing: Promise<string> | null = null;
+
+  get token() { return this._token; }
+
+  set(token: string) { this._token = token; }
+
+  clear() { this._token = ''; }
+
+  async refresh(): Promise<string> {
+    if (this._refreshing) return this._refreshing;
+
+    this._refreshing = (async () => {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: this._token }),
+      });
+      if (!res.ok) {
+        this._token = '';
+        throw new Error('Session expired. Please login again.');
+      }
+      const data = await res.json();
+      this._token = data.token;
+      return this._token;
+    })();
+
+    try {
+      return await this._refreshing;
+    } finally {
+      this._refreshing = null;
+    }
+  }
+}
+
+export const tokenStore = new TokenStore();
+
 function friendlyError(msg: string): string {
   if (/network|connect|refused|unreachable|econnrefused|enotfound|econnreset|failed to fetch|load failed/i.test(msg)) {
     return 'Unable to reach the server. Please check your internet connection and try again.';
   }
   return msg;
+}
+
+function hasBearerToken(headers?: HeadersInit): boolean {
+  if (!headers) return false;
+  const h = headers as Record<string, string>;
+  return !!h['Authorization']?.startsWith('Bearer ');
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -17,6 +61,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   } catch {
     throw new Error('Unable to reach the server. Please check your internet connection and try again.');
   }
+
+  if (res.status === 401 && hasBearerToken(options?.headers) && tokenStore.token) {
+    try {
+      await tokenStore.refresh();
+      const newHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) };
+      newHeaders['Authorization'] = `Bearer ${tokenStore.token}`;
+      res = await fetch(`${API_BASE}${path}`, { ...options, headers: newHeaders });
+    } catch {
+      throw new Error('Session expired. Please login again.');
+    }
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(friendlyError(body.error || 'Something went wrong. Please try again.'));
@@ -78,6 +134,14 @@ export interface UpcomingAppointment {
   status: string;
 }
 
+export interface MaxDateResponse {
+  max_date: string | null;
+}
+
+export interface AvailableDatesResponse {
+  dates: string[];
+}
+
 export const api = {
   requestOtp: (identifier: string) =>
     request<{ message: string }>('/auth/request-otp', {
@@ -97,6 +161,12 @@ export const api = {
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  getMaxAvailabilityDate: (doctorId?: string) =>
+    request<MaxDateResponse>(`/availability/max-date${doctorId ? `?doctor_id=${doctorId}` : ''}`),
+
+  getAvailableDates: (doctorId?: string) =>
+    request<AvailableDatesResponse>(`/availability/dates${doctorId ? `?doctor_id=${doctorId}` : ''}`),
 
   getDoctors: () =>
     request<Doctor[]>('/doctors'),

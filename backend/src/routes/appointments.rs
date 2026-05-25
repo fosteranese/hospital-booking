@@ -144,7 +144,7 @@ pub async fn update_appointment(
 ) -> Result<Json<AppointmentResponse>, AppError> {
     let patient = get_patient_from_auth(&state, &_auth).await?;
 
-    let appointment = sqlx::query_as::<_, Appointment>(
+    let _appointment = sqlx::query_as::<_, Appointment>(
         "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2 AND status = 'confirmed'"
     )
     .bind(id)

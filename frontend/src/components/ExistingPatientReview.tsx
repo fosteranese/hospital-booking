@@ -67,7 +67,7 @@ function AppointmentCard({
   cancelling: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-white shadow-sm ring-1 ring-foreground/5 p-4 space-y-2.5">
+    <div className="rounded-xl bg-white shadow-sm border p-4 space-y-2.5">
       <div className="space-y-0.5">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">Dr. {appointment.doctor_name}</p>
@@ -252,7 +252,7 @@ export function ExistingPatientReview({
           <CardDescription>We found your details — review and continue below</CardDescription>
         </CardHeader>
         <CardContent className="px-0 space-y-5">
-          <Card className="overflow-hidden shadow-sm ring-1 ring-foreground/5 pt-0">
+          <Card className="overflow-hidden shadow-sm border pt-0">
             <div className="h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-muted" />
             <CardContent className="relative pb-0">
               <div className="flex flex-row items-start gap-5">
@@ -352,7 +352,7 @@ export function ExistingPatientReview({
                   </AnimatePresence>
 
                   {upcomingAppointments.length === 0 && (
-                    <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-6 px-4">
+                    <div className="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-10 px-4">
                       <HugeiconsIcon icon={Appointment01Icon} strokeWidth={2} className="size-6 text-muted-foreground/40 shrink-0" />
                       <p className="text-xs text-muted-foreground">No upcoming appointments</p>
                     </div>
@@ -364,18 +364,18 @@ export function ExistingPatientReview({
 
           {!upcomingLoading && rebookDoctor && (
             <div className="flex flex-col gap-3">
-              <Button className="w-full h-12 text-base gap-2" onClick={() => onRebookWithLastDoctor(rebookDoctor.doctor_id, rebookDoctor.doctor_name)}>
+              <Button className="w-full h-11 text-base gap-2 shadow-xs" onClick={() => onRebookWithLastDoctor(rebookDoctor.doctor_id, rebookDoctor.doctor_name)}>
                 Rebook with Dr. {rebookDoctor.doctor_name}
                 <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={2} className="size-4" />
               </Button>
-              <Button variant="outline" className="w-full h-12 text-base bg-white" onClick={onChangeDoctor}>
+              <Button variant="outline" className="w-full h-11 text-base bg-white" onClick={onChangeDoctor}>
                 Choose a different doctor
               </Button>
             </div>
           )}
 
           {!upcomingLoading && !rebookDoctor && upcomingAppointments.length === 0 && (
-            <Button className="w-full h-12 text-base gap-2" onClick={onChangeDoctor}>
+            <Button className="w-full h-11 text-base gap-2 shadow-xs" onClick={onChangeDoctor}>
               {doctorCount > 1 ? 'Book an appointment' : 'Continue'}
               <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={2} className="size-4" />
             </Button>
