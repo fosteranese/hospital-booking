@@ -1,5 +1,5 @@
 use axum::{Json, extract::{Query, State}, Router, routing::{get, post, put}};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -28,6 +28,18 @@ pub struct LookupQuery {
     pub identifier: String,
 }
 
+#[derive(Deserialize)]
+pub struct CheckPatientQuery {
+    pub email: Option<String>,
+    pub phone: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct CheckPatientResponse {
+    pub email_taken: bool,
+    pub phone_taken: bool,
+}
+
 pub async fn create_patient(
     State(state): State<AppState>,
     _auth: AuthUser,
@@ -41,23 +53,40 @@ pub async fn create_patient(
     if first_name.is_empty() || last_name.is_empty() {
         return Err(AppError::Validation("First name and last name are required".to_string()));
     }
-    if phone.is_empty() || email.is_empty() {
-        return Err(AppError::Validation("Phone and email are required".to_string()));
-    }
 
-    let existing = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM patients WHERE email = $1 OR phone = $2"
-    )
-    .bind(&email)
-    .bind(&phone)
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|e| AppError::Database(e))?;
+    if !email.is_empty() || !phone.is_empty() {
+        let existing = if !email.is_empty() && !phone.is_empty() {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM patients WHERE email = $1 OR phone = $2"
+            )
+            .bind(&email)
+            .bind(&phone)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+        } else if !email.is_empty() {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM patients WHERE email = $1"
+            )
+            .bind(&email)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+        } else {
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM patients WHERE phone = $1"
+            )
+            .bind(&phone)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+        };
 
-    if existing > 0 {
-        return Err(AppError::BadRequest(
-            "A patient with this email or phone number already exists".to_string()
-        ));
+        if existing > 0 {
+            return Err(AppError::BadRequest(
+                "A patient with this email or phone number already exists".to_string()
+            ));
+        }
     }
 
     let patient = sqlx::query_as::<_, Patient>(
@@ -228,8 +257,46 @@ pub async fn update_patient(
     Ok(Json(patient))
 }
 
+pub async fn check_patient_exists(
+    State(state): State<AppState>,
+    Query(query): Query<CheckPatientQuery>,
+) -> Result<Json<CheckPatientResponse>, AppError> {
+    let email_taken = if let Some(email) = &query.email {
+        let email = email.trim().to_lowercase();
+        if email.is_empty() {
+            false
+        } else {
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM patients WHERE email = $1")
+                .bind(&email)
+                .fetch_one(&state.pool)
+                .await
+                .map_err(|e| AppError::Database(e))? > 0
+        }
+    } else {
+        false
+    };
+
+    let phone_taken = if let Some(phone) = &query.phone {
+        let phone = phone.trim().to_string();
+        if phone.is_empty() {
+            false
+        } else {
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM patients WHERE phone = $1")
+                .bind(&phone)
+                .fetch_one(&state.pool)
+                .await
+                .map_err(|e| AppError::Database(e))? > 0
+        }
+    } else {
+        false
+    };
+
+    Ok(Json(CheckPatientResponse { email_taken, phone_taken }))
+}
+
 pub fn patient_routes() -> Router<AppState> {
     Router::new()
+        .route("/api/patients/check", get(check_patient_exists))
         .route("/api/patients", post(create_patient))
         .route("/api/patients/lookup", get(lookup_patient))
         .route("/api/patients/:id/last-doctor", get(get_last_doctor))

@@ -241,4 +241,11 @@ export const api = {
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  checkPatientExists: (params: { email?: string; phone?: string }) => {
+    const query = new URLSearchParams();
+    if (params.email) query.set('email', params.email);
+    if (params.phone) query.set('phone', params.phone);
+    return request<{ email_taken: boolean; phone_taken: boolean }>(`/patients/check?${query.toString()}`);
+  },
 };

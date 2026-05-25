@@ -55,6 +55,8 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
+  const availableDatesRef = useRef(availableDates);
+  availableDatesRef.current = availableDates;
 
   const checkScroll = () => {
     const el = stripRef.current;
@@ -95,7 +97,17 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
       ? api.getAvailability(doctorId, date, patientId)
       : api.getAllAvailability(date, patientId);
     fetch
-      .then(setSlots)
+      .then((fetchedSlots) => {
+        setSlots(fetchedSlots);
+        const avail = fetchedSlots.filter(s => !s.is_booked && !s.is_blocked);
+        if (avail.length === 0) {
+          const dates = availableDatesRef.current;
+          const idx = dates.indexOf(date);
+          setAvailableDates(dates.filter(d => d !== date));
+          const nextDate = dates.find((_d, i) => i > idx);
+          if (nextDate) setDate(nextDate);
+        }
+      })
       .catch(() => setSlots([]))
       .finally(() => setLoading(false));
   }, [date, doctorId, patientId]);

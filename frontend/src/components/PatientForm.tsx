@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CallIcon } from '@hugeicons/core-free-icons';
 import { COUNTRY_CODES } from '@/lib/country-codes';
+import { api } from '@/lib/api';
 
 interface PatientFormProps {
   defaultFirstName: string;
@@ -23,6 +24,15 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
   const [countryCode, setCountryCode] = useState('+233');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState(defaultEmail);
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const emailTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const phoneTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const usedEmail = otpIdentifier?.includes('@') ?? false;
+  const usedPhone = otpIdentifier ? !otpIdentifier.includes('@') : false;
 
   useEffect(() => {
     setFirstName(defaultFirstName);
@@ -39,14 +49,39 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
     }
   }, [defaultFirstName, defaultLastName, defaultPhone, defaultEmail]);
 
-  const usedEmail = otpIdentifier?.includes('@') ?? false;
-  const usedPhone = otpIdentifier ? !otpIdentifier.includes('@') : false;
+  useEffect(() => {
+    if (usedEmail || !email) { setEmailError(''); return; }
+    clearTimeout(emailTimer.current);
+    emailTimer.current = setTimeout(() => {
+      setCheckingEmail(true);
+      api.checkPatientExists({ email: email.trim().toLowerCase() })
+        .then((res) => setEmailError(res.email_taken ? 'This email is already registered' : ''))
+        .catch(() => {})
+        .finally(() => setCheckingEmail(false));
+    }, 500);
+    return () => clearTimeout(emailTimer.current);
+  }, [email, usedEmail]);
 
-  const phone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
-  const allFilled = firstName && lastName && (usedPhone || phoneNumber) && (usedEmail || email);
+  useEffect(() => {
+    if (usedPhone || !phoneNumber) { setPhoneError(''); return; }
+    const phone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+    clearTimeout(phoneTimer.current);
+    phoneTimer.current = setTimeout(() => {
+      setCheckingPhone(true);
+      api.checkPatientExists({ phone })
+        .then((res) => setPhoneError(res.phone_taken ? 'This phone number is already registered' : ''))
+        .catch(() => {})
+        .finally(() => setCheckingPhone(false));
+    }, 500);
+    return () => clearTimeout(phoneTimer.current);
+  }, [phoneNumber, countryCode, usedPhone]);
+
+  const phone = phoneNumber ? `${countryCode}${phoneNumber.replace(/\D/g, '')}` : '';
+  const allFilled = firstName && lastName;
+  const hasError = (!!email && !!emailError) || (!!phone && !!phoneError);
 
   const handleSubmit = () => {
-    if (!allFilled) return;
+    if (!allFilled || hasError) return;
     onComplete(firstName, lastName, phone, email);
   };
 
@@ -70,7 +105,7 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
         {!usedPhone && (
         <div className="space-y-2">
           <Label htmlFor="phone">Phone</Label>
-          <div className="flex border border-input rounded-lg overflow-hidden bg-white focus-within:ring-3 focus-within:ring-ring/50 focus-within:border-ring">
+          <div className={`flex border rounded-lg overflow-hidden bg-white focus-within:ring-3 focus-within:ring-ring/50 focus-within:border-ring ${phoneError ? 'border-destructive' : 'border-input'}`}>
             <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
               <SelectTrigger size="xl" className="w-[120px] shrink-0 border-0 rounded-none shadow-none bg-white pl-3">
                 <SelectValue>
@@ -110,6 +145,7 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
               />
             </div>
           </div>
+          {phoneError && <p className="text-xs text-destructive">{checkingPhone ? 'Checking...' : phoneError}</p>}
         </div>
         )}
         {!usedEmail && (
@@ -117,15 +153,17 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            type="email"
             inputSize="xl"
             placeholder="john@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-white data-[size=xl]:pl-4"
+            className={`bg-white data-[size=xl]:pl-4 ${emailError ? 'border-destructive focus-visible:ring-destructive/30' : ''}`}
           />
+          {emailError && <p className="text-xs text-destructive">{checkingEmail ? 'Checking...' : emailError}</p>}
         </div>
         )}
-        <Button className="w-full h-11 text-base shadow-xs" onClick={handleSubmit} disabled={!allFilled}>
+        <Button className="w-full h-11 text-base shadow-xs" onClick={handleSubmit} disabled={!allFilled || hasError}>
           Continue
         </Button>
       </CardContent>
