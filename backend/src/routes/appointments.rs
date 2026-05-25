@@ -326,7 +326,7 @@ async fn get_patient_from_auth(
 async fn send_confirmation_email(
     state: &AppState,
     patient: &crate::models::Patient,
-    _appointment: &crate::models::Appointment,
+    appointment: &crate::models::Appointment,
     slot: &crate::models::AvailabilitySlot,
     doctor_id: &Uuid,
 ) -> Result<(), String> {
@@ -350,7 +350,7 @@ async fn send_confirmation_email(
         &doctor_name,
         &date,
         &time,
-        &_appointment.notes,
+        &appointment.notes,
     ).await
 }
 
