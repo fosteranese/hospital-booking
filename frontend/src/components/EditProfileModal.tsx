@@ -205,7 +205,7 @@ export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfi
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 py-4 border-t border-foreground/5">
+        <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 pb-4 pt-0">
           <Button variant="outline" className="h-10 text-sm" onClick={onClose}>
             Cancel
           </Button>

@@ -633,7 +633,18 @@ export function ExistingPatientReview({
             </div>
           </div>
 
-          {!upcomingLoading && rebookDoctor && (
+          {!upcomingLoading && upcomingAppointments.length >= 3 && (
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/60 py-4 px-4 text-center">
+              <p className="text-xs font-medium text-amber-800">
+                You have {upcomingAppointments.length} upcoming appointments — the maximum allowed.
+              </p>
+              <p className="text-[11px] text-amber-700/70">
+                Please cancel or reschedule an existing appointment to book a new one.
+              </p>
+            </div>
+          )}
+
+          {!upcomingLoading && upcomingAppointments.length < 3 && rebookDoctor && (
             <div className="flex flex-col gap-3">
               <Button className="w-full h-11 text-base gap-2 shadow-xs" onClick={() => onRebookWithLastDoctor(rebookDoctor.doctor_id, rebookDoctor.doctor_name)}>
                 Rebook with Dr. {rebookDoctor.doctor_name}
@@ -645,7 +656,7 @@ export function ExistingPatientReview({
             </div>
           )}
 
-          {!upcomingLoading && !rebookDoctor && upcomingAppointments.length === 0 && (
+          {!upcomingLoading && upcomingAppointments.length < 3 && !rebookDoctor && upcomingAppointments.length === 0 && (
             <Button className="w-full h-11 text-base gap-2 shadow-xs" onClick={onChangeDoctor}>
               {doctorCount > 1 ? 'Book an appointment' : 'Continue'}
               <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={2} className="size-4" />

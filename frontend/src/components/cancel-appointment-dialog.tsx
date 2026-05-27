@@ -63,7 +63,7 @@ function CancelAppointmentDialog({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+            <div className="overflow-y-auto flex-1 px-5 pt-5 pb-0 space-y-5">
               <div className="relative bg-gradient-to-br from-rose-50 via-rose-50/60 to-primary/8 px-4 py-4 rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,oklch(0.65 0.12 25/0.1),transparent_60%)]" />
                 <div className="relative flex items-center gap-3">
@@ -113,7 +113,7 @@ function CancelAppointmentDialog({
               </div>
             </div>
 
-            <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 py-4 border-t border-foreground/5">
+            <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 py-4">
               <Button variant="outline" className="h-10 text-sm" onClick={handleClose} disabled={isCancelling}>
                 No, keep it
               </Button>

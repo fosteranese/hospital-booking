@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { UserIcon, Doctor01Icon, Calendar01Icon, Clock01Icon, CheckmarkCircle02Icon, ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { UserIcon, Doctor01Icon, Calendar01Icon, Clock01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 
 interface AppointmentSummaryProps {
   doctorName: string;
@@ -107,29 +107,25 @@ export function AppointmentSummary({ doctorName, specialization, date, time, pat
                   <p className="text-sm font-medium text-foreground mt-0.5">{formatTime(time)}</p>
                 </div>
               </div>
+              <div className="px-5 py-4 hover:bg-foreground/[0.02] transition-colors">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Reason for visit (optional)</p>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => onNotesChange(e.target.value)}
+                    placeholder="Briefly describe your reason for visit..."
+                    className="w-full min-h-[80px] resize-none rounded-lg border border-foreground/10 bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-colors"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border overflow-hidden">
-            <div className="px-5 py-4 space-y-2">
-              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Reason for visit (optional)</p>
-              <textarea
-                value={notes}
-                onChange={(e) => onNotesChange(e.target.value)}
-                placeholder="Briefly describe your reason for visit..."
-                className="w-full min-h-[80px] resize-none rounded-lg border border-foreground/10 bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-colors"
-                disabled={loading}
-              />
-            </div>
-          </div>
 
           {error && <ErrorMessage message={error} />}
 
           <div className="flex flex-col gap-3 pt-1">
-            <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" onClick={onBack} disabled={loading}>
-              <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
-              Back
-            </Button>
             <Button className="w-full h-11 text-base shadow-xs" onClick={onConfirm} disabled={loading}>
               {loading ? (
                 <span className="flex items-center gap-2">
