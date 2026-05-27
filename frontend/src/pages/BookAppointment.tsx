@@ -340,8 +340,8 @@ export default function BookAppointment() {
     try {
       await api.updateAppointment(appointmentId, { status: 'cancelled', cancellation_reason: reason || '' }, token);
       setUpcomingAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
-    } catch {
-      // silently fail — appointment list stays unchanged
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel appointment. Please try again.');
     }
   };
 
@@ -517,7 +517,6 @@ export default function BookAppointment() {
                       loading={loading}
                       error={error}
                       onConfirm={handleConfirm}
-                      onBack={() => { setDirection(-1); setStep('datetime'); }}
                       onNotesChange={setNotes}
                     />
                   )}

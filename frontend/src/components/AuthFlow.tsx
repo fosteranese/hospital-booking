@@ -123,7 +123,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setResending(false);
     }
   };
 

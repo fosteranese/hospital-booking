@@ -69,6 +69,7 @@ export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfi
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <motion.div
         initial={{ y: 60, opacity: 0 }}

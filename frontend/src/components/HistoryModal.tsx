@@ -7,32 +7,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
-
-function formatTime(timeStr: string): string {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
-
-const AVATAR_COLORS = [
-  { bg: 'bg-blue-100', text: 'text-blue-700' },
-  { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  { bg: 'bg-amber-100', text: 'text-amber-700' },
-  { bg: 'bg-rose-100', text: 'text-rose-700' },
-  { bg: 'bg-violet-100', text: 'text-violet-700' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700' },
-  { bg: 'bg-orange-100', text: 'text-orange-700' },
-  { bg: 'bg-teal-100', text: 'text-teal-700' },
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+import { getAvatarColor } from '@/lib/avatar';
+import { formatTime } from '@/lib/format';
 
 interface HistoryModalProps {
   history: AppointmentHistoryItem[];
@@ -61,6 +37,7 @@ export function HistoryModal({ history, loading, onClose, onMarkAttendance }: Hi
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <motion.div
         initial={{ y: 60, opacity: 0 }}

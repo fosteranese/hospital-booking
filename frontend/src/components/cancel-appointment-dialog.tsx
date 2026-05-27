@@ -42,6 +42,7 @@ function CancelAppointmentDialog({
           transition={{ duration: 0.15 }}
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
           onClick={handleClose}
+          onKeyDown={(e) => e.key === 'Escape' && handleClose()}
         >
           <motion.div
             initial={{ y: 60, opacity: 0 }}

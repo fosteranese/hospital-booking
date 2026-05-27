@@ -15,7 +15,6 @@ interface AppointmentSummaryProps {
   loading: boolean;
   error?: string;
   onConfirm: () => void;
-  onBack: () => void;
   onNotesChange: (notes: string) => void;
 }
 
@@ -39,7 +38,7 @@ function formatTime(timeStr: string): string {
   }
 }
 
-export function AppointmentSummary({ doctorName, specialization, date, time, patientName, notes, loading, error, onConfirm, onBack, onNotesChange }: AppointmentSummaryProps) {
+export function AppointmentSummary({ doctorName, specialization, date, time, patientName, notes, loading, error, onConfirm, onNotesChange }: AppointmentSummaryProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

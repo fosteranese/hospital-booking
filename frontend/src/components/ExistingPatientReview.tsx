@@ -13,6 +13,8 @@ import { EditProfileModal } from '@/components/EditProfileModal';
 import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { Spinner } from '@/components/ui/spinner';
 import { api, AppointmentHistoryItem } from '@/lib/api';
+import { getAvatarColor } from '@/lib/avatar';
+import { formatDate, formatTime } from '@/lib/format';
 
 export interface ExistingPatientData {
   id: string;
@@ -61,41 +63,6 @@ interface ExistingPatientReviewProps {
 
 function getInitials(first: string, last: string): string {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-}
-
-const AVATAR_COLORS = [
-  { bg: 'bg-blue-100', text: 'text-blue-700' },
-  { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  { bg: 'bg-amber-100', text: 'text-amber-700' },
-  { bg: 'bg-rose-100', text: 'text-rose-700' },
-  { bg: 'bg-violet-100', text: 'text-violet-700' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700' },
-  { bg: 'bg-orange-100', text: 'text-orange-700' },
-  { bg: 'bg-teal-100', text: 'text-teal-700' },
-];
-
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function formatTime(timeStr: string): string {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  } catch {
-    return dateStr;
-  }
 }
 
 function AppointmentCard({
@@ -285,6 +252,7 @@ function UpcomingAppointmentsModal({
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <motion.div
         initial={{ y: 60, opacity: 0 }}

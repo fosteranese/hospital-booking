@@ -74,11 +74,14 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
   };
 
   useEffect(() => {
+    const abort = new AbortController();
     api.getAvailableDates(doctorId ?? undefined).then((res) => {
+      if (abort.signal.aborted) return;
       setAvailableDates(res.dates);
       if (!date && res.dates.length > 0) setDate(res.dates[0]);
       setTimeout(checkScroll, 50);
-    }).catch(() => setAvailableDates([]));
+    }).catch(() => { if (!abort.signal.aborted) setAvailableDates([]); });
+    return () => abort.abort();
   }, [doctorId]);
 
   useEffect(() => {
@@ -91,6 +94,7 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
 
   useEffect(() => {
     if (!date) return;
+    const abort = new AbortController();
     setLoading(true);
     setSelectedSlot(null);
     const fetch = doctorId
@@ -98,9 +102,10 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
       : api.getAllAvailability(date, patientId);
     fetch
       .then((fetchedSlots) => {
+        if (abort.signal.aborted) return;
         setSlots(fetchedSlots);
         const avail = fetchedSlots.filter(s => !s.is_booked && !s.is_blocked);
-        if (avail.length === 0) {
+        if (avail.length === 0 && availableDatesRef.current.length > 1) {
           const dates = availableDatesRef.current;
           const idx = dates.indexOf(date);
           setAvailableDates(dates.filter(d => d !== date));
@@ -108,8 +113,9 @@ export function BookingForm({ doctorId, defaultDate = '', patientId, onSelectSlo
           if (nextDate) setDate(nextDate);
         }
       })
-      .catch(() => setSlots([]))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!abort.signal.aborted) setSlots([]); })
+      .finally(() => { if (!abort.signal.aborted) setLoading(false); });
+    return () => abort.abort();
   }, [date, doctorId, patientId]);
 
   useEffect(() => {
