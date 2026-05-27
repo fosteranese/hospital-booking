@@ -82,6 +82,17 @@ pub struct LastDoctorInfo {
     pub last_appointment_time: chrono::NaiveTime,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+pub struct DoctorUnavailability {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub slot_date: NaiveDate,
+    pub start_time: Option<NaiveTime>,
+    pub end_time: Option<NaiveTime>,
+    pub reason: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
 #[derive(Debug, Serialize, FromRow)]
 pub struct UpcomingAppointment {
     pub id: Uuid,

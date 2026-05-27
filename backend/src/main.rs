@@ -107,6 +107,7 @@ async fn main() {
         .merge(routes::doctors::doctor_routes())
         .merge(routes::appointments::appointment_routes())
         .merge(routes::settings::settings_routes())
+        .merge(routes::unavailability::unavailability_routes())
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()

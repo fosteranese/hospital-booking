@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::models::{AvailabilitySlot, DoctorWithName};
+use crate::models::{AvailabilitySlot, DoctorUnavailability, DoctorWithName};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -62,6 +62,38 @@ fn is_blocked(slot_time: chrono::NaiveTime, existing_times: &[chrono::NaiveTime]
     existing_times.iter().any(|et| (slot_time - *et).num_minutes().abs() < min_gap_minutes)
 }
 
+async fn load_unavailability(
+    state: &AppState,
+    doctor_id: Uuid,
+    date: chrono::NaiveDate,
+) -> Result<Vec<DoctorUnavailability>, AppError> {
+    let rows = sqlx::query_as::<_, DoctorUnavailability>(
+        "SELECT * FROM doctor_unavailability WHERE doctor_id = $1 AND slot_date = $2"
+    )
+    .bind(doctor_id)
+    .bind(date)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+    Ok(rows)
+}
+
+fn is_unavailable(slot_time: chrono::NaiveTime, unavailability: &[DoctorUnavailability]) -> bool {
+    unavailability.iter().any(|u| {
+        // Full-day off
+        if u.start_time.is_none() && u.end_time.is_none() {
+            return true;
+        }
+        // Time-range off: slot start falls within [start_time, end_time)
+        if let (Some(st), Some(et)) = (u.start_time, u.end_time) {
+            if slot_time >= st && slot_time < et {
+                return true;
+            }
+        }
+        false
+    })
+}
+
 pub async fn list_doctors(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<DoctorWithName>>, AppError> {
@@ -93,17 +125,23 @@ pub async fn get_availability(
     .map_err(|e| AppError::Database(e))?;
 
     let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
+    let unavailability = load_unavailability(&state, doctor_id, date).await?;
 
     let response: Vec<SlotResponse> = slots
         .into_iter()
-        .map(|s| SlotResponse {
-            id: s.id,
-            doctor_id: s.doctor_id,
-            slot_date: s.slot_date.to_string(),
-            start_time: s.start_time.format("%H:%M").to_string(),
-            end_time: s.end_time.format("%H:%M").to_string(),
-            is_booked: s.is_booked,
-            is_blocked: s.is_booked || is_blocked(s.start_time, &blocked_times, *state.min_gap_minutes.read().unwrap()),
+        .map(|s| {
+            let blocked = s.is_booked
+                || is_blocked(s.start_time, &blocked_times, *state.min_gap_minutes.read().unwrap())
+                || is_unavailable(s.start_time, &unavailability);
+            SlotResponse {
+                id: s.id,
+                doctor_id: s.doctor_id,
+                slot_date: s.slot_date.to_string(),
+                start_time: s.start_time.format("%H:%M").to_string(),
+                end_time: s.end_time.format("%H:%M").to_string(),
+                is_booked: s.is_booked,
+                is_blocked: blocked,
+            }
         })
         .collect();
 
@@ -131,18 +169,39 @@ pub async fn get_all_availability(
 
     let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
 
+    // Load all unavailability for all doctors on this date
+    let all_unavailability = sqlx::query_as::<_, DoctorUnavailability>(
+        "SELECT * FROM doctor_unavailability WHERE slot_date = $1"
+    )
+    .bind(date)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    // Group by doctor_id for fast lookup
+    let mut unavail_by_doctor: std::collections::HashMap<Uuid, Vec<DoctorUnavailability>> = std::collections::HashMap::new();
+    for u in all_unavailability {
+        unavail_by_doctor.entry(u.doctor_id).or_default().push(u);
+    }
+
     let slots = rows
         .into_iter()
-        .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked)| SlotWithDoctor {
-            id,
-            doctor_id,
-            slot_date: slot_date.to_string(),
-            start_time: start_time.format("%H:%M").to_string(),
-            end_time: end_time.format("%H:%M").to_string(),
-            doctor_name,
-            specialization,
-            is_booked,
-            is_blocked: is_booked || is_blocked(start_time, &blocked_times, *state.min_gap_minutes.read().unwrap()),
+        .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked)| {
+            let unavail = unavail_by_doctor.get(&doctor_id).map(|v| v.as_slice()).unwrap_or(&[]);
+            let blocked = is_booked
+                || is_blocked(start_time, &blocked_times, *state.min_gap_minutes.read().unwrap())
+                || is_unavailable(start_time, unavail);
+            SlotWithDoctor {
+                id,
+                doctor_id,
+                slot_date: slot_date.to_string(),
+                start_time: start_time.format("%H:%M").to_string(),
+                end_time: end_time.format("%H:%M").to_string(),
+                doctor_name,
+                specialization,
+                is_booked,
+                is_blocked: blocked,
+            }
         })
         .collect();
 
@@ -167,7 +226,12 @@ pub async fn get_max_availability_date(
     let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let row = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
-            "SELECT MAX(slot_date) FROM availability_slots WHERE doctor_id = $1 AND slot_date >= $2 AND NOT is_booked"
+            "SELECT MAX(slot_date) FROM availability_slots s
+             WHERE s.doctor_id = $1 AND s.slot_date >= $2 AND NOT s.is_booked
+             AND NOT EXISTS (
+                 SELECT 1 FROM doctor_unavailability u
+                 WHERE u.doctor_id = $1 AND u.slot_date = s.slot_date AND u.start_time IS NULL
+             )"
         )
         .bind(did)
         .bind(cutoff)
@@ -207,7 +271,13 @@ pub async fn get_available_dates(
     let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let rows = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(
-            "SELECT DISTINCT slot_date FROM availability_slots WHERE doctor_id = $1 AND slot_date >= $2 AND NOT is_booked ORDER BY slot_date"
+            "SELECT DISTINCT s.slot_date FROM availability_slots s
+             WHERE s.doctor_id = $1 AND s.slot_date >= $2 AND NOT s.is_booked
+             AND NOT EXISTS (
+                 SELECT 1 FROM doctor_unavailability u
+                 WHERE u.doctor_id = $1 AND u.slot_date = s.slot_date AND u.start_time IS NULL
+             )
+             ORDER BY s.slot_date"
         )
         .bind(did)
         .bind(cutoff)

@@ -4,8 +4,42 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::middleware::auth::AuthUser;
-use crate::models::Appointment;
+use crate::models::{Appointment, DoctorUnavailability};
 use crate::state::AppState;
+
+async fn check_slot_unavailability(
+    pool: &sqlx::PgPool,
+    doctor_id: Uuid,
+    slot_date: chrono::NaiveDate,
+    start_time: chrono::NaiveTime,
+) -> Result<(), AppError> {
+    let unavail = sqlx::query_as::<_, DoctorUnavailability>(
+        "SELECT * FROM doctor_unavailability WHERE doctor_id = $1 AND slot_date = $2"
+    )
+    .bind(doctor_id)
+    .bind(slot_date)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    for u in &unavail {
+        // Full-day off
+        if u.start_time.is_none() && u.end_time.is_none() {
+            return Err(AppError::BadRequest(
+                "This doctor is not available on the selected date".to_string()
+            ));
+        }
+        // Time-range off
+        if let (Some(st), Some(et)) = (u.start_time, u.end_time) {
+            if start_time >= st && start_time < et {
+                return Err(AppError::BadRequest(
+                    format!("The doctor is unavailable at {} on this date", start_time.format("%H:%M"))
+                ));
+            }
+        }
+    }
+    Ok(())
+}
 
 #[derive(Deserialize)]
 pub struct CreateAppointmentRequest {
@@ -118,6 +152,8 @@ pub async fn create_appointment(
             return Err(AppError::BadRequest("Selected slot does not belong to the specified doctor".to_string()));
         }
     }
+
+    check_slot_unavailability(&state.pool, slot.doctor_id, slot.slot_date, slot.start_time).await?;
 
     let notes = body.notes.unwrap_or_default();
 
@@ -232,6 +268,8 @@ pub async fn update_appointment(
                 return Err(AppError::BadRequest("Selected slot does not belong to the specified doctor".to_string()));
             }
         }
+
+        check_slot_unavailability(&state.pool, new_slot.doctor_id, new_slot.slot_date, new_slot.start_time).await?;
 
         let existing = sqlx::query_as::<_, (chrono::NaiveTime, chrono::NaiveDate)>(
             "SELECT s.start_time, s.slot_date

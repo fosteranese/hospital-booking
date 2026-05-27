@@ -2,9 +2,25 @@ use std::collections::HashMap;
 use chrono::{NaiveTime, Datelike, Duration};
 use sqlx::{PgPool, QueryBuilder};
 use tracing::info;
+use uuid::Uuid;
 
 use crate::error::AppError;
+use crate::models::DoctorUnavailability;
 use crate::services::SettingsService;
+
+fn is_time_unavailable(t: NaiveTime, unavail: &[DoctorUnavailability]) -> bool {
+    unavail.iter().any(|u| {
+        if u.start_time.is_none() && u.end_time.is_none() {
+            return true; // full-day off
+        }
+        if let (Some(st), Some(et)) = (u.start_time, u.end_time) {
+            if t >= st && t < et {
+                return true;
+            }
+        }
+        false
+    })
+}
 
 const DAY_NAMES: [&str; 7] = [
     "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
@@ -61,6 +77,22 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     let start_date = today + Duration::days(min_advance_days);
     let end_date = today + Duration::days(days_ahead);
 
+    // Batch-load all unavailability for the slot window
+    let all_unavailability: Vec<DoctorUnavailability> = sqlx::query_as::<_, DoctorUnavailability>(
+        "SELECT * FROM doctor_unavailability WHERE slot_date >= $1 AND slot_date <= $2"
+    )
+    .bind(start_date)
+    .bind(end_date)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    // Index by (doctor_id, slot_date) for fast lookup
+    let mut unavail_index: HashMap<(Uuid, chrono::NaiveDate), Vec<DoctorUnavailability>> = HashMap::new();
+    for u in all_unavailability {
+        unavail_index.entry((u.doctor_id, u.slot_date)).or_default().push(u);
+    }
+
     // Trim unbooked slots beyond the window
     sqlx::query(
         "DELETE FROM availability_slots WHERE (slot_date > $1 OR slot_date < $2) AND is_booked = FALSE
@@ -112,10 +144,36 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
                 }
 
                 for (doctor_id,) in &doctors {
+                    let unavail_for_doc = unavail_index.get(&(*doctor_id, current)).map(|v| v.as_slice()).unwrap_or(&[]);
+
+                    // If full-day off, skip this doctor entirely for this date
+                    if unavail_for_doc.iter().any(|u| u.start_time.is_none() && u.end_time.is_none()) {
+                        // Also clean up any existing unbooked slots for this day to avoid stale data
+                        sqlx::query(
+                            "DELETE FROM availability_slots WHERE doctor_id = $1 AND slot_date = $2 AND is_booked = FALSE
+                             AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
+                        )
+                        .bind(doctor_id)
+                        .bind(current)
+                        .execute(pool)
+                        .await
+                        .map_err(|e| AppError::Database(e))?;
+                        continue;
+                    }
+
+                    // Filter out time slots that fall within time-range unavailability
+                    let filtered_times: Vec<&(NaiveTime, NaiveTime)> = times.iter()
+                        .filter(|(st, _)| !is_time_unavailable(*st, unavail_for_doc))
+                        .collect();
+
+                    if filtered_times.is_empty() {
+                        continue;
+                    }
+
                     let mut qb = QueryBuilder::new(
                         "INSERT INTO availability_slots (doctor_id, slot_date, start_time, end_time) "
                     );
-                    qb.push_values(times.iter(), |mut b, (st, et)| {
+                    qb.push_values(filtered_times.iter(), |mut b, (st, et)| {
                         b.push_bind(doctor_id)
                             .push_bind(current)
                             .push_bind(st)

@@ -229,6 +229,226 @@ test.describe('Frontend integration', () => {
     await expect(page.locator('text=Returning').first()).toBeVisible({ timeout: 15000 });
   });
 
+  test('11. API: concurrent slot booking — user2 cannot book same dr slot, can book dr2 slot', async ({ request }) => {
+    // Create user 1
+    const email1 = `e2e_concur1_${Date.now()}@test.com`;
+    await request.post(`${API}/api/auth/request-otp`, { data: { identifier: email1 } });
+    const ver1 = await request.post(`${API}/api/auth/verify-otp`, {
+      data: { identifier: email1, code: '123456' },
+    });
+    const { token: token1 } = await ver1.json();
+    const patient1 = await request.post(`${API}/api/patients`, {
+      headers: { Authorization: `Bearer ${token1}` },
+      data: { first_name: 'Concur', last_name: 'One', phone: '', email: email1 },
+    });
+    expect(patient1.ok()).toBeTruthy();
+    const pid1 = (await patient1.json()).id;
+
+    // Create user 2
+    const email2 = `e2e_concur2_${Date.now()}@test.com`;
+    await request.post(`${API}/api/auth/request-otp`, { data: { identifier: email2 } });
+    const ver2 = await request.post(`${API}/api/auth/verify-otp`, {
+      data: { identifier: email2, code: '123456' },
+    });
+    const { token: token2 } = await ver2.json();
+    const patient2 = await request.post(`${API}/api/patients`, {
+      headers: { Authorization: `Bearer ${token2}` },
+      data: { first_name: 'Concur', last_name: 'Two', phone: '', email: email2 },
+    });
+    expect(patient2.ok()).toBeTruthy();
+    const pid2 = (await patient2.json()).id;
+
+    // Get all doctors
+    const doctorsResp = await request.get(`${API}/api/doctors`);
+    const doctors = await doctorsResp.json();
+    expect(doctors.length).toBeGreaterThanOrEqual(2);
+    const dr1 = doctors[0];
+    const dr2 = doctors[1];
+
+    // Find a date with available slots for both doctors
+    const datesResp = await request.get(`${API}/api/availability/dates`);
+    const { dates } = await datesResp.json();
+    expect(dates.length).toBeGreaterThan(0);
+    const date = dates[dates.length - 1]; // pick furthest date
+
+    // Get slots for dr1 on that date
+    const dr1Slots = await request.get(`${API}/api/doctors/${dr1.id}/availability?date=${date}`);
+    const dr1Available = (await dr1Slots.json()).find((s: any) => !s.is_booked);
+    expect(dr1Available).toBeTruthy();
+    const slotTime = dr1Available.start_time;
+
+    // Get slots for dr2 on same date, find matching start_time
+    const dr2Slots = await request.get(`${API}/api/doctors/${dr2.id}/availability?date=${date}`);
+    const dr2Matching = (await dr2Slots.json()).find((s: any) => s.start_time === slotTime && !s.is_booked);
+    expect(dr2Matching).toBeTruthy();
+
+    // User 1 books dr1's slot
+    const appt1 = await request.post(`${API}/api/appointments`, {
+      headers: { Authorization: `Bearer ${token1}` },
+      data: { slot_id: dr1Available.id, doctor_id: dr1.id, patient_id: pid1, notes: 'concur test' },
+    });
+    expect(appt1.ok()).toBeTruthy();
+
+    // User 2 tries to book the SAME slot (dr1's slot) — should fail
+    const appt2Fail = await request.post(`${API}/api/appointments`, {
+      headers: { Authorization: `Bearer ${token2}` },
+      data: { slot_id: dr1Available.id, doctor_id: dr1.id, patient_id: pid2, notes: 'should fail' },
+    });
+    expect(appt2Fail.ok()).toBe(false);
+    expect(appt2Fail.status()).toBe(400);
+
+    // User 2 books dr2's same-time slot — should succeed
+    const appt2Ok = await request.post(`${API}/api/appointments`, {
+      headers: { Authorization: `Bearer ${token2}` },
+      data: { slot_id: dr2Matching.id, doctor_id: dr2.id, patient_id: pid2, notes: 'concur dr2' },
+    });
+    expect(appt2Ok.ok()).toBeTruthy();
+  });
+
+  test('12. Frontend: user2 cannot see booked dr1 slot, can see and book dr2 slot', async ({ page, request }) => {
+    const email1 = `e2e_fe_concur1_${Date.now()}@test.com`;
+    const email2 = `e2e_fe_concur2_${Date.now()}@test.com`;
+
+    // --- Setup via API ---
+
+    // Create user1
+    await request.post(`${API}/api/auth/request-otp`, { data: { identifier: email1 } });
+    const ver1 = await request.post(`${API}/api/auth/verify-otp`, {
+      data: { identifier: email1, code: '123456' },
+    });
+    const { token: token1 } = await ver1.json();
+    const patient1 = await request.post(`${API}/api/patients`, {
+      headers: { Authorization: `Bearer ${token1}` },
+      data: { first_name: 'Frontend', last_name: 'Concur', phone: '', email: email1 },
+    });
+    expect(patient1.ok()).toBeTruthy();
+    const pid1 = (await patient1.json()).id;
+
+    // Create user2 (so browser auth detects returning patient)
+    await request.post(`${API}/api/auth/request-otp`, { data: { identifier: email2 } });
+    const ver2 = await request.post(`${API}/api/auth/verify-otp`, {
+      data: { identifier: email2, code: '123456' },
+    });
+    const { token: token2 } = await ver2.json();
+    const patient2 = await request.post(`${API}/api/patients`, {
+      headers: { Authorization: `Bearer ${token2}` },
+      data: { first_name: 'Frontend', last_name: 'User', phone: '', email: email2 },
+    });
+    expect(patient2.ok()).toBeTruthy();
+
+    // Get doctors
+    const doctorsResp = await request.get(`${API}/api/doctors`);
+    const doctors = await doctorsResp.json();
+    expect(doctors.length).toBeGreaterThanOrEqual(2);
+    const dr1 = doctors[0];
+    const dr2 = doctors[1];
+
+    // Find a date and start_time available for BOTH doctors
+    const dr1DatesResp = await request.get(`${API}/api/availability/dates?doctor_id=${dr1.id}`);
+    const dr1Dates: string[] = (await dr1DatesResp.json()).dates;
+    const dr2DatesResp = await request.get(`${API}/api/availability/dates?doctor_id=${dr2.id}`);
+    const dr2Dates: string[] = (await dr2DatesResp.json()).dates;
+    const commonDate = dr1Dates.find(d => dr2Dates.includes(d));
+    expect(commonDate).toBeTruthy();
+
+    // Find a start_time available for BOTH doctors on the common date
+    const dr1Slots = await request.get(`${API}/api/doctors/${dr1.id}/availability?date=${commonDate}`);
+    const dr1Avail = (await dr1Slots.json()).filter((s: any) => !s.is_booked);
+    const dr2Slots = await request.get(`${API}/api/doctors/${dr2.id}/availability?date=${commonDate}`);
+    const dr2Avail = (await dr2Slots.json()).filter((s: any) => !s.is_booked);
+
+    const commonTime = dr1Avail.find((s1: any) =>
+      dr2Avail.some((s2: any) => s2.start_time === s1.start_time)
+    )?.start_time;
+    expect(commonTime).toBeTruthy();
+    const date = commonDate;
+    const slotTime = commonTime;
+
+    // Get the specific slot records for each doctor
+    const dr1SlotToBook = dr1Avail.find((s: any) => s.start_time === slotTime);
+    const dr2SlotToBook = dr2Avail.find((s: any) => s.start_time === slotTime);
+    expect(dr1SlotToBook).toBeTruthy();
+    expect(dr2SlotToBook).toBeTruthy();
+    const endTime = dr1SlotToBook.end_time;
+
+    // User1 books dr1's slot
+    const appt1 = await request.post(`${API}/api/appointments`, {
+      headers: { Authorization: `Bearer ${token1}` },
+      data: { slot_id: dr1SlotToBook.id, doctor_id: dr1.id, patient_id: pid1, notes: 'fe concur test' },
+    });
+    expect(appt1.ok()).toBeTruthy();
+
+    // --- Frontend test as user2 (returning patient) ---
+
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle' });
+    await expect(page.locator('h1:has-text("Welcome to Mediport")')).toBeVisible({ timeout: 15000 });
+
+    // Auth via email
+    await page.click('button:has-text("Use email instead")');
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await page.fill('input[type="email"]', email2);
+    await page.click('button:has-text("Send OTP")');
+
+    await expect(page.locator('#otp')).toBeVisible({ timeout: 15000 });
+    await page.locator('#otp').fill('123456');
+
+    // Wait for ExistingPatientReview (user2 is returning)
+    await expect(page.locator('text=Welcome back')).toBeVisible({ timeout: 15000 });
+
+    // Click "Book an appointment" to go to DoctorSelect
+    await page.click('button:has-text("Book an appointment")');
+    await expect(page.locator('text=Choose your specialist')).toBeVisible({ timeout: 15000 });
+
+    // Select dr1
+    await page.click(`button:has-text("Dr. ${dr1.first_name} ${dr1.last_name}")`);
+
+    // Wait for BookingForm — dr1's t1 is booked, should NOT be visible
+    await expect(page.locator('text=Choose your date & time')).toBeVisible({ timeout: 15000 });
+
+    const dt = new Date(date + 'T12:00:00');
+    const dayNum = dt.getDate().toString();
+
+    // If the target date isn't already the selected one, click it
+    const dateBtn = page.locator('button').filter({ hasText: dayNum }).first();
+    await expect(dateBtn).toBeVisible({ timeout: 5000 });
+    await dateBtn.click();
+
+    // Wait for slots to load
+    await page.waitForTimeout(2000);
+
+    // Dr1's t1 is booked so it should NOT be visible
+    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).not.toBeVisible();
+
+    // Go back to doctor step
+    await page.click('button:has-text("Back")');
+    await expect(page.locator('text=Choose your specialist')).toBeVisible({ timeout: 15000 });
+
+    // Select dr2
+    await page.click(`button:has-text("Dr. ${dr2.first_name} ${dr2.last_name}")`);
+
+    // Wait for BookingForm — dr2's same-time slot is available, should be visible
+    await expect(page.locator('text=Choose your date & time')).toBeVisible({ timeout: 15000 });
+
+    // Click the same date
+    const dateBtn2 = page.locator('button').filter({ hasText: dayNum }).first();
+    await expect(dateBtn2).toBeVisible({ timeout: 5000 });
+    await dateBtn2.click();
+    await page.waitForTimeout(2000);
+
+    // Dr2's same-time slot should be available and visible
+    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).toBeVisible();
+
+    // Select the slot
+    await page.click(`button:has-text("${slotTime} — ${endTime}")`);
+
+    // Wait for confirm step and click Confirm Booking
+    await expect(page.locator('text=Almost there')).toBeVisible({ timeout: 15000 });
+    await page.click('button:has-text("Confirm Booking")');
+
+    // Verify success
+    await expect(page.locator('h2:has-text("Appointment Booked!")')).toBeVisible({ timeout: 15000 });
+  });
+
   test('7. API: cancelled appointment appears in history', async ({ request }) => {
     const email = `e2e_cancel_${Date.now()}@test.com`;
     await request.post(`${API}/api/auth/request-otp`, { data: { identifier: email } });

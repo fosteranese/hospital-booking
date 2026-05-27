@@ -174,6 +174,16 @@ export interface AvailableDatesResponse {
   dates: string[];
 }
 
+export interface DoctorUnavailability {
+  id: string;
+  doctor_id: string;
+  slot_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string;
+  created_at: string;
+}
+
 export interface ClinicConfig {
   clinicName: string;
   clinicAddress: string;
@@ -282,4 +292,22 @@ export const api = {
 
   getAppointmentConfig: () =>
     request<Array<{ name: string; value: string }>>('/settings/appointment'),
+
+  getDoctorUnavailability: (doctorId: string, token: string) =>
+    request<DoctorUnavailability[]>(`/doctors/${doctorId}/unavailability`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  createDoctorUnavailability: (doctorId: string, data: { slot_date: string; start_time?: string; end_time?: string; reason?: string }, token: string) =>
+    request<DoctorUnavailability>(`/doctors/${doctorId}/unavailability`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  deleteDoctorUnavailability: (doctorId: string, unavailId: string, token: string) =>
+    request<void>(`/doctors/${doctorId}/unavailability/${unavailId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };
