@@ -59,7 +59,7 @@ export function HistoryModal({ history, loading, onClose, onMarkAttendance }: Hi
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
     >
       <motion.div

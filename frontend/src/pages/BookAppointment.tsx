@@ -64,7 +64,10 @@ const stepVariants = {
 export default function BookAppointment() {
   const cleared = useRef(false);
   const oldToken = useRef('');
-  if (!cleared.current) {
+
+  const initialStepFromUrl = new URLSearchParams(window.location.search).get('step') as Step | null;
+  const shouldClear = !initialStepFromUrl || !STEPS.includes(initialStepFromUrl) || initialStepFromUrl === 'auth';
+  if (!cleared.current && shouldClear) {
     cleared.current = true;
     oldToken.current = tokenStore.token;
     tokenStore.clear();
@@ -73,13 +76,13 @@ export default function BookAppointment() {
   }
 
   useEffect(() => {
-    if (oldToken.current) {
+    if (shouldClear && oldToken.current) {
       api.invalidateToken(oldToken.current).catch(() => {});
     }
-    if (typeof caches !== 'undefined') {
+    if (shouldClear && typeof caches !== 'undefined') {
       caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).catch(() => {});
     }
-  }, []);
+  }, [shouldClear]);
 
   const [searchParams, setSearchParams] = useSearchParams();
 

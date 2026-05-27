@@ -283,7 +283,7 @@ function UpcomingAppointmentsModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
     >
       <motion.div
@@ -497,8 +497,25 @@ export function ExistingPatientReview({
           <CardDescription>Great to see you again — here's your information</CardDescription>
         </CardHeader>
         <CardContent className="px-0 space-y-5">
-          <Card className="overflow-hidden shadow-sm shadow-black/[0.03] border pt-0">
+          <Card className="overflow-hidden shadow-sm shadow-black/[0.03] border pt-0 relative">
             <div className="h-24 bg-gradient-to-br from-amber-50 via-rose-50/60 to-primary/5" />
+            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => setShowEditModal(true)}
+              >
+                <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
+                Edit profile
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => setShowHistoryModal(true)}
+              >
+                History
+              </Button>
+            </div>
             <CardContent className="relative pb-0">
               <div className="flex flex-row items-start gap-5">
                 <Avatar className="border-4 border-[#ffffff] shadow-lg -mt-12 size-28">
@@ -520,14 +537,6 @@ export function ExistingPatientReview({
                       <HugeiconsIcon icon={CallIcon} strokeWidth={2} className="size-4 shrink-0" />
                       <span>{patient.phone}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowEditModal(true)}
-                      className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors mt-1"
-                    >
-                      <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="size-3 inline mr-1" />
-                      Edit profile
-                    </button>
                   </div>
                 </div>
               </div>
@@ -564,7 +573,7 @@ export function ExistingPatientReview({
                     Upcoming appointments
                     <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{upcomingAppointments.length}</span>
                   </p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-0">
                     {restCount > 0 && (
                       <button
                         type="button"
@@ -574,13 +583,6 @@ export function ExistingPatientReview({
                         View all ({upcomingAppointments.length})
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setShowHistoryModal(true)}
-                      className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors shrink-0"
-                    >
-                      History
-                    </button>
                   </div>
               </div>
               )}

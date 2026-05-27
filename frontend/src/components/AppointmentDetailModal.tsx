@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon, Calendar01Icon, Clock01Icon, Location01Icon, Note01Icon, Navigation01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, Calendar01Icon, Clock01Icon, Location01Icon, Note01Icon, Navigation01Icon, CheckmarkCircle02Icon, More01Icon } from '@hugeicons/core-free-icons';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { AddToCalendar } from '@/components/AddToCalendar';
 import { CancelAppointmentDialog } from '@/components/cancel-appointment-dialog';
 import type { UpcomingAppointmentData } from '@/components/ExistingPatientReview';
@@ -126,7 +127,7 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
       onClick={onClose}
     >
       <motion.div
@@ -162,12 +163,56 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                 >
                   <HugeiconsIcon icon={Calendar01Icon} strokeWidth={2} className="size-5 text-white" />
                 </motion.div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-primary">Appointment info</p>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">
                     {isCancelled ? 'This appointment was cancelled' : 'Review your appointment details below'}
                   </p>
                 </div>
+                {onRescheduleTime && onRescheduleDoctor && onCancel && !isCancelled && (
+                  <>
+                    <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => { onClose(); onRescheduleTime(); }}
+                      >
+                        Reschedule
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => { onClose(); onRescheduleDoctor(); }}
+                      >
+                        Change doctor
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        className="text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5"
+                        onClick={() => setPendingCancel(true)}
+                      >
+                        Cancel appointment
+                      </Button>
+                    </div>
+                    <div className="flex sm:hidden shrink-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={<Button variant="outline" size="xs"><HugeiconsIcon icon={More01Icon} strokeWidth={2} /></Button>} />
+                        <DropdownMenuContent align="end" className="min-w-36">
+                          <DropdownMenuItem onClick={() => { onClose(); onRescheduleTime(); }}>
+                            Reschedule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { onClose(); onRescheduleDoctor(); }}>
+                            Change doctor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setPendingCancel(true)}>
+                            Cancel appointment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -284,31 +329,6 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                 </div>
               )}
 
-              {onRescheduleTime && onRescheduleDoctor && onCancel && !isCancelled && (
-                <div className="mt-5 pt-5 border-t border-foreground/5 flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    className="h-10 text-sm"
-                    onClick={() => { onClose(); onRescheduleTime(); }}
-                  >
-                    Reschedule
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-10 text-sm"
-                    onClick={() => { onClose(); onRescheduleDoctor(); }}
-                  >
-                    Change doctor
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-10 text-sm text-destructive hover:text-destructive border-destructive/20 hover:border-destructive/40 hover:bg-destructive/5"
-                    onClick={() => setPendingCancel(true)}
-                  >
-                    Cancel appointment
-                  </Button>
-                </div>
-              )}
             </div>
 
           </div>
