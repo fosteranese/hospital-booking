@@ -39,10 +39,10 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
     setLastName(defaultLastName);
     setEmail(defaultEmail);
     if (defaultPhone) {
-      const match = defaultPhone.match(/^(\+\d+)(\d*)$/);
+      const match = COUNTRY_CODES.find((c) => defaultPhone.startsWith(c.code));
       if (match) {
-        setCountryCode(match[1]);
-        setPhoneNumber(match[2]);
+        setCountryCode(match.code);
+        setPhoneNumber(defaultPhone.slice(match.code.length));
       } else {
         setPhoneNumber(defaultPhone);
       }

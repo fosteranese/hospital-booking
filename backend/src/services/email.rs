@@ -17,19 +17,24 @@ impl EmailService {
         pass: Option<String>,
         from_email: String,
     ) -> Self {
-        let transport = match (host, user, pass) {
-            (Some(host), Some(user), Some(pass)) => {
-                let creds = Credentials::new(user, pass);
-                Some(
-                    AsyncSmtpTransport::<Tokio1Executor>::relay(&host)
-                        .unwrap()
-                        .credentials(creds)
-                        .build(),
-                )
-            }
-            _ => {
-                info!("SMTP not configured, email sending disabled");
-                None
+        let transport = if std::env::var("DEV_MODE").is_ok() {
+            info!("DEV_MODE: email transport disabled");
+            None
+        } else {
+            match (host, user, pass) {
+                (Some(host), Some(user), Some(pass)) => {
+                    let creds = Credentials::new(user, pass);
+                    Some(
+                        AsyncSmtpTransport::<Tokio1Executor>::relay(&host)
+                            .unwrap()
+                            .credentials(creds)
+                            .build(),
+                    )
+                }
+                _ => {
+                    info!("SMTP not configured, email sending disabled");
+                    None
+                }
             }
         };
 
@@ -71,6 +76,8 @@ impl EmailService {
         date: &str,
         time: &str,
         notes: &str,
+        clinic_name: &str,
+        clinic_address: &str,
     ) -> Result<(), String> {
         let notes_section = if notes.is_empty() {
             String::new()
@@ -79,8 +86,8 @@ impl EmailService {
         };
 
         let body = format!(
-            "Dear {},\n\nYour appointment has been confirmed.\n\nDoctor: {}\nDate: {}\nTime: {}\n\nLocation: MEDIPORT FERTILITY SERVICES\nBissau Avenue, East-Legon, Accra{}{}",
-            patient_name, doctor_name, date, time, notes_section,
+            "Dear {},\n\nYour appointment has been confirmed.\n\nDoctor: {}\nDate: {}\nTime: {}\n\nLocation: {}\n{}{}{}",
+            patient_name, doctor_name, date, time, clinic_name, clinic_address, notes_section,
             "\n\nPlease arrive 15 minutes before your scheduled time.\n\nIf you need to reschedule or cancel, please contact us at +233 24 138 2827."
         );
 
@@ -88,7 +95,7 @@ impl EmailService {
             match Message::builder()
                 .from(self.from_email.parse().map_err(|e| format!("Invalid from email: {}", e))?)
                 .to(to_email.parse().map_err(|e| format!("Invalid to email: {}", e))?)
-                .subject("Appointment Confirmed - Mediport Fertility Services")
+                .subject(format!("Appointment Confirmed - {}", clinic_name))
                 .header(ContentType::TEXT_PLAIN)
                 .body(body.clone())
             {

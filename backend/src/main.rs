@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use axum::{Router, body::Body, http::Response};
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::trace::TraceLayer;
@@ -38,12 +38,15 @@ async fn main() {
     // Generate initial slots
     generate_slots(&pool, &settings).await.expect("Failed to generate slots");
 
-    // Background task: keep slots fresh every hour
+    // Background task: keep slots fresh and clean stale blacklist entries every hour
     let bg_pool = pool.clone();
     let bg_settings = settings.clone();
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(3600)).await;
+            let _ = sqlx::query("DELETE FROM token_blacklist WHERE expires_at <= NOW()")
+                .execute(&bg_pool)
+                .await;
             if let Err(e) = generate_slots(&bg_pool, &bg_settings).await {
                 tracing::error!("Background slot generation failed: {:?}", e);
             }
@@ -66,12 +69,30 @@ async fn main() {
         .and_then(|v| v.parse().ok())
         .unwrap_or(180);
 
+    let min_advance_days: i64 = settings.get("appointment", "min_advance_days").await.ok().flatten()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(7);
+
+    let max_upcoming_appointments: i64 = settings.get("appointment", "max_upcoming_appointments").await.ok().flatten()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(3);
+
+    let clinic_name = settings.get("appointment", "clinic_name").await.ok().flatten()
+        .unwrap_or_else(|| "MEDIPORT FERTILITY SERVICES".to_string());
+
+    let clinic_address = settings.get("appointment", "clinic_address").await.ok().flatten()
+        .unwrap_or_else(|| "Bissau Avenue, East-Legon, Accra, Ghana".to_string());
+
     let state = AppState {
         pool,
         email_service: Arc::new(email_service),
         sms_service: Arc::new(sms_service),
         jwt_secret,
-        min_gap_minutes,
+        min_gap_minutes: Arc::new(RwLock::new(min_gap_minutes)),
+        min_advance_days: Arc::new(RwLock::new(min_advance_days)),
+        max_upcoming_appointments: Arc::new(RwLock::new(max_upcoming_appointments)),
+        clinic_name: Arc::new(RwLock::new(clinic_name)),
+        clinic_address: Arc::new(RwLock::new(clinic_address)),
         settings,
     };
 

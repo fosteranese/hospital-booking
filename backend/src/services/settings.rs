@@ -65,6 +65,10 @@ impl SettingsService {
             ("appointment", "sunday_start", "", false, "Sunday first slot (HH:MM, empty=closed)"),
             ("appointment", "sunday_end", "", false, "Sunday last slot end (HH:MM)"),
             ("appointment", "slot_days_ahead", "14", false, "Number of days ahead to generate slots"),
+            ("appointment", "min_advance_days", "7", false, "Minimum number of days in advance required when booking an appointment"),
+            ("appointment", "clinic_name", "MEDIPORT FERTILITY SERVICES", false, "Clinic name displayed in emails and UI"),
+            ("appointment", "max_upcoming_appointments", "3", false, "Maximum number of upcoming appointments a patient can have at a time"),
+            ("appointment", "clinic_address", "Bissau Avenue, East-Legon, Accra, Ghana", false, "Clinic address line displayed in UI"),
             ("otp", "length", "6", false, "OTP code length (number of digits)"),
         ];
 

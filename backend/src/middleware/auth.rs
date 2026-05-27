@@ -5,7 +5,8 @@ use axum::{
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::services::verify_token;
+use crate::services::{verify_token, hash_token};
+use crate::state::AppState;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -15,13 +16,11 @@ pub struct AuthUser {
 }
 
 #[async_trait::async_trait]
-impl<S> FromRequestParts<S> for AuthUser
-where
-    S: Send + Sync,
+impl FromRequestParts<AppState> for AuthUser
 {
     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let auth_header = parts
             .headers
             .get("Authorization")
@@ -29,11 +28,25 @@ where
             .and_then(|v| v.strip_prefix("Bearer "))
             .ok_or_else(|| AppError::Unauthorized("Missing Authorization header".to_string()))?;
 
-        let secret = std::env::var("JWT_SECRET")
-            .map_err(|_| AppError::Internal("JWT_SECRET not configured".to_string()))?;
-
-        let claims = verify_token(auth_header, &secret)
+        let claims = verify_token(auth_header, &state.jwt_secret)
             .map_err(|_| AppError::Unauthorized("Invalid or expired token".to_string()))?;
+
+        let token_hash = hash_token(auth_header);
+        let blacklisted = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM token_blacklist WHERE token_hash = $1 AND expires_at > NOW()"
+        )
+        .bind(&token_hash)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|_| AppError::Internal("Failed to verify token".to_string()))?;
+
+        if blacklisted > 0 {
+            return Err(AppError::Unauthorized("Token has been invalidated".to_string()));
+        }
+
+        let _ = sqlx::query("DELETE FROM token_blacklist WHERE expires_at <= NOW()")
+            .execute(&state.pool)
+            .await;
 
         Ok(AuthUser {
             sub: claims.sub,

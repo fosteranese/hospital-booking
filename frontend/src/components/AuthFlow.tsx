@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '@/lib/api';
+import { api, tokenStore } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,19 @@ interface AuthFlowProps {
 }
 
 export function AuthFlow({ onVerified }: AuthFlowProps) {
+  useEffect(() => {
+    const staleToken = tokenStore.token;
+    if (staleToken) {
+      api.invalidateToken(staleToken).catch(() => {});
+      tokenStore.clear();
+    }
+    sessionStorage.clear();
+    localStorage.clear();
+    if (typeof caches !== 'undefined') {
+      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).catch(() => {});
+    }
+  }, []);
+
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
   const [step, setStep] = useState<'input' | 'otp'>('input');
   const [email, setEmail] = useState('');

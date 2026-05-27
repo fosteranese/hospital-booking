@@ -103,7 +103,7 @@ pub async fn get_availability(
             start_time: s.start_time.format("%H:%M").to_string(),
             end_time: s.end_time.format("%H:%M").to_string(),
             is_booked: s.is_booked,
-            is_blocked: s.is_booked || is_blocked(s.start_time, &blocked_times, state.min_gap_minutes),
+            is_blocked: s.is_booked || is_blocked(s.start_time, &blocked_times, *state.min_gap_minutes.read().unwrap()),
         })
         .collect();
 
@@ -142,7 +142,7 @@ pub async fn get_all_availability(
             doctor_name,
             specialization,
             is_booked,
-            is_blocked: is_booked || is_blocked(start_time, &blocked_times, state.min_gap_minutes),
+            is_blocked: is_booked || is_blocked(start_time, &blocked_times, *state.min_gap_minutes.read().unwrap()),
         })
         .collect();
 
@@ -163,18 +163,22 @@ pub async fn get_max_availability_date(
     State(state): State<AppState>,
     Query(query): Query<MaxDateQuery>,
 ) -> Result<Json<MaxDateResponse>, AppError> {
+    let min_advance = *state.min_advance_days.read().unwrap();
+    let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let row = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
-            "SELECT MAX(slot_date) FROM availability_slots WHERE doctor_id = $1 AND slot_date >= CURRENT_DATE AND NOT is_booked"
+            "SELECT MAX(slot_date) FROM availability_slots WHERE doctor_id = $1 AND slot_date >= $2 AND NOT is_booked"
         )
         .bind(did)
+        .bind(cutoff)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
     } else {
         sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
-            "SELECT MAX(slot_date) FROM availability_slots WHERE slot_date >= CURRENT_DATE AND NOT is_booked"
+            "SELECT MAX(slot_date) FROM availability_slots WHERE slot_date >= $1 AND NOT is_booked"
         )
+        .bind(cutoff)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
@@ -199,18 +203,22 @@ pub async fn get_available_dates(
     State(state): State<AppState>,
     Query(query): Query<AvailableDatesQuery>,
 ) -> Result<Json<AvailableDatesResponse>, AppError> {
+    let min_advance = *state.min_advance_days.read().unwrap();
+    let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let rows = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(
-            "SELECT DISTINCT slot_date FROM availability_slots WHERE doctor_id = $1 AND slot_date >= CURRENT_DATE AND NOT is_booked ORDER BY slot_date"
+            "SELECT DISTINCT slot_date FROM availability_slots WHERE doctor_id = $1 AND slot_date >= $2 AND NOT is_booked ORDER BY slot_date"
         )
         .bind(did)
+        .bind(cutoff)
         .fetch_all(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
     } else {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(
-            "SELECT DISTINCT slot_date FROM availability_slots WHERE slot_date >= CURRENT_DATE AND NOT is_booked ORDER BY slot_date"
+            "SELECT DISTINCT slot_date FROM availability_slots WHERE slot_date >= $1 AND NOT is_booked ORDER BY slot_date"
         )
+        .bind(cutoff)
         .fetch_all(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?

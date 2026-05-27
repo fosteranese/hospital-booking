@@ -3,16 +3,25 @@ const API_BASE = '/api';
 class TokenStore {
   private _token = '';
   private _refreshing: Promise<string> | null = null;
+  private _generation = 0;
 
   get token() { return this._token; }
 
-  set(token: string) { this._token = token; }
+  set(token: string) {
+    this._token = token;
+    this._generation++;
+  }
 
-  clear() { this._token = ''; }
+  clear() {
+    this._token = '';
+    this._generation++;
+    this._refreshing = null;
+  }
 
   async refresh(): Promise<string> {
     if (this._refreshing) return this._refreshing;
 
+    const gen = this._generation;
     this._refreshing = (async () => {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
@@ -24,6 +33,10 @@ class TokenStore {
         throw new Error('Session expired. Please login again.');
       }
       const data = await res.json();
+      if (this._generation !== gen) {
+        // session was reset during refresh — discard stale result
+        return this._token;
+      }
       this._token = data.token;
       return this._token;
     })();
@@ -115,6 +128,7 @@ export interface Appointment {
   status: string;
   notes: string;
   attended: boolean | null;
+  cancellation_reason: string;
   created_at: string;
 }
 
@@ -129,6 +143,7 @@ export interface AppointmentHistoryItem {
   status: string;
   notes: string;
   attended: boolean | null;
+  cancellation_reason: string;
 }
 
 export interface LastDoctorInfo {
@@ -146,7 +161,9 @@ export interface UpcomingAppointment {
   specialization: string;
   slot_date: string;
   start_time: string;
+  end_time: string;
   status: string;
+  notes: string;
 }
 
 export interface MaxDateResponse {
@@ -155,6 +172,12 @@ export interface MaxDateResponse {
 
 export interface AvailableDatesResponse {
   dates: string[];
+}
+
+export interface ClinicConfig {
+  clinicName: string;
+  clinicAddress: string;
+  minAdvanceDays: number;
 }
 
 export const api = {
@@ -225,7 +248,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string; attended?: boolean }, token: string) =>
+  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string; attended?: boolean; cancellation_reason?: string }, token: string) =>
     request<Appointment>(`/appointments/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -250,4 +273,13 @@ export const api = {
     if (params.phone) query.set('phone', params.phone);
     return request<{ email_taken: boolean; phone_taken: boolean }>(`/patients/check?${query.toString()}`);
   },
+
+  invalidateToken: (token: string) =>
+    request<{ message: string }>('/auth/invalidate', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
+  getAppointmentConfig: () =>
+    request<Array<{ name: string; value: string }>>('/settings/appointment'),
 };

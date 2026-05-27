@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use chrono::Utc;
 
 use crate::error::AppError;
-use crate::services::{create_otp, verify_otp, create_token, verify_token_ignore_expiry};
+use crate::services::{create_otp, verify_otp, create_token, verify_token_ignore_expiry, hash_token};
 use crate::state::AppState;
 
 const REFRESH_GRACE_DAYS: i64 = 7;
@@ -88,10 +88,62 @@ pub struct RefreshTokenRequest {
     pub token: String,
 }
 
+async fn cleanup_blacklist(pool: &sqlx::PgPool) {
+    let _ = sqlx::query("DELETE FROM token_blacklist WHERE expires_at <= NOW()")
+        .execute(pool)
+        .await;
+}
+
+async fn is_token_blacklisted(token: &str, pool: &sqlx::PgPool) -> Result<bool, AppError> {
+    let token_hash = hash_token(token);
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM token_blacklist WHERE token_hash = $1 AND expires_at > NOW()"
+    )
+    .bind(&token_hash)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+    Ok(count > 0)
+}
+
+#[derive(Deserialize)]
+pub struct InvalidateTokenRequest {
+    pub token: String,
+}
+
+pub async fn invalidate_token_handler(
+    State(state): State<AppState>,
+    Json(body): Json<InvalidateTokenRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let claims = verify_token_ignore_expiry(&body.token, &state.jwt_secret)
+        .map_err(|_| AppError::Unauthorized("Invalid token".to_string()))?;
+
+    let token_hash = hash_token(&body.token);
+    let expires_at = chrono::DateTime::from_timestamp(claims.exp as i64, 0)
+        .ok_or_else(|| AppError::Internal("Invalid token expiry".to_string()))?;
+
+    sqlx::query(
+        "INSERT INTO token_blacklist (token_hash, expires_at) VALUES ($1, $2) ON CONFLICT (token_hash) DO NOTHING"
+    )
+    .bind(&token_hash)
+    .bind(expires_at)
+    .execute(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    cleanup_blacklist(&state.pool).await;
+
+    Ok(Json(serde_json::json!({ "message": "Token invalidated" })))
+}
+
 pub async fn refresh_token_handler(
     State(state): State<AppState>,
     Json(body): Json<RefreshTokenRequest>,
 ) -> Result<Json<VerifyOtpResponse>, AppError> {
+    if is_token_blacklisted(&body.token, &state.pool).await? {
+        return Err(AppError::Unauthorized("Token has been invalidated".to_string()));
+    }
+
     let claims = verify_token_ignore_expiry(&body.token, &state.jwt_secret)
         .map_err(|_| AppError::Unauthorized("Invalid token".to_string()))?;
 
@@ -104,6 +156,8 @@ pub async fn refresh_token_handler(
     let token = create_token(&claims.sub, &state.jwt_secret)
         .map_err(|e| AppError::Internal(format!("Failed to create token: {}", e)))?;
 
+    cleanup_blacklist(&state.pool).await;
+
     Ok(Json(VerifyOtpResponse { token }))
 }
 
@@ -112,4 +166,5 @@ pub fn auth_routes() -> axum::Router<AppState> {
         .route("/api/auth/request-otp", post(request_otp))
         .route("/api/auth/verify-otp", post(verify_otp_handler))
         .route("/api/auth/refresh", post(refresh_token_handler))
+        .route("/api/auth/invalidate", post(invalidate_token_handler))
 }

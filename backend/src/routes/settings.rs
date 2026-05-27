@@ -89,8 +89,33 @@ pub async fn update_setting(
     .await
     .map_err(|e| AppError::Database(e))?;
 
-    // Regenerate slots in background if appointment setting changed
+    // Update in-memory state and regenerate slots if appointment setting changed
     if group == "appointment" {
+        match name.as_str() {
+            "min_advance_days" => {
+                if let Ok(v) = body.value.parse::<i64>() {
+                    *state.min_advance_days.write().unwrap() = v;
+                }
+            }
+            "min_gap_minutes" => {
+                if let Ok(v) = body.value.parse::<i64>() {
+                    *state.min_gap_minutes.write().unwrap() = v;
+                }
+            }
+            "max_upcoming_appointments" => {
+                if let Ok(v) = body.value.parse::<i64>() {
+                    *state.max_upcoming_appointments.write().unwrap() = v;
+                }
+            }
+            "clinic_name" => {
+                *state.clinic_name.write().unwrap() = body.value.clone();
+            }
+            "clinic_address" => {
+                *state.clinic_address.write().unwrap() = body.value.clone();
+            }
+            _ => {}
+        }
+
         let bg_pool = state.pool.clone();
         let bg_settings = state.settings.clone();
         tokio::spawn(async move {

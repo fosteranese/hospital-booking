@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, tokenStore, Patient, LastDoctorInfo } from '@/lib/api';
 import { AuthFlow } from '@/components/AuthFlow';
@@ -7,6 +7,7 @@ import { DoctorSelect } from '@/components/DoctorSelect';
 import { BookingForm } from '@/components/BookingForm';
 import { AppointmentSummary } from '@/components/AppointmentSummary';
 import { ExistingPatientReview, ExistingPatientData, UpcomingAppointmentData } from '@/components/ExistingPatientReview';
+import type { ClinicConfig } from '@/lib/api';
 import { LeftPanel } from '@/components/LeftPanel';
 
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,25 @@ const stepVariants = {
 };
 
 export default function BookAppointment() {
+  const cleared = useRef(false);
+  const oldToken = useRef('');
+  if (!cleared.current) {
+    cleared.current = true;
+    oldToken.current = tokenStore.token;
+    tokenStore.clear();
+    sessionStorage.clear();
+    localStorage.clear();
+  }
+
+  useEffect(() => {
+    if (oldToken.current) {
+      api.invalidateToken(oldToken.current).catch(() => {});
+    }
+    if (typeof caches !== 'undefined') {
+      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).catch(() => {});
+    }
+  }, []);
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialStep = (() => {
@@ -113,6 +133,27 @@ export default function BookAppointment() {
   const [rescheduling, setRescheduling] = useState<ReschedulingState | null>(initialData?.rescheduling ?? null);
 
   const isReschedule = rescheduling !== null;
+
+  const [clinicConfig, setClinicConfig] = useState<ClinicConfig>({
+    clinicName: 'MEDIPORT FERTILITY SERVICES',
+    clinicAddress: 'Bissau Avenue, East-Legon, Accra, Ghana',
+    minAdvanceDays: 7,
+  });
+
+  useEffect(() => {
+    api.getAppointmentConfig().then((settings) => {
+      const getName = (n: string) => settings.find((s) => s.name === n)?.value ?? '';
+      const getNum = (n: string, def: number) => {
+        const v = settings.find((s) => s.name === n)?.value;
+        return v ? parseInt(v, 10) || def : def;
+      };
+      setClinicConfig({
+        clinicName: getName('clinic_name') || 'MEDIPORT FERTILITY SERVICES',
+        clinicAddress: getName('clinic_address') || 'Bissau Avenue, East-Legon, Accra, Ghana',
+        minAdvanceDays: getNum('min_advance_days', 7),
+      });
+    }).catch(() => {});
+  }, []);
 
   const resetAll = useCallback(() => {
     clearBooking();
@@ -228,14 +269,21 @@ export default function BookAppointment() {
     tokenStore.set(newToken);
     setOtpIdentifier(identifier);
 
+    let patientData: Patient;
     try {
-      const patientData: Patient = await api.lookupPatient(identifier, newToken);
-      setExistingPatient(patientData);
-      setPatientFirstName(patientData.first_name);
-      setPatientLastName(patientData.last_name);
-      setPatientPhone(patientData.phone);
-      setPatientEmail(patientData.email);
+      patientData = await api.lookupPatient(identifier, newToken);
+    } catch {
+      goToStep('patient');
+      return;
+    }
 
+    setExistingPatient(patientData);
+    setPatientFirstName(patientData.first_name);
+    setPatientLastName(patientData.last_name);
+    setPatientPhone(patientData.phone);
+    setPatientEmail(patientData.email);
+
+    try {
       const [lastDoc, doctors] = await Promise.all([
         api.getLastDoctor(patientData.id, newToken),
         api.getDoctors(),
@@ -248,11 +296,11 @@ export default function BookAppointment() {
         setDoctorId(doctors[0].id);
         setDoctorName(`Dr. ${doctors[0].first_name} ${doctors[0].last_name}`);
       }
-
-      goToStep('review');
     } catch {
-      goToStep('patient');
+      // secondary lookups failed — show review anyway, user can still book
     }
+
+    goToStep('review');
   };
 
   const handlePatientComplete = (firstName: string, lastName: string, phone: string, email: string) => {
@@ -285,9 +333,9 @@ export default function BookAppointment() {
     goToStep('doctor');
   };
 
-  const handleCancelAppointment = async (appointmentId: string) => {
+  const handleCancelAppointment = async (appointmentId: string, reason?: string) => {
     try {
-      await api.updateAppointment(appointmentId, { status: 'cancelled' }, token);
+      await api.updateAppointment(appointmentId, { status: 'cancelled', cancellation_reason: reason || '' }, token);
       setUpcomingAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
     } catch {
       // silently fail — appointment list stays unchanged
@@ -414,6 +462,8 @@ export default function BookAppointment() {
                       onRescheduleDoctor={handleRescheduleDoctor}
                       onCancelAppointment={handleCancelAppointment}
                       onPatientUpdated={handlePatientUpdated}
+                      clinicName={clinicConfig.clinicName}
+                      clinicAddress={clinicConfig.clinicAddress}
                     />
                   )}
 
@@ -547,7 +597,7 @@ export default function BookAppointment() {
                         <AddToCalendar
                           title={`Appointment with ${doctorName}`}
                           description={`Patient: ${patientFirstName} ${patientLastName}\nDoctor: ${doctorName}`}
-                          location="MEDIPORT FERTILITY SERVICES, Accra, Ghana"
+                          location={`${clinicConfig.clinicName}, ${clinicConfig.clinicAddress}`}
                           startDate={bookDate}
                           startTime={bookTime}
                           endTime={bookEndTime}

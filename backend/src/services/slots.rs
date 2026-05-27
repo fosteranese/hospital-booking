@@ -37,6 +37,10 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
         .and_then(|v| v.parse().ok())
         .unwrap_or(14);
 
+    let min_advance_days: i64 = map.get("min_advance_days")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(7);
+
     let mut day_hours: [Option<(NaiveTime, NaiveTime)>; 7] = Default::default();
     for (i, day) in DAY_NAMES.iter().enumerate() {
         let start_str = map.get(&format!("{}_start", day)).map(|s| s.as_str()).unwrap_or("");
@@ -54,15 +58,16 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     }
 
     let today = chrono::Utc::now().date_naive();
-    let start_date = today + Duration::days(1);
+    let start_date = today + Duration::days(min_advance_days);
     let end_date = today + Duration::days(days_ahead);
 
     // Trim unbooked slots beyond the window
     sqlx::query(
-        "DELETE FROM availability_slots WHERE slot_date > $1 AND is_booked = FALSE
+        "DELETE FROM availability_slots WHERE (slot_date > $1 OR slot_date < $2) AND is_booked = FALSE
          AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
     )
     .bind(end_date)
+    .bind(start_date)
     .execute(pool)
     .await
     .map_err(|e| AppError::Database(e))?;
@@ -126,8 +131,8 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     }
 
     info!(
-        "Slots generated: {} days ({} ahead), {} min slots, {} doctors",
-        days_ahead, days_ahead, duration_minutes, doctors.len()
+        "Slots generated: {} days ({} ahead, {} min advance), {} min slots, {} doctors",
+        days_ahead, days_ahead, min_advance_days, duration_minutes, doctors.len()
     );
 
     Ok(())

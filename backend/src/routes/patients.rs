@@ -166,12 +166,13 @@ pub async fn get_upcoming_appointments(
 ) -> Result<Json<Vec<UpcomingAppointment>>, AppError> {
     let appointments = sqlx::query_as::<_, UpcomingAppointment>(
         "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
-                d.specialization, s.slot_date, s.start_time, a.status
+                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes
          FROM appointments a
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
-         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE
-         ORDER BY s.slot_date ASC, s.start_time ASC"
+          WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE
+         ORDER BY s.slot_date ASC, s.start_time ASC
+         LIMIT 100"
     )
     .bind(patient_id)
     .fetch_all(&state.pool)
@@ -188,12 +189,13 @@ pub async fn get_appointment_history(
 ) -> Result<Json<Vec<AppointmentHistoryItem>>, AppError> {
     let appointments = sqlx::query_as::<_, AppointmentHistoryItem>(
         "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
-                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended
+                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended, a.cancellation_reason
          FROM appointments a
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
-         WHERE a.patient_id = $1 AND s.slot_date < CURRENT_DATE
-         ORDER BY s.slot_date DESC, s.start_time DESC"
+          WHERE a.patient_id = $1 AND (s.slot_date < CURRENT_DATE OR a.status = 'cancelled')
+         ORDER BY s.slot_date DESC, s.start_time DESC
+         LIMIT 100"
     )
     .bind(patient_id)
     .fetch_all(&state.pool)

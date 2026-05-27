@@ -21,6 +21,7 @@ pub struct UpdateAppointmentRequest {
     pub doctor_id: Option<Uuid>,
     pub status: Option<String>,
     pub attended: Option<bool>,
+    pub cancellation_reason: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -32,6 +33,7 @@ pub struct AppointmentResponse {
     pub status: String,
     pub notes: String,
     pub attended: Option<bool>,
+    pub cancellation_reason: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -52,6 +54,23 @@ pub async fn create_appointment(
     } else {
         get_patient_from_auth(&state, &_auth).await?
     };
+
+    let upcoming_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM appointments a
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE"
+    )
+    .bind(patient.id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    let max_upcoming = *state.max_upcoming_appointments.read().unwrap();
+    if upcoming_count >= max_upcoming {
+        return Err(AppError::BadRequest(
+            format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
+        ));
+    }
 
     let slot = sqlx::query_as::<_, crate::models::AvailabilitySlot>(
         "SELECT * FROM availability_slots WHERE id = $1 AND is_booked = FALSE FOR UPDATE"
@@ -75,12 +94,21 @@ pub async fn create_appointment(
     .map_err(|e| AppError::Database(e))?;
 
     for (existing_time, _) in &existing {
-        let diff = (slot.start_time - *existing_time).num_minutes().abs();
-        if diff < state.min_gap_minutes {
+            let diff = (slot.start_time - *existing_time).num_minutes().abs();
+        let min_gap = *state.min_gap_minutes.read().unwrap();
+        if diff < min_gap {
             return Err(AppError::BadRequest(
-                format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), slot.slot_date, state.min_gap_minutes)
+                format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), slot.slot_date, min_gap)
             ));
         }
+    }
+
+    let today = chrono::Utc::now().date_naive();
+    let min_advance = *state.min_advance_days.read().unwrap();
+    if slot.slot_date < today + chrono::Duration::days(min_advance) {
+        return Err(AppError::BadRequest(
+            format!("Appointments must be booked at least {} days in advance. The selected date is too soon.", min_advance)
+        ));
     }
 
     let doctor_id = body.doctor_id.unwrap_or(slot.doctor_id);
@@ -119,6 +147,7 @@ pub async fn create_appointment(
         status: appointment.status,
         notes: appointment.notes,
         attended: appointment.attended,
+        cancellation_reason: appointment.cancellation_reason,
         created_at: appointment.created_at,
     }))
 }
@@ -145,6 +174,7 @@ pub async fn get_appointment(
         status: appointment.status,
         notes: appointment.notes,
         attended: appointment.attended,
+        cancellation_reason: appointment.cancellation_reason,
         created_at: appointment.created_at,
     }))
 }
@@ -177,6 +207,24 @@ pub async fn update_appointment(
         .map_err(|e| AppError::Database(e))?
         .ok_or_else(|| AppError::BadRequest("Slot is not available or already booked".to_string()))?;
 
+        let upcoming_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM appointments a
+             JOIN availability_slots s ON s.id = a.slot_id
+             WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE AND a.id != $2"
+        )
+        .bind(patient.id)
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?;
+
+        let max_upcoming = *state.max_upcoming_appointments.read().unwrap();
+        if upcoming_count >= max_upcoming {
+            return Err(AppError::BadRequest(
+                format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
+            ));
+        }
+
         let doctor_id = body.doctor_id.unwrap_or(new_slot.doctor_id);
 
         if let Some(req_doctor_id) = body.doctor_id {
@@ -200,11 +248,20 @@ pub async fn update_appointment(
 
         for (existing_time, _) in &existing {
             let diff = (new_slot.start_time - *existing_time).num_minutes().abs();
-            if diff < state.min_gap_minutes {
+            let min_gap = *state.min_gap_minutes.read().unwrap();
+            if diff < min_gap {
                 return Err(AppError::BadRequest(
-                    format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), new_slot.slot_date, state.min_gap_minutes)
+                    format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), new_slot.slot_date, min_gap)
                 ));
             }
+        }
+
+        let today = chrono::Utc::now().date_naive();
+        let min_advance = *state.min_advance_days.read().unwrap();
+        if new_slot.slot_date < today + chrono::Duration::days(min_advance) {
+            return Err(AppError::BadRequest(
+                format!("Appointments must be booked at least {} days in advance. The selected date is too soon.", min_advance)
+            ));
         }
 
         let updated = sqlx::query_as::<_, Appointment>(
@@ -235,6 +292,7 @@ pub async fn update_appointment(
             status: updated.status,
             notes: updated.notes,
             attended: updated.attended,
+            cancellation_reason: updated.cancellation_reason,
             created_at: updated.created_at,
         }));
     }
@@ -265,15 +323,17 @@ pub async fn update_appointment(
             status: updated.status,
             notes: updated.notes,
             attended: updated.attended,
+            cancellation_reason: updated.cancellation_reason,
             created_at: updated.created_at,
         }));
     }
 
     if let Some(new_status) = &body.status {
         if new_status == "cancelled" {
+            let reason = body.cancellation_reason.as_deref().unwrap_or("");
             let updated = sqlx::query_as::<_, Appointment>(
                 "WITH cancelled AS (
-                    UPDATE appointments SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *
+                    UPDATE appointments SET status = 'cancelled', cancellation_reason = $2, updated_at = NOW() WHERE id = $1 RETURNING *
                 ),
                 freed AS (
                     UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
@@ -281,6 +341,7 @@ pub async fn update_appointment(
                 SELECT * FROM cancelled"
             )
             .bind(id)
+            .bind(reason)
             .fetch_one(&state.pool)
             .await
             .map_err(|e| AppError::Database(e))?;
@@ -293,6 +354,7 @@ pub async fn update_appointment(
                 status: updated.status,
                 notes: updated.notes,
                 attended: updated.attended,
+                cancellation_reason: updated.cancellation_reason,
                 created_at: updated.created_at,
             }));
         }
@@ -316,6 +378,7 @@ pub async fn update_appointment(
             status: updated.status,
             notes: updated.notes,
             attended: updated.attended,
+            cancellation_reason: updated.cancellation_reason,
             created_at: updated.created_at,
         }));
     }
@@ -373,6 +436,8 @@ async fn send_confirmation_email(
     let date = slot.slot_date.format("%A, %B %d, %Y").to_string();
     let time = format!("{}:00 - {}:00", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
 
+    let clinic_name = state.clinic_name.read().unwrap().clone();
+    let clinic_address = state.clinic_address.read().unwrap().clone();
     state.email_service.send_appointment_confirmation(
         &patient.email,
         &patient_name,
@@ -380,6 +445,8 @@ async fn send_confirmation_email(
         &date,
         &time,
         &appointment.notes,
+        &clinic_name,
+        &clinic_address,
     ).await
 }
 

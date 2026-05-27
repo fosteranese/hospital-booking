@@ -2,6 +2,13 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, Duration};
 use uuid::Uuid;
+use sha2::{Sha256, Digest};
+
+pub fn hash_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    hex::encode(hasher.finalize())
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
