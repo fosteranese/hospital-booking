@@ -64,6 +64,7 @@ const stepVariants = {
 export default function BookAppointment() {
   const cleared = useRef(false);
   const oldToken = useRef('');
+  const tokenInitialised = useRef(false);
 
   const initialStepFromUrl = new URLSearchParams(window.location.search).get('step') as Step | null;
   const shouldClear = !initialStepFromUrl || !STEPS.includes(initialStepFromUrl) || initialStepFromUrl === 'auth';
@@ -111,7 +112,10 @@ export default function BookAppointment() {
   const [direction, setDirection] = useState(initialStep === 'auth' ? 1 : 0);
 
   const initialData = initialStep !== 'auth' ? loadBooking<BookingSnapshot>() : null;
-  if (initialData?.token) tokenStore.set(initialData.token);
+  if (!tokenInitialised.current && initialData?.token) {
+    tokenInitialised.current = true;
+    tokenStore.set(initialData.token);
+  }
 
   const [token, setToken] = useState(initialData?.token ?? '');
   const [otpIdentifier, setOtpIdentifier] = useState(initialData?.otpIdentifier ?? '');
@@ -191,30 +195,54 @@ export default function BookAppointment() {
     setPrevStepBeforeDatetime(null);
   }, []);
 
+  const fetchedOnMount = useRef(false);
+  const fetchingRef = useRef(false);
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
   const fetchUpcoming = useCallback(() => {
-    if (!existingPatient || !token) return;
-    setUpcomingLoading(true);
-    setUpcomingError('');
-    api.getUpcomingAppointments(existingPatient.id, token)
-      .then((data) => { setUpcomingAppointments(data); setUpcomingError(''); })
-      .catch((err) => { setUpcomingAppointments([]); setUpcomingError(err.message); })
-      .finally(() => setUpcomingLoading(false));
-  }, [existingPatient, token]);
-
-  useEffect(() => {
-    if (initialData?.token) {
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 15000)
-      );
-      Promise.race([tokenStore.refresh(), timeout])
-        .then((newToken) => { if (newToken) setToken(newToken as string); })
-        .catch(() => {});
+    if (!existingPatient || !token || fetchingRef.current) return;
+    const doFetch = (useToken: string) => {
+      fetchingRef.current = true;
+      setUpcomingLoading(true);
+      setUpcomingError('');
+      api.getUpcomingAppointments(existingPatient.id, useToken)
+        .then((data) => {
+          if (stepRef.current !== 'review') return;
+          setUpcomingAppointments(data);
+          setUpcomingError('');
+        })
+        .catch((err) => {
+          if (stepRef.current !== 'review') return;
+          setUpcomingAppointments([]);
+          if (err.message.includes('expired') || err.message.includes('Invalid')) {
+            tokenStore.clear();
+            clearBooking();
+            setSearchParams({}, { replace: true });
+            setStep('auth');
+            setToken('');
+            return;
+          }
+          setUpcomingError(err.message);
+        })
+        .finally(() => { if (stepRef.current === 'review') setUpcomingLoading(false); fetchingRef.current = false; });
+    };
+    if (!fetchedOnMount.current) {
+      fetchedOnMount.current = true;
+      tokenStore.refresh()
+        .then((newToken) => { if (newToken) setToken(newToken as string); return newToken || token; })
+        .then(doFetch)
+        .catch(() => {
+          tokenStore.clear();
+          clearBooking();
+          setSearchParams({}, { replace: true });
+          setStep('auth');
+          setToken('');
+        });
+    } else {
+      doFetch(token);
     }
-  }, []);
-
-  useEffect(() => {
-    if (step === 'confirm') setNotes('');
-  }, [step]);
+  }, [existingPatient, token, setSearchParams]);
 
   useEffect(() => {
     if (step === 'review' && existingPatient && token) {
