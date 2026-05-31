@@ -331,4 +331,50 @@ export const api = {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     }),
+
+  listAppointments: (query: { doctor_id?: string; date?: string; from?: string; to?: string; status?: string }, token: string) => {
+    const params = new URLSearchParams();
+    if (query.doctor_id) params.set('doctor_id', query.doctor_id);
+    if (query.date) params.set('date', query.date);
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    if (query.status) params.set('status', query.status);
+    const qs = params.toString();
+    return request<AppointmentHistoryItem[]>(`/appointments${qs ? `?${qs}` : ''}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  downloadExportCsv: async (query: { doctor_id?: string; date?: string; from?: string; to?: string; status?: string }, token: string) => {
+    const params = new URLSearchParams();
+    if (query.doctor_id) params.set('doctor_id', query.doctor_id);
+    if (query.date) params.set('date', query.date);
+    if (query.from) params.set('from', query.from);
+    if (query.to) params.set('to', query.to);
+    if (query.status) params.set('status', query.status);
+    const qs = params.toString();
+    const url = `${API_BASE}/appointments/export${qs ? `?${qs}` : ''}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to export appointments');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'appointments.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  },
+
+  getSettingsGroup: (group: string) =>
+    request<Array<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string }>>(`/settings/${group}`),
+
+  updateSetting: (group: string, name: string, value: string, token: string) =>
+    request<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string }>(`/settings/${group}/${name}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value }),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
 };

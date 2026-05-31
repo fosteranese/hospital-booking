@@ -7,7 +7,6 @@ import { DoctorSelect } from '@/components/DoctorSelect';
 import { BookingForm } from '@/components/BookingForm';
 import { AppointmentSummary } from '@/components/AppointmentSummary';
 import { ExistingPatientReview, ExistingPatientData, UpcomingAppointmentData } from '@/components/ExistingPatientReview';
-import type { ClinicConfig } from '@/lib/api';
 import { LeftPanel } from '@/components/LeftPanel';
 
 import { Button } from '@/components/ui/button';
@@ -19,8 +18,8 @@ import { AddToCalendar } from '@/components/AddToCalendar';
 import { useSearchParams } from 'react-router-dom';
 import { saveBooking, loadBooking, clearBooking } from '@/lib/booking-storage';
 import { cn } from '@/lib/utils';
-import { AuthProvider } from '@/contexts/auth-context';
-import { ClinicProvider } from '@/contexts/clinic-context';
+import { useAuth } from '@/contexts/auth-context';
+import { useClinic } from '@/contexts/clinic-context';
 
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
@@ -65,6 +64,9 @@ const stepVariants = {
 };
 
 export default function BookAppointment() {
+  const { setAll, clearAuth, token: tokenFromContext, otpIdentifier } = useAuth();
+  const clinicConfig = useClinic();
+
   const cleared = useRef(false);
   const oldToken = useRef('');
   const tokenInitialised = useRef(false);
@@ -116,9 +118,6 @@ export default function BookAppointment() {
     tokenStore.set(initialData.token);
   }
 
-  const [token, setToken] = useState(initialData?.token ?? '');
-  const [userRole, setUserRole] = useState(initialData?.userRole ?? '');
-  const [otpIdentifier, setOtpIdentifier] = useState(initialData?.otpIdentifier ?? '');
   const [patientFirstName, setPatientFirstName] = useState(initialData?.patientFirstName ?? '');
   const [patientLastName, setPatientLastName] = useState(initialData?.patientLastName ?? '');
   const [patientPhone, setPatientPhone] = useState(initialData?.patientPhone ?? '');
@@ -143,35 +142,13 @@ export default function BookAppointment() {
 
   const isReschedule = rescheduling !== null;
 
-  const [clinicConfig, setClinicConfig] = useState<ClinicConfig>({
-    clinicName: 'MEDIPORT FERTILITY SERVICES',
-    clinicAddress: 'Bissau Avenue, East-Legon, Accra, Ghana',
-    minAdvanceDays: 7,
-  });
-
-  useEffect(() => {
-    api.getAppointmentConfig().then((settings) => {
-      const getName = (n: string) => settings.find((s) => s.name === n)?.value ?? '';
-      const getNum = (n: string, def: number) => {
-        const v = settings.find((s) => s.name === n)?.value;
-        return v ? parseInt(v, 10) || def : def;
-      };
-      setClinicConfig({
-        clinicName: getName('clinic_name') || 'MEDIPORT FERTILITY SERVICES',
-        clinicAddress: getName('clinic_address') || 'Bissau Avenue, East-Legon, Accra, Ghana',
-        minAdvanceDays: getNum('min_advance_days', 7),
-      });
-    }).catch(() => {});
-  }, []);
-
   const resetAll = useCallback(() => {
     clearBooking();
+    clearAuth();
     setSearchParams({}, { replace: true });
     setStep('auth');
     setDirection(1);
-    setToken('');
     tokenStore.clear();
-    setOtpIdentifier('');
     setPatientFirstName('');
     setPatientLastName('');
     setPatientPhone('');
@@ -193,7 +170,7 @@ export default function BookAppointment() {
     setUpcomingError('');
     setRescheduling(null);
     setPrevStepBeforeDatetime(null);
-  }, []);
+  }, [clearAuth]);
 
   const fetchedOnMount = useRef(false);
   const fetchingRef = useRef(false);
@@ -201,7 +178,7 @@ export default function BookAppointment() {
   stepRef.current = step;
 
   const fetchUpcoming = useCallback(() => {
-    if (!existingPatient || !token || fetchingRef.current) return;
+    if (!existingPatient || !tokenFromContext || fetchingRef.current) return;
     const doFetch = (useToken: string) => {
       fetchingRef.current = true;
       setUpcomingLoading(true);
@@ -218,9 +195,9 @@ export default function BookAppointment() {
           if (err.message.includes('expired') || err.message.includes('Invalid')) {
             tokenStore.clear();
             clearBooking();
+            clearAuth();
             setSearchParams({}, { replace: true });
             setStep('auth');
-            setToken('');
             return;
           }
           setUpcomingError(err.message);
@@ -230,19 +207,19 @@ export default function BookAppointment() {
     if (!fetchedOnMount.current) {
       fetchedOnMount.current = true;
       tokenStore.refresh()
-        .then((newToken) => { if (newToken) setToken(newToken as string); return newToken || token; })
-        .then(doFetch)
+        .then((newToken) => { if (newToken) return newToken; return tokenFromContext; })
+        .then((t) => { doFetch(t); })
         .catch(() => {
           tokenStore.clear();
           clearBooking();
+          clearAuth();
           setSearchParams({}, { replace: true });
           setStep('auth');
-          setToken('');
         });
     } else {
-      doFetch(token);
+      doFetch(tokenFromContext);
     }
-  }, [existingPatient, token, setSearchParams]);
+  }, [existingPatient, tokenFromContext, setSearchParams, clearAuth]);
 
   // Save effect must run BEFORE fetch effect so tokenStore is populated
   // when fetchUpcoming calls tokenStore.refresh().
@@ -250,7 +227,7 @@ export default function BookAppointment() {
     const params = new URLSearchParams();
     if (step !== 'auth') {
       params.set('step', step);
-      if (token) tokenStore.set(token);
+      if (tokenFromContext) tokenStore.set(tokenFromContext);
     } else {
       tokenStore.clear();
     }
@@ -258,9 +235,9 @@ export default function BookAppointment() {
 
     if (step !== 'auth') {
       saveBooking({
-        token,
-        userRole,
-        otpIdentifier,
+        token: tokenFromContext,
+        userRole: '',
+        otpIdentifier: '',
         patientFirstName,
         patientLastName,
         patientPhone,
@@ -282,7 +259,7 @@ export default function BookAppointment() {
       clearBooking();
     }
   }, [
-    step, token, userRole, otpIdentifier,
+    step, tokenFromContext,
     patientFirstName, patientLastName, patientPhone, patientEmail,
     notes,
     existingPatient, lastDoctor, doctorCount,
@@ -292,10 +269,10 @@ export default function BookAppointment() {
   ]);
 
   useEffect(() => {
-    if (step === 'review' && existingPatient && token) {
+    if (step === 'review' && existingPatient && tokenFromContext) {
       fetchUpcoming();
     }
-  }, [step, existingPatient, token, fetchUpcoming]);
+  }, [step, existingPatient, tokenFromContext, fetchUpcoming]);
 
   const goToStep = (s: Step) => {
     setDirection(stepIndex(s) > stepIndex(step) ? 1 : -1);
@@ -327,10 +304,8 @@ export default function BookAppointment() {
   };
 
   const handleVerified = async (newToken: string, identifier: string, role: string) => {
-    setToken(newToken);
+    setAll(newToken, role, identifier);
     tokenStore.set(newToken);
-    setOtpIdentifier(identifier);
-    setUserRole(role);
 
     let patientData: Patient;
     try {
@@ -398,7 +373,7 @@ export default function BookAppointment() {
 
   const handleCancelAppointment = async (appointmentId: string, reason?: string) => {
     try {
-      await api.cancelAppointment(appointmentId, { cancellation_reason: reason || '' }, token);
+      await api.cancelAppointment(appointmentId, { cancellation_reason: reason || '' }, tokenFromContext);
       setUpcomingAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
     } catch (err: any) {
       setError(err.message || 'Failed to cancel appointment. Please try again.');
@@ -422,7 +397,7 @@ export default function BookAppointment() {
       setLoading(true);
       setError('');
       try {
-        await api.changeDoctor(rescheduling.appointmentId, { doctor_id: id }, token);
+        await api.changeDoctor(rescheduling.appointmentId, { doctor_id: id }, tokenFromContext);
         setRescheduling(null);
         goToStep('review');
       } catch (err: any) {
@@ -453,20 +428,20 @@ export default function BookAppointment() {
         await api.rescheduleAppointment(
           rescheduling.appointmentId,
           { slot_id: slotId, doctor_id: doctorId ?? undefined },
-          token
+          tokenFromContext
         );
       } else {
         let pid = existingPatient?.id;
         if (!pid) {
           const created = await api.createPatient(
             { first_name: patientFirstName, last_name: patientLastName, phone: patientPhone, email: patientEmail },
-            token
+            tokenFromContext
           );
           pid = created.id;
         }
         await api.createAppointment(
           { doctor_id: doctorId!, slot_id: slotId, patient_id: pid, notes: notes || undefined },
-          token
+          tokenFromContext
         );
       }
       goToStep('success');
@@ -478,8 +453,6 @@ export default function BookAppointment() {
   };
 
   return (
-    <AuthProvider initialToken={token} initialRole={userRole} initialIdentifier={otpIdentifier}>
-    <ClinicProvider config={{ clinicName: clinicConfig.clinicName, clinicAddress: clinicConfig.clinicAddress, minAdvanceDays: clinicConfig.minAdvanceDays }}>
     <div className="flex h-screen">
       <LeftPanel step={step} wide={step === 'auth' || step === 'success'} />
 
@@ -490,7 +463,7 @@ export default function BookAppointment() {
               {step === 'review' && (
                 <Button
                   variant="ghost"
-                  onClick={() => { if (token) api.invalidateToken(token).catch(() => {}); resetAll(); }}
+                  onClick={() => { if (tokenFromContext) api.invalidateToken(tokenFromContext).catch(() => {}); resetAll(); }}
                   className="h-10 text-muted-foreground hover:text-destructive"
                 >
                   Sign out
@@ -687,7 +660,5 @@ export default function BookAppointment() {
         </div>
       </main>
     </div>
-    </ClinicProvider>
-    </AuthProvider>
   );
 }

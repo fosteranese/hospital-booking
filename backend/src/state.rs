@@ -18,6 +18,7 @@ pub struct AppState {
     pub settings: SettingsService,
     pub otp_limiter: Arc<Mutex<RateLimiter>>,
     pub mutation_limiter: Arc<Mutex<RateLimiter>>,
+    pub notification_email: Option<String>,
 }
 
 impl AppState {

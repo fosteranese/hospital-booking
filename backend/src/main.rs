@@ -137,6 +137,8 @@ async fn main() {
     let clinic_address = settings.get("appointment", "clinic_address").await.ok().flatten()
         .unwrap_or_else(|| "Bissau Avenue, East-Legon, Accra, Ghana".to_string());
 
+    let notification_email = std::env::var("CLINIC_NOTIFICATION_EMAIL").ok();
+
     let state = AppState {
         pool: pool.clone(),
         email_service: Arc::new(email_service),
@@ -150,6 +152,7 @@ async fn main() {
         settings,
         otp_limiter: Arc::new(Mutex::new(RateLimiter::new(5, 300))),
         mutation_limiter: Arc::new(Mutex::new(RateLimiter::new(20, 60))),
+        notification_email,
     };
 
     let cors = {

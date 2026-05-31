@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { tokenStore } from '@/lib/api';
 
 interface AuthState {
@@ -17,37 +17,64 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children, initialToken, initialRole, initialIdentifier }: {
-  children: ReactNode;
-  initialToken: string;
-  initialRole: string;
-  initialIdentifier: string;
-}) {
-  const [token, _setToken] = useState(initialToken);
-  const [userRole, setUserRole] = useState(initialRole);
-  const [otpIdentifier, setOtpIdentifier] = useState(initialIdentifier);
+const STORAGE_KEY_TOKEN = 'auth_token';
+const STORAGE_KEY_ROLE = 'auth_role';
+const STORAGE_KEY_ID = 'auth_identifier';
+
+function loadFromStorage(): AuthState {
+  try {
+    return {
+      token: sessionStorage.getItem(STORAGE_KEY_TOKEN) || '',
+      userRole: sessionStorage.getItem(STORAGE_KEY_ROLE) || '',
+      otpIdentifier: sessionStorage.getItem(STORAGE_KEY_ID) || '',
+    };
+  } catch {
+    return { token: '', userRole: '', otpIdentifier: '' };
+  }
+}
+
+function saveToStorage(state: AuthState) {
+  try {
+    sessionStorage.setItem(STORAGE_KEY_TOKEN, state.token || '');
+    sessionStorage.setItem(STORAGE_KEY_ROLE, state.userRole || '');
+    sessionStorage.setItem(STORAGE_KEY_ID, state.otpIdentifier || '');
+  } catch {}
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<AuthState>(loadFromStorage);
+
+  useEffect(() => {
+    saveToStorage(state);
+    if (state.token) {
+      tokenStore.set(state.token);
+    } else {
+      tokenStore.clear();
+    }
+  }, [state]);
 
   const setToken = useCallback((t: string) => {
-    _setToken(t);
-    tokenStore.set(t);
+    setState(prev => ({ ...prev, token: t }));
+  }, []);
+
+  const setUserRole = useCallback((r: string) => {
+    setState(prev => ({ ...prev, userRole: r }));
+  }, []);
+
+  const setOtpIdentifier = useCallback((id: string) => {
+    setState(prev => ({ ...prev, otpIdentifier: id }));
   }, []);
 
   const clearAuth = useCallback(() => {
-    _setToken('');
-    setUserRole('');
-    setOtpIdentifier('');
-    tokenStore.clear();
+    setState({ token: '', userRole: '', otpIdentifier: '' });
   }, []);
 
   const setAll = useCallback((t: string, role: string, identifier: string) => {
-    _setToken(t);
-    tokenStore.set(t);
-    setUserRole(role);
-    setOtpIdentifier(identifier);
+    setState({ token: t, userRole: role, otpIdentifier: identifier });
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, userRole, otpIdentifier, setToken, setUserRole, setOtpIdentifier, clearAuth, setAll }}>
+    <AuthContext.Provider value={{ ...state, setToken, setUserRole, setOtpIdentifier, clearAuth, setAll }}>
       {children}
     </AuthContext.Provider>
   );

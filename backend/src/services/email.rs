@@ -115,4 +115,35 @@ impl EmailService {
 
         Ok(())
     }
+
+    pub async fn send_notification(&self, to_email: &str, subject: &str, body: &str) {
+        let from = match self.from_email.parse() {
+            Ok(v) => v,
+            Err(e) => { info!("[EMAIL SKIP] Invalid from email: {}", e); return; }
+        };
+        let to = match to_email.parse() {
+            Ok(v) => v,
+            Err(e) => { info!("[EMAIL SKIP] Invalid to email: {}", e); return; }
+        };
+        if let Some(transport) = &self.transport {
+            match Message::builder()
+                .from(from)
+                .to(to)
+                .subject(subject.to_string())
+                .header(ContentType::TEXT_PLAIN)
+                .body(body.to_string())
+            {
+                Ok(email) => {
+                    if let Err(e) = transport.send(email).await {
+                        info!("[EMAIL FALLBACK] Notification send failed ({}): {}", e, subject);
+                    }
+                }
+                Err(e) => {
+                    info!("[EMAIL FALLBACK] Notification build failed ({}): {}", e, subject);
+                }
+            }
+        } else {
+            info!("[EMAIL MOCK] Notification to {}: {}", to_email, body);
+        }
+    }
 }

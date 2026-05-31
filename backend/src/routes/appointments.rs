@@ -1,6 +1,7 @@
-use axum::{Json, extract::{Path, State}, Router, routing::{get, patch, post}};
+use axum::{Json, extract::{Path, State, Query}, Router, routing::{get, patch}};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use chrono::NaiveDate;
 
 use crate::error::{AppError, validate_length};
 use crate::middleware::auth::AuthUser;
@@ -80,6 +81,173 @@ pub struct AppointmentResponse {
     pub attended: Option<bool>,
     pub cancellation_reason: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct ListAppointmentsQuery {
+    pub doctor_id: Option<Uuid>,
+    pub date: Option<NaiveDate>,
+    pub from: Option<NaiveDate>,
+    pub to: Option<NaiveDate>,
+    pub status: Option<String>,
+}
+
+pub async fn list_appointments(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Query(query): Query<ListAppointmentsQuery>,
+) -> Result<Json<Vec<crate::models::AppointmentHistoryItem>>, AppError> {
+    let (doctor_id, patient_id) = match auth.role.as_str() {
+        "admin" | "scheduler" => (query.doctor_id, None),
+        "doctor" => {
+            let doc = sqlx::query_as::<_, (Uuid,)>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            (Some(doc.0), None)
+        }
+        _ => {
+            let patient = get_patient_from_auth(&state, &auth).await?;
+            (None, Some(patient.id))
+        }
+    };
+
+    let mut sql = String::from(
+        "SELECT a.id, a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
+                d.specialization, s.slot_date, s.start_time, s.end_time,
+                a.status, a.notes, a.attended, a.cancellation_reason
+         FROM appointments a
+         JOIN doctors d ON d.id = a.doctor_id
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE 1=1"
+    );
+    let mut param_idx = 1u32;
+
+    if let Some(_) = doctor_id {
+        sql.push_str(&format!(" AND a.doctor_id = ${}", param_idx));
+        param_idx += 1;
+    }
+    if let Some(_) = patient_id {
+        sql.push_str(&format!(" AND a.patient_id = ${}", param_idx));
+        param_idx += 1;
+    }
+    if let Some(_) = query.date {
+        sql.push_str(&format!(" AND s.slot_date = ${}", param_idx));
+        param_idx += 1;
+    } else {
+        if let Some(_) = query.from {
+            sql.push_str(&format!(" AND s.slot_date >= ${}", param_idx));
+            param_idx += 1;
+        }
+        if let Some(_) = query.to {
+            sql.push_str(&format!(" AND s.slot_date <= ${}", param_idx));
+            param_idx += 1;
+        }
+    }
+    if let Some(_) = &query.status {
+        sql.push_str(&format!(" AND a.status = ${}", param_idx));
+    }
+
+    sql.push_str(" ORDER BY s.slot_date DESC, s.start_time DESC LIMIT 100");
+
+    let mut q = sqlx::query_as::<_, crate::models::AppointmentHistoryItem>(&sql);
+
+    if let Some(did) = doctor_id { q = q.bind(did); }
+    if let Some(pid) = patient_id { q = q.bind(pid); }
+    if let Some(d) = query.date { q = q.bind(d); }
+    else {
+        if let Some(f) = query.from { q = q.bind(f); }
+        if let Some(t) = query.to { q = q.bind(t); }
+    }
+    if let Some(ref st) = query.status { q = q.bind(st); }
+
+    let appointments = q.fetch_all(&state.pool).await.map_err(|e| AppError::Database(e))?;
+    Ok(Json(appointments))
+}
+
+pub async fn export_appointments(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Query(query): Query<ListAppointmentsQuery>,
+) -> Result<(axum::http::StatusCode, [(&'static str, String); 2], String), AppError> {
+    if auth.role != "admin" && auth.role != "scheduler" {
+        return Err(AppError::Unauthorized("Only admin and scheduler can export appointments".to_string()));
+    }
+
+    let mut sql = String::from(
+        "SELECT a.id, a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
+                d.specialization, s.slot_date, s.start_time, s.end_time,
+                a.status, a.notes, a.attended, a.cancellation_reason
+         FROM appointments a
+         JOIN doctors d ON d.id = a.doctor_id
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE 1=1"
+    );
+    let mut param_idx = 1u32;
+
+    if let Some(_) = query.doctor_id {
+        sql.push_str(&format!(" AND a.doctor_id = ${}", param_idx));
+        param_idx += 1;
+    }
+    if let Some(_) = query.date {
+        sql.push_str(&format!(" AND s.slot_date = ${}", param_idx));
+        param_idx += 1;
+    } else {
+        if let Some(_) = query.from {
+            sql.push_str(&format!(" AND s.slot_date >= ${}", param_idx));
+            param_idx += 1;
+        }
+        if let Some(_) = query.to {
+            sql.push_str(&format!(" AND s.slot_date <= ${}", param_idx));
+            param_idx += 1;
+        }
+    }
+    if let Some(_) = &query.status {
+        sql.push_str(&format!(" AND a.status = ${}", param_idx));
+    }
+
+    sql.push_str(" ORDER BY s.slot_date ASC, s.start_time ASC");
+
+    let mut query_builder = sqlx::query_as::<_, crate::models::AppointmentHistoryItem>(&sql);
+    if let Some(did) = query.doctor_id { query_builder = query_builder.bind(did); }
+    if let Some(d) = query.date { query_builder = query_builder.bind(d); }
+    else {
+        if let Some(f) = query.from { query_builder = query_builder.bind(f); }
+        if let Some(t) = query.to { query_builder = query_builder.bind(t); }
+    }
+    if let Some(ref st) = query.status { query_builder = query_builder.bind(st); }
+
+    let appointments = query_builder.fetch_all(&state.pool).await.map_err(|e| AppError::Database(e))?;
+
+    let mut csv = String::from("ID,Doctor,Specialization,Date,Start Time,End Time,Status,Notes,Attended,Cancellation Reason\n");
+    for a in &appointments {
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{}\n",
+            a.id,
+            a.doctor_name.replace(',', " "),
+            a.specialization.replace(',', " "),
+            a.slot_date,
+            a.start_time.format("%H:%M"),
+            a.end_time.format("%H:%M"),
+            a.status,
+            a.notes.replace(',', " "),
+            a.attended.map(|v| v.to_string()).unwrap_or_default(),
+            a.cancellation_reason.replace(',', " "),
+        ));
+    }
+
+    Ok((
+        axum::http::StatusCode::OK,
+        [
+            ("Content-Type", "text/csv; charset=utf-8".to_string()),
+            ("Content-Disposition", "attachment; filename=\"appointments.csv\"".to_string()),
+        ],
+        csv,
+    ))
 }
 
 pub async fn create_appointment(
@@ -221,6 +389,41 @@ pub async fn create_appointment(
 
     if let Err(e) = send_confirmation_email(&state, &patient, &appointment, &slot, &doctor_id).await {
         tracing::warn!("Failed to send confirmation email: {}", e);
+    }
+
+    // Notify clinic staff about new booking
+    if let Some(ref notify_email) = state.notification_email {
+        let clinic_name = state.clinic_name();
+        let doctor = sqlx::query_as::<_, (String, String)>(
+            "SELECT first_name, last_name FROM doctors WHERE id = $1"
+        )
+        .bind(doctor_id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?;
+
+        let doctor_name = doctor
+            .map(|(f, l)| format!("Dr. {} {}", f, l))
+            .unwrap_or_else(|| "Unknown".to_string());
+        let date = slot.slot_date.format("%A, %B %d, %Y").to_string();
+        let time = format!("{}:00 - {}:00", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
+        let patient_name = format!("{} {}", patient.first_name, patient.last_name);
+
+        let subject = format!("New Booking - {}", clinic_name);
+        let body = format!(
+            "A new appointment has been booked:\n\n\
+             Patient: {}\n\
+             Doctor: {}\n\
+             Date: {}\n\
+             Time: {}\n\
+             Notes: {}\n\n\
+             ---\n\
+             {}\n{}",
+            patient_name, doctor_name, date, time, appointment.notes,
+            clinic_name, state.clinic_address()
+        );
+
+        state.email_service.send_notification(notify_email, &subject, &body).await;
     }
 
     Ok(Json(AppointmentResponse {
@@ -645,7 +848,8 @@ async fn send_confirmation_email(
 
 pub fn appointment_routes() -> Router<AppState> {
     Router::new()
-        .route("/api/appointments", post(create_appointment))
+        .route("/api/appointments", get(list_appointments).post(create_appointment))
+        .route("/api/appointments/export", get(export_appointments))
         .route("/api/appointments/:id", get(get_appointment))
         .route("/api/appointments/:id/cancel", patch(cancel_appointment))
         .route("/api/appointments/:id/reschedule", patch(reschedule_appointment))
