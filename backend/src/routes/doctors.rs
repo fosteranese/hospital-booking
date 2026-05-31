@@ -131,7 +131,7 @@ pub async fn get_availability(
         .into_iter()
         .map(|s| {
             let blocked = s.is_booked
-                || is_blocked(s.start_time, &blocked_times, *state.min_gap_minutes.read().unwrap())
+                || is_blocked(s.start_time, &blocked_times, state.min_gap_minutes())
                 || is_unavailable(s.start_time, &unavailability);
             SlotResponse {
                 id: s.id,
@@ -189,7 +189,7 @@ pub async fn get_all_availability(
         .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked)| {
             let unavail = unavail_by_doctor.get(&doctor_id).map(|v| v.as_slice()).unwrap_or(&[]);
             let blocked = is_booked
-                || is_blocked(start_time, &blocked_times, *state.min_gap_minutes.read().unwrap())
+                || is_blocked(start_time, &blocked_times, state.min_gap_minutes())
                 || is_unavailable(start_time, unavail);
             SlotWithDoctor {
                 id,
@@ -222,7 +222,7 @@ pub async fn get_max_availability_date(
     State(state): State<AppState>,
     Query(query): Query<MaxDateQuery>,
 ) -> Result<Json<MaxDateResponse>, AppError> {
-    let min_advance = *state.min_advance_days.read().unwrap();
+    let min_advance = state.min_advance_days();
     let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let row = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (Option<chrono::NaiveDate>,)>(
@@ -267,7 +267,7 @@ pub async fn get_available_dates(
     State(state): State<AppState>,
     Query(query): Query<AvailableDatesQuery>,
 ) -> Result<Json<AvailableDatesResponse>, AppError> {
-    let min_advance = *state.min_advance_days.read().unwrap();
+    let min_advance = state.min_advance_days();
     let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
     let rows = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(

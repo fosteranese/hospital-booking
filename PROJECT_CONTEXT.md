@@ -14,7 +14,7 @@ Full-stack self-service hospital appointment booking system. Patients book docto
 | Database | PostgreSQL 16 |
 | Auth | JWT (jsonwebtoken), SHA-256 hashed OTPs |
 | Email/SMS | SMTP via lettre, mock SMS |
-| Tests | Playwright e2e (7 tests) |
+| Tests | Playwright e2e (12 tests) |
 
 ---
 
@@ -34,6 +34,8 @@ Or `make dev` to run both concurrently.
 
 ## Environment Variables (backend/.env)
 
+Copy `.env.example` → `.env` and fill in your values.
+
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
@@ -48,7 +50,7 @@ Or `make dev` to run both concurrently.
 ```
 hospital-booking/
 ├── backend/
-│   ├── migrations/          # 14 SQLx migrations (patients, doctors, slots, appointments, OTP, settings, etc.)
+│   ├── migrations/          # 16 SQLx migrations (patients, doctors, slots, appointments, OTP, settings, etc.)
 │   ├── src/
 │   │   ├── main.rs          # Server entry point — loads settings, state, routes, slot generation
 │   │   ├── state.rs         # AppState struct (pool, email/sms services, jwt, settings)
@@ -103,7 +105,7 @@ hospital-booking/
 │   │       ├── use-mobile.ts
 │   │       └── use-toast.ts
 │   ├── e2e/
-│   │   └── booking-flow.spec.ts  # 7 Playwright tests
+│   │   └── booking-flow.spec.ts  # 12 Playwright tests
 │   ├── playwright.config.ts
 │   └── vite.config.ts          # /api proxy to :3000
 ├── Makefile                   # dev-api, dev-web, dev, db-migrate, build, lint
@@ -215,6 +217,11 @@ Updating appointment settings triggers slot regeneration.
 | 5 | API: duplicate rejection returns 409 | API |
 | 6 | API: update appointment attendance | API |
 | 7 | API: cancelled appointment appears in history | API |
+| 8 | API: token invalidation prevents use | API |
+| 9 | API: refresh fails for invalidated token | API |
+| 10 | Returning patient detection after consecutive same-tab booking | Browser |
+| 11 | Concurrent slot booking (user2 cannot book same dr slot) | API |
+| 12 | Frontend: user2 cannot see booked dr1 slot, can book dr2 slot | Browser |
 
 Run with: `cd frontend && npx playwright test`
 
@@ -225,6 +232,10 @@ Run with: `cd frontend && npx playwright test`
 ### Appointment Limits
 - Max upcoming appointments configurable via `appointment/max_upcoming_appointments` setting (default 3)
 - Enforced on create and reschedule; checked before slot validation
+
+### Patient Access Verification
+- `verify_patient_access` looks up the patient from DB by `auth.sub` (JWT subject = phone/email) and compares against the requested `patient_id`
+- Previously relied on `auth.patient_id` from JWT claims, but JWT was always created with `patient_id: None`, causing all patient data endpoints (upcoming, history, last doctor, update) to silently return 401 — the frontend showed 0 appointments
 
 ### Cancellation
 - Reason is required (textarea, disabled button when empty)
@@ -302,3 +313,6 @@ Run with: `cd frontend && npx playwright test`
 28. Auth middleware now checks blacklist before accepting any token (returns 401 `Token has been invalidated`)
 29. Refresh endpoint also checks blacklist before issuing a new token
 30. Expired blacklist entries cleaned up on every invalidation/check and hourly via background task
+31. Fixed `verify_patient_access` to look up patient by `auth.sub` (phone/email) from DB — JWT was always created with `patient_id: None` so every patient data endpoint (upcoming, history, last doctor, update) silently returned 401, causing the review page to show 0 appointments
+32. Fixed back navigation in `BookAppointment.tsx` `goBack()` — pressing Back from datetime page now goes to 'review' for returning patients (not just reschedules)
+33. Added error display with retry buttons for upcoming appointments and history API failures — errors are shown inline with a "Retry" button instead of silently showing empty state; history errors shown in modal

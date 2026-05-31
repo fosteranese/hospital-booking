@@ -3,7 +3,7 @@ use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
 };
 use lettre::message::header::ContentType;
-use tracing::info;
+use tracing::{info, warn};
 
 pub struct EmailService {
     from_email: String,
@@ -17,19 +17,20 @@ impl EmailService {
         pass: Option<String>,
         from_email: String,
     ) -> Self {
-        let transport = if std::env::var("DEV_MODE").is_ok() {
-            info!("DEV_MODE: email transport disabled");
+        let transport = if cfg!(debug_assertions) {
+            info!("Debug build: email transport disabled");
             None
         } else {
             match (host, user, pass) {
                 (Some(host), Some(user), Some(pass)) => {
                     let creds = Credentials::new(user, pass);
-                    Some(
-                        AsyncSmtpTransport::<Tokio1Executor>::relay(&host)
-                            .unwrap()
-                            .credentials(creds)
-                            .build(),
-                    )
+                    match AsyncSmtpTransport::<Tokio1Executor>::relay(&host) {
+                        Ok(relay) => Some(relay.credentials(creds).build()),
+                        Err(e) => {
+                            warn!("Failed to configure SMTP relay for {}: {:?}. Email sending disabled.", host, e);
+                            None
+                        }
+                    }
                 }
                 _ => {
                     info!("SMTP not configured, email sending disabled");

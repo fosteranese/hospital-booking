@@ -1,10 +1,11 @@
 use std::sync::{Arc, RwLock};
-use axum::{Router, body::Body, http::Response};
-use tower_http::cors::{CorsLayer, Any};
+use axum::Router;
+use axum::extract::DefaultBodyLimit;
+use axum::routing::get;
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use std::time::Duration;
-use tracing::Span;
 
 mod db;
 mod error;
@@ -17,6 +18,10 @@ mod state;
 use crate::state::AppState;
 use crate::services::{EmailService, SettingsService, SmsService, generate_slots};
 
+async fn health() -> &'static str {
+    "OK"
+}
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
@@ -25,18 +30,39 @@ async fn main() {
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
 
-    let pool = db::connect().await.expect("Failed to connect to database");
+    let pool = match db::connect().await {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::error!("Failed to connect to database: {:?}", e);
+            std::process::exit(1);
+        }
+    };
 
-    let encryption_key = std::env::var("SETTINGS_ENCRYPTION_KEY")
-        .expect("SETTINGS_ENCRYPTION_KEY must be set (64 hex chars = 32 bytes)");
+    let encryption_key = match std::env::var("SETTINGS_ENCRYPTION_KEY") {
+        Ok(k) => k,
+        Err(_) => {
+            tracing::error!("SETTINGS_ENCRYPTION_KEY must be set (64 hex chars = 32 bytes)");
+            std::process::exit(1);
+        }
+    };
 
-    let settings = SettingsService::new(pool.clone(), &encryption_key)
-        .expect("Failed to initialize settings service");
+    let settings = match SettingsService::new(pool.clone(), &encryption_key) {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("Failed to initialize settings service: {:?}", e);
+            std::process::exit(1);
+        }
+    };
 
-    settings.seed_defaults().await.expect("Failed to seed settings");
+    if let Err(e) = settings.seed_defaults().await {
+        tracing::error!("Failed to seed settings: {:?}", e);
+        std::process::exit(1);
+    }
 
-    // Generate initial slots
-    generate_slots(&pool, &settings).await.expect("Failed to generate slots");
+    if let Err(e) = generate_slots(&pool, &settings).await {
+        tracing::error!("Failed to generate slots: {:?}", e);
+        std::process::exit(1);
+    }
 
     // Background task: keep slots fresh and clean stale blacklist entries every hour
     let bg_pool = pool.clone();
@@ -62,8 +88,13 @@ async fn main() {
     let email_service = EmailService::new(smtp_host, smtp_user, smtp_pass, from_email);
     let sms_service = SmsService::new();
 
-    let jwt_secret = std::env::var("JWT_SECRET")
-        .expect("JWT_SECRET must be set");
+    let jwt_secret = match std::env::var("JWT_SECRET") {
+        Ok(k) => k,
+        Err(_) => {
+            tracing::error!("JWT_SECRET must be set");
+            std::process::exit(1);
+        }
+    };
 
     let min_gap_minutes: i64 = settings.get("appointment", "min_gap_minutes").await.ok().flatten()
         .and_then(|v| v.parse().ok())
@@ -84,7 +115,7 @@ async fn main() {
         .unwrap_or_else(|| "Bissau Avenue, East-Legon, Accra, Ghana".to_string());
 
     let state = AppState {
-        pool,
+        pool: pool.clone(),
         email_service: Arc::new(email_service),
         sms_service: Arc::new(sms_service),
         jwt_secret,
@@ -96,22 +127,42 @@ async fn main() {
         settings,
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let cors = {
+        let origins: Vec<axum::http::HeaderValue> = std::env::var("CORS_ORIGIN")
+            .unwrap_or_else(|_| "http://localhost:5173".to_string())
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+
+        if origins.is_empty() {
+            tracing::warn!("CORS_ORIGIN env var produced no valid origins, falling back to localhost");
+            CorsLayer::new()
+                .allow_origin("http://localhost:5173".parse::<axum::http::HeaderValue>().unwrap())
+        } else {
+            CorsLayer::new()
+                .allow_origin(origins)
+        }
+    }
+        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT, axum::http::Method::PATCH, axum::http::Method::DELETE, axum::http::Method::OPTIONS])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::ACCEPT,
+        ]);
 
     let app = Router::new()
+        .route("/health", get(health))
         .merge(routes::auth::auth_routes())
         .merge(routes::patients::patient_routes())
         .merge(routes::doctors::doctor_routes())
         .merge(routes::appointments::appointment_routes())
         .merge(routes::settings::settings_routes())
         .merge(routes::unavailability::unavailability_routes())
+        .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()
-                .on_response(|response: &Response<Body>, latency: Duration, _span: &Span| {
+                .on_response(|response: &axum::http::Response<axum::body::Body>, latency: Duration, _span: &tracing::Span| {
                     let status = response.status();
                     if status.is_server_error() {
                         tracing::error!(status = status.as_u16(), latency_ms = latency.as_millis(), "internal error");
@@ -124,9 +175,50 @@ async fn main() {
         )
         .with_state(state);
 
-    let addr = "0.0.0.0:3000";
+    let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = format!("{}:{}", host, port);
+
     tracing::info!("Server starting on http://{}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            tracing::error!("Failed to bind to {}: {:?}", addr, e);
+            std::process::exit(1);
+        }
+    };
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!("Server error: {:?}", e);
+        });
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("Shutdown signal received, starting graceful shutdown");
 }

@@ -1,4 +1,5 @@
 use rand::Rng;
+use rand::rngs::OsRng;
 use sqlx::PgPool;
 use chrono::{Utc, Duration};
 use sha2::{Sha256, Digest};
@@ -7,10 +8,6 @@ use crate::models::OtpCode;
 
 const OTP_EXPIRY_MINUTES: i64 = 10;
 
-fn is_dev_mode() -> bool {
-    std::env::var("DEV_MODE").is_ok()
-}
-
 fn hash_code(code: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(code.as_bytes());
@@ -18,11 +15,11 @@ fn hash_code(code: &str) -> String {
 }
 
 pub fn generate_code(length: usize) -> String {
-    if is_dev_mode() {
+    if cfg!(debug_assertions) {
         return "123456".to_string();
     }
     let max = 10usize.pow(length as u32);
-    let mut rng = rand::thread_rng();
+    let mut rng = OsRng;
     format!("{:0width$}", rng.gen_range(0..max), width = length)
 }
 

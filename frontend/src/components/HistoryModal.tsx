@@ -13,13 +13,15 @@ import { formatTime } from '@/lib/format';
 interface HistoryModalProps {
   history: AppointmentHistoryItem[];
   loading: boolean;
+  error?: string;
+  onRetry?: () => void;
   onClose: () => void;
   onMarkAttendance: (appointmentId: string, attended: boolean) => Promise<void>;
 }
 
 const PER_PAGE = 10;
 
-export function HistoryModal({ history, loading, onClose, onMarkAttendance }: HistoryModalProps) {
+export function HistoryModal({ history, loading, error, onRetry, onClose, onMarkAttendance }: HistoryModalProps) {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [page, setPage] = useState(1);
 
@@ -65,6 +67,34 @@ export function HistoryModal({ history, loading, onClose, onMarkAttendance }: Hi
             <div className="flex items-center justify-center gap-2.5 py-8">
               <Spinner />
               <span className="text-xs text-muted-foreground">Loading history...</span>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center gap-4 py-12 px-6">
+              <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                <rect x="14" y="18" width="44" height="44" rx="6" className="fill-amber-200/70" stroke="#d97706" strokeWidth="1.5" strokeLinejoin="round"/>
+                <line x1="22" y1="30" x2="50" y2="30" className="stroke-amber-300" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="22" y1="38" x2="44" y2="38" className="stroke-amber-300" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="22" y1="46" x2="38" y2="46" className="stroke-amber-300" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="56" cy="18" r="10" className="fill-amber-100" stroke="#d97706" strokeWidth="1.5"/>
+                <path d="M56 14V18H60" className="stroke-amber-500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="56" cy="18" r="2" className="fill-amber-400"/>
+              </svg>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-semibold text-amber-800">Oops! Something went wrong</p>
+                <p className="text-xs text-amber-600/80 max-w-xs mx-auto">{error}</p>
+              </div>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-100/80 hover:bg-amber-200/60 rounded-lg px-4 py-2 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                  </svg>
+                  Try again
+                </button>
+              )}
             </div>
           ) : history.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 px-4">

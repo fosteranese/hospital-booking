@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::AppError;
+use crate::middleware::auth::AuthUser;
 use crate::services::generate_slots;
 use crate::state::AppState;
 
@@ -25,16 +26,23 @@ pub struct UpdateSettingRequest {
 
 pub async fn get_setting(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path((group, name)): Path<(String, String)>,
 ) -> Result<Json<SettingResponse>, AppError> {
     let setting = state.settings.get_setting(&group, &name).await?
         .ok_or_else(|| AppError::NotFound(format!("Setting '{}/{}' not found", group, name)))?;
 
+    let value = if setting.is_sensitive {
+        "********".to_string()
+    } else {
+        setting.value.unwrap_or_default()
+    };
+
     Ok(Json(SettingResponse {
         id: setting.id,
         group_name: setting.group_name,
         name: setting.name,
-        value: setting.value.unwrap_or_default(),
+        value,
         is_sensitive: setting.is_sensitive,
         description: setting.description,
     }))
@@ -42,6 +50,7 @@ pub async fn get_setting(
 
 pub async fn get_settings_group(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path(group): Path<String>,
 ) -> Result<Json<Vec<SettingResponse>>, AppError> {
     let settings = state.settings.get_group(&group).await?;
@@ -51,13 +60,20 @@ pub async fn get_settings_group(
 
     let response: Vec<SettingResponse> = settings
         .into_iter()
-        .map(|s| SettingResponse {
-            id: s.id,
-            group_name: s.group_name,
-            name: s.name,
-            value: s.value.unwrap_or_default(),
-            is_sensitive: s.is_sensitive,
-            description: s.description,
+        .map(|s| {
+            let value = if s.is_sensitive {
+                "********".to_string()
+            } else {
+                s.value.unwrap_or_default()
+            };
+            SettingResponse {
+                id: s.id,
+                group_name: s.group_name,
+                name: s.name,
+                value,
+                is_sensitive: s.is_sensitive,
+                description: s.description,
+            }
         })
         .collect();
 
@@ -66,10 +82,10 @@ pub async fn get_settings_group(
 
 pub async fn update_setting(
     State(state): State<AppState>,
+    _auth: AuthUser,
     Path((group, name)): Path<(String, String)>,
     Json(body): Json<UpdateSettingRequest>,
 ) -> Result<Json<SettingResponse>, AppError> {
-    // Verify the setting exists
     let existing = state.settings.get_setting(&group, &name).await?
         .ok_or_else(|| AppError::NotFound(format!("Setting '{}/{}' not found", group, name)))?;
 
@@ -89,29 +105,28 @@ pub async fn update_setting(
     .await
     .map_err(|e| AppError::Database(e))?;
 
-    // Update in-memory state and regenerate slots if appointment setting changed
     if group == "appointment" {
         match name.as_str() {
             "min_advance_days" => {
                 if let Ok(v) = body.value.parse::<i64>() {
-                    *state.min_advance_days.write().unwrap() = v;
+                    state.set_min_advance_days(v);
                 }
             }
             "min_gap_minutes" => {
                 if let Ok(v) = body.value.parse::<i64>() {
-                    *state.min_gap_minutes.write().unwrap() = v;
+                    state.set_min_gap_minutes(v);
                 }
             }
             "max_upcoming_appointments" => {
                 if let Ok(v) = body.value.parse::<i64>() {
-                    *state.max_upcoming_appointments.write().unwrap() = v;
+                    state.set_max_upcoming_appointments(v);
                 }
             }
             "clinic_name" => {
-                *state.clinic_name.write().unwrap() = body.value.clone();
+                state.set_clinic_name(body.value.clone());
             }
             "clinic_address" => {
-                *state.clinic_address.write().unwrap() = body.value.clone();
+                state.set_clinic_address(body.value.clone());
             }
             _ => {}
         }
@@ -125,11 +140,17 @@ pub async fn update_setting(
         });
     }
 
+    let response_value = if existing.is_sensitive {
+        "********".to_string()
+    } else {
+        body.value
+    };
+
     Ok(Json(SettingResponse {
         id: existing.id,
         group_name: group,
         name,
-        value: body.value,
+        value: response_value,
         is_sensitive: existing.is_sensitive,
         description: existing.description,
     }))
