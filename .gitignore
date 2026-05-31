@@ -22,3 +22,4 @@ frontend/.env
 *.swo
 medi-port
 *.db
+test-results/
