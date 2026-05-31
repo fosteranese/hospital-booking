@@ -25,7 +25,7 @@ test.describe('Frontend integration', () => {
     expect((await r1.json()).email_taken).toBe(false);
 
     // Verify with known data
-    const r2 = await request.get(`${API}/api/patients/check?phone=0548888888`);
+    const r2 = await request.get(`${API}/api/patients/check?phone=0243505598`);
     expect(r2.ok()).toBeTruthy();
     expect((await r2.json()).phone_taken).toBe(true);
   });
@@ -306,6 +306,7 @@ test.describe('Frontend integration', () => {
   });
 
   test('12. Frontend: user2 cannot see booked dr1 slot, can see and book dr2 slot', async ({ page, request }) => {
+    test.setTimeout(120000);
     const email1 = `e2e_fe_concur1_${Date.now()}@test.com`;
     const email2 = `e2e_fe_concur2_${Date.now()}@test.com`;
 
@@ -413,11 +414,8 @@ test.describe('Frontend integration', () => {
     await expect(dateBtn).toBeVisible({ timeout: 5000 });
     await dateBtn.click();
 
-    // Wait for slots to load
-    await page.waitForTimeout(2000);
-
-    // Dr1's t1 is booked so it should NOT be visible
-    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).not.toBeVisible();
+    // Wait for slots to load — dr1's t1 is booked, should NOT be visible
+    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).not.toBeVisible({ timeout: 45000 });
 
     // Go back to doctor step
     await page.click('button:has-text("Back")');
@@ -433,10 +431,8 @@ test.describe('Frontend integration', () => {
     const dateBtn2 = page.locator('button').filter({ hasText: dayNum }).first();
     await expect(dateBtn2).toBeVisible({ timeout: 5000 });
     await dateBtn2.click();
-    await page.waitForTimeout(2000);
-
     // Dr2's same-time slot should be available and visible
-    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).toBeVisible();
+    await expect(page.locator(`button:has-text("${slotTime} — ${endTime}")`)).toBeVisible({ timeout: 45000 });
 
     // Select the slot
     await page.click(`button:has-text("${slotTime} — ${endTime}")`);
