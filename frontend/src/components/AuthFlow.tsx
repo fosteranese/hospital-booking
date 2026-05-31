@@ -22,6 +22,12 @@ function isValidPhone(code: string, number: string): boolean {
   return total.length >= 7 && total.length <= 15;
 }
 
+function normalizePhoneForDisplay(code: string, number: string): string {
+  const digits = number.replace(/\D/g, '');
+  if (digits.startsWith('0')) return `${code}${digits.slice(1)}`;
+  return `${code}${digits}`;
+}
+
 interface AuthFlowProps {
   onVerified: (token: string, identifier: string) => void;
 }
@@ -274,7 +280,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {method === 'phone'
-                      ? <>We sent a code via SMS to <span className="font-medium text-foreground/90">{countryCode}{phoneNumber}</span></>
+                      ? <>We sent a code via SMS to <span className="font-medium text-foreground/90">{normalizePhoneForDisplay(countryCode, phoneNumber)}</span></>
                       : <>We sent a code via email to <span className="font-medium text-foreground/90">{email}</span></>
                     }
                   </p>
