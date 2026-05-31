@@ -138,7 +138,7 @@ test.describe('Frontend integration', () => {
     expect(apptBody.attended).toBeNull();
 
     // Mark attended
-    const patch = await request.patch(`${API}/api/appointments/${apptBody.id}`, {
+    const patch = await request.patch(`${API}/api/appointments/${apptBody.id}/attendance`, {
       headers: { Authorization: `Bearer ${token}` },
       data: { attended: true },
     });
@@ -481,9 +481,9 @@ test.describe('Frontend integration', () => {
     const { id: apptId } = await appt.json();
 
     // Cancel the appointment
-    const cancel = await request.patch(`${API}/api/appointments/${apptId}`, {
+    const cancel = await request.patch(`${API}/api/appointments/${apptId}/cancel`, {
       headers: { Authorization: `Bearer ${token}` },
-      data: { status: 'cancelled', cancellation_reason: 'Test cancellation' },
+      data: { cancellation_reason: 'Test cancellation' },
     });
     expect(cancel.ok()).toBeTruthy();
     expect((await cancel.json()).status).toBe('cancelled');

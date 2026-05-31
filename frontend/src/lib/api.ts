@@ -258,8 +258,29 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  updateAppointment: (id: string, data: { slot_id?: string; doctor_id?: string; status?: string; attended?: boolean; cancellation_reason?: string }, token: string) =>
-    request<Appointment>(`/appointments/${id}`, {
+  cancelAppointment: (id: string, data: { cancellation_reason?: string }, token: string) =>
+    request<Appointment>(`/appointments/${id}/cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  rescheduleAppointment: (id: string, data: { slot_id: string; doctor_id?: string }, token: string) =>
+    request<Appointment>(`/appointments/${id}/reschedule`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  changeDoctor: (id: string, data: { doctor_id: string }, token: string) =>
+    request<Appointment>(`/appointments/${id}/change-doctor`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  markAttendance: (id: string, data: { attended: boolean }, token: string) =>
+    request<Appointment>(`/appointments/${id}/attendance`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },

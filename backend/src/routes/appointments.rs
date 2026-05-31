@@ -49,12 +49,24 @@ pub struct CreateAppointmentRequest {
 }
 
 #[derive(Deserialize)]
-pub struct UpdateAppointmentRequest {
-    pub slot_id: Option<Uuid>,
+pub struct RescheduleRequest {
+    pub slot_id: Uuid,
     pub doctor_id: Option<Uuid>,
-    pub status: Option<String>,
-    pub attended: Option<bool>,
+}
+
+#[derive(Deserialize)]
+pub struct ChangeDoctorRequest {
+    pub doctor_id: Uuid,
+}
+
+#[derive(Deserialize)]
+pub struct CancelAppointmentRequest {
     pub cancellation_reason: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct MarkAttendanceRequest {
+    pub attended: bool,
 }
 
 #[derive(Serialize)]
@@ -264,232 +276,310 @@ pub async fn get_appointment(
     }))
 }
 
-pub async fn update_appointment(
+async fn get_appointment_for_update(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    state: &AppState,
+    auth: &AuthUser,
+    id: Uuid,
+) -> Result<(crate::models::Patient, Appointment), AppError> {
+    if auth.role == "admin" || auth.role == "scheduler" {
+        let appt = sqlx::query_as::<_, Appointment>(
+            "SELECT * FROM appointments WHERE id = $1 AND status = 'confirmed'"
+        )
+        .bind(id)
+        .fetch_optional(&mut **tx)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::NotFound("Appointment not found or already cancelled".to_string()))?;
+        let patient = sqlx::query_as::<_, crate::models::Patient>(
+            "SELECT * FROM patients WHERE id = $1"
+        )
+        .bind(appt.patient_id)
+        .fetch_optional(&mut **tx)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?;
+        Ok((patient, appt))
+    } else {
+        let patient = get_patient_from_auth(state, auth).await?;
+        let appt = sqlx::query_as::<_, Appointment>(
+            "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2 AND status = 'confirmed'"
+        )
+        .bind(id)
+        .bind(patient.id)
+        .fetch_optional(&mut **tx)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::NotFound("Appointment not found or already cancelled".to_string()))?;
+        Ok((patient, appt))
+    }
+}
+
+async fn free_and_update_slot(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    appointment_id: Uuid,
+    new_slot_id: Uuid,
+    new_doctor_id: Uuid,
+) -> Result<Appointment, AppError> {
+    let updated = sqlx::query_as::<_, Appointment>(
+        "WITH old_slot AS (
+            SELECT slot_id FROM appointments WHERE id = $1
+        ),
+        freed AS (
+            UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM old_slot)
+        ),
+        booked AS (
+            UPDATE availability_slots SET is_booked = TRUE WHERE id = $2
+        )
+        UPDATE appointments SET slot_id = $2, doctor_id = $3, updated_at = NOW() WHERE id = $1
+        RETURNING *"
+    )
+    .bind(appointment_id)
+    .bind(new_slot_id)
+    .bind(new_doctor_id)
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+    Ok(updated)
+}
+
+pub async fn cancel_appointment(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
-    Json(body): Json<UpdateAppointmentRequest>,
+    Json(body): Json<CancelAppointmentRequest>,
 ) -> Result<Json<AppointmentResponse>, AppError> {
-    state.check_mutation_rate_limit(&format!("update_appointment:{}", auth.sub))?;
+    state.check_mutation_rate_limit(&format!("cancel_appointment:{}", auth.sub))?;
+    let reason = body.cancellation_reason.unwrap_or_default();
+    validate_length(&reason, "Cancellation reason", 500)?;
 
-    if let Some(ref reason) = body.cancellation_reason {
-        validate_length(reason, "Cancellation reason", 500)?;
-    }
     let mut tx = state.pool.begin().await.map_err(|e| AppError::Database(e))?;
-    let patient = get_patient_from_auth(&state, &auth).await?;
+    let (_patient, _appt) = get_appointment_for_update(&mut tx, &state, &auth, id).await?;
 
-    let _appointment = sqlx::query_as::<_, Appointment>(
-        "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2 AND status = 'confirmed'"
+    let updated = sqlx::query_as::<_, Appointment>(
+        "WITH cancelled AS (
+            UPDATE appointments SET status = 'cancelled', cancellation_reason = $2, updated_at = NOW() WHERE id = $1 RETURNING *
+        ),
+        freed AS (
+            UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
+        )
+        SELECT * FROM cancelled"
     )
     .bind(id)
-    .bind(patient.id)
+    .bind(&reason)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    tx.commit().await.map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(AppointmentResponse {
+        id: updated.id,
+        patient_id: updated.patient_id,
+        doctor_id: updated.doctor_id,
+        slot_id: updated.slot_id,
+        status: updated.status,
+        notes: updated.notes,
+        attended: updated.attended,
+        cancellation_reason: updated.cancellation_reason,
+        created_at: updated.created_at,
+    }))
+}
+
+pub async fn reschedule_appointment(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<RescheduleRequest>,
+) -> Result<Json<AppointmentResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("reschedule_appointment:{}", auth.sub))?;
+
+    let mut tx = state.pool.begin().await.map_err(|e| AppError::Database(e))?;
+    let (patient, _appt) = get_appointment_for_update(&mut tx, &state, &auth, id).await?;
+
+    let new_slot = sqlx::query_as::<_, crate::models::AvailabilitySlot>(
+        "SELECT * FROM availability_slots WHERE id = $1 AND is_booked = FALSE FOR UPDATE"
+    )
+    .bind(body.slot_id)
     .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Database(e))?
-    .ok_or_else(|| AppError::NotFound("Appointment not found or already cancelled".to_string()))?;
+    .ok_or_else(|| AppError::BadRequest("Slot is not available or already booked".to_string()))?;
 
-    if let Some(new_slot_id) = body.slot_id {
-        let new_slot = sqlx::query_as::<_, crate::models::AvailabilitySlot>(
-            "SELECT * FROM availability_slots WHERE id = $1 AND is_booked = FALSE FOR UPDATE"
-        )
-        .bind(new_slot_id)
+    let upcoming_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM appointments a
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE AND a.id != $2"
+    )
+    .bind(patient.id)
+    .bind(id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    let max_upcoming = state.max_upcoming_appointments();
+    if upcoming_count >= max_upcoming {
+        tx.rollback().await.map_err(|e| AppError::Database(e))?;
+        return Err(AppError::BadRequest(
+            format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
+        ));
+    }
+
+    let doctor_id = body.doctor_id.unwrap_or(new_slot.doctor_id);
+
+    if let Some(req_doctor_id) = body.doctor_id {
+        if req_doctor_id != new_slot.doctor_id {
+            tx.rollback().await.map_err(|e| AppError::Database(e))?;
+            return Err(AppError::BadRequest("Selected slot does not belong to the specified doctor".to_string()));
+        }
+    }
+
+    check_slot_unavailability_in_tx(&mut tx, new_slot.doctor_id, new_slot.slot_date, new_slot.start_time).await?;
+
+    let existing = sqlx::query_as::<_, (chrono::NaiveTime, chrono::NaiveDate)>(
+        "SELECT s.start_time, s.slot_date
+         FROM appointments a
+         JOIN availability_slots s ON s.id = a.slot_id
+         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date = $2 AND a.id != $3"
+    )
+    .bind(patient.id)
+    .bind(new_slot.slot_date)
+    .bind(id)
+    .fetch_all(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    for (existing_time, _) in &existing {
+        let diff = (new_slot.start_time - *existing_time).num_minutes().abs();
+        let min_gap = state.min_gap_minutes();
+        if diff < min_gap {
+            tx.rollback().await.map_err(|e| AppError::Database(e))?;
+            return Err(AppError::BadRequest(
+                format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), new_slot.slot_date, min_gap)
+            ));
+        }
+    }
+
+    let today = chrono::Utc::now().date_naive();
+    let min_advance = state.min_advance_days();
+    if new_slot.slot_date < today + chrono::Duration::days(min_advance) {
+        tx.rollback().await.map_err(|e| AppError::Database(e))?;
+        return Err(AppError::BadRequest(
+            format!("Appointments must be booked at least {} days in advance. The selected date is too soon.", min_advance)
+        ));
+    }
+
+    let updated = free_and_update_slot(&mut tx, id, body.slot_id, doctor_id).await?;
+    tx.commit().await.map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(AppointmentResponse {
+        id: updated.id,
+        patient_id: updated.patient_id,
+        doctor_id: updated.doctor_id,
+        slot_id: updated.slot_id,
+        status: updated.status,
+        notes: updated.notes,
+        attended: updated.attended,
+        cancellation_reason: updated.cancellation_reason,
+        created_at: updated.created_at,
+    }))
+}
+
+pub async fn change_doctor(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<ChangeDoctorRequest>,
+) -> Result<Json<AppointmentResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("change_doctor:{}", auth.sub))?;
+
+    let mut tx = state.pool.begin().await.map_err(|e| AppError::Database(e))?;
+    let (_patient, _appt) = get_appointment_for_update(&mut tx, &state, &auth, id).await?;
+
+    sqlx::query("SELECT id FROM doctors WHERE id = $1")
+        .bind(body.doctor_id)
         .fetch_optional(&mut *tx)
         .await
         .map_err(|e| AppError::Database(e))?
-        .ok_or_else(|| AppError::BadRequest("Slot is not available or already booked".to_string()))?;
+        .ok_or_else(|| AppError::BadRequest("Doctor not found".to_string()))?;
 
-        let upcoming_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a
-             JOIN availability_slots s ON s.id = a.slot_id
-             WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE AND a.id != $2"
-        )
-        .bind(patient.id)
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(e))?;
+    let updated = sqlx::query_as::<_, Appointment>(
+        "UPDATE appointments SET doctor_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
+    )
+    .bind(id)
+    .bind(body.doctor_id)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|e| AppError::Database(e))?;
 
-        let max_upcoming = state.max_upcoming_appointments();
-        if upcoming_count >= max_upcoming {
-            tx.rollback().await.map_err(|e| AppError::Database(e))?;
-            return Err(AppError::BadRequest(
-                format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
-            ));
-        }
+    tx.commit().await.map_err(|e| AppError::Database(e))?;
 
-        let doctor_id = body.doctor_id.unwrap_or(new_slot.doctor_id);
+    Ok(Json(AppointmentResponse {
+        id: updated.id,
+        patient_id: updated.patient_id,
+        doctor_id: updated.doctor_id,
+        slot_id: updated.slot_id,
+        status: updated.status,
+        notes: updated.notes,
+        attended: updated.attended,
+        cancellation_reason: updated.cancellation_reason,
+        created_at: updated.created_at,
+    }))
+}
 
-        if let Some(req_doctor_id) = body.doctor_id {
-            if req_doctor_id != new_slot.doctor_id {
-                tx.rollback().await.map_err(|e| AppError::Database(e))?;
-                return Err(AppError::BadRequest("Selected slot does not belong to the specified doctor".to_string()));
-            }
-        }
+pub async fn mark_attendance(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<MarkAttendanceRequest>,
+) -> Result<Json<AppointmentResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("mark_attendance:{}", auth.sub))?;
 
-        check_slot_unavailability_in_tx(&mut tx, new_slot.doctor_id, new_slot.slot_date, new_slot.start_time).await?;
-
-        let existing = sqlx::query_as::<_, (chrono::NaiveTime, chrono::NaiveDate)>(
-            "SELECT s.start_time, s.slot_date
-             FROM appointments a
-             JOIN availability_slots s ON s.id = a.slot_id
-             WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date = $2 AND a.id != $3"
-        )
-        .bind(patient.id)
-        .bind(new_slot.slot_date)
-        .bind(id)
-        .fetch_all(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(e))?;
-
-        for (existing_time, _) in &existing {
-            let diff = (new_slot.start_time - *existing_time).num_minutes().abs();
-            let min_gap = state.min_gap_minutes();
-            if diff < min_gap {
-                tx.rollback().await.map_err(|e| AppError::Database(e))?;
-                return Err(AppError::BadRequest(
-                    format!("You already have an appointment at {} on {}. There must be at least {} minutes between appointments.", existing_time.format("%H:%M"), new_slot.slot_date, min_gap)
-                ));
-            }
-        }
-
-        let today = chrono::Utc::now().date_naive();
-        let min_advance = state.min_advance_days();
-        if new_slot.slot_date < today + chrono::Duration::days(min_advance) {
-            tx.rollback().await.map_err(|e| AppError::Database(e))?;
-            return Err(AppError::BadRequest(
-                format!("Appointments must be booked at least {} days in advance. The selected date is too soon.", min_advance)
-            ));
-        }
-
-        let updated = sqlx::query_as::<_, Appointment>(
-            "WITH old_slot AS (
-                SELECT slot_id FROM appointments WHERE id = $1
-            ),
-            freed AS (
-                UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM old_slot)
-            ),
-            booked AS (
-                UPDATE availability_slots SET is_booked = TRUE WHERE id = $2
-            )
-            UPDATE appointments SET slot_id = $2, doctor_id = $3, updated_at = NOW() WHERE id = $1
-            RETURNING *"
-        )
-        .bind(id)
-        .bind(new_slot_id)
-        .bind(doctor_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(e))?;
-
-        tx.commit().await.map_err(|e| AppError::Database(e))?;
-        return Ok(Json(AppointmentResponse {
-            id: updated.id,
-            patient_id: updated.patient_id,
-            doctor_id: updated.doctor_id,
-            slot_id: updated.slot_id,
-            status: updated.status,
-            notes: updated.notes,
-            attended: updated.attended,
-            cancellation_reason: updated.cancellation_reason,
-            created_at: updated.created_at,
-        }));
-    }
-
-    if let Some(new_doctor_id) = body.doctor_id {
-        tracing::info!("Updating doctor for appointment {} to {}", id, new_doctor_id);
-        sqlx::query("SELECT id FROM doctors WHERE id = $1")
-            .bind(new_doctor_id)
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(e))?
-            .ok_or_else(|| AppError::BadRequest("Doctor not found".to_string()))?;
-
-        let updated = sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET doctor_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
-        )
-        .bind(id)
-        .bind(new_doctor_id)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| AppError::Database(e))?;
-
-        tx.commit().await.map_err(|e| AppError::Database(e))?;
-        return Ok(Json(AppointmentResponse {
-            id: updated.id,
-            patient_id: updated.patient_id,
-            doctor_id: updated.doctor_id,
-            slot_id: updated.slot_id,
-            status: updated.status,
-            notes: updated.notes,
-            attended: updated.attended,
-            cancellation_reason: updated.cancellation_reason,
-            created_at: updated.created_at,
-        }));
-    }
-
-    if let Some(new_status) = &body.status {
-        if new_status == "cancelled" {
-            let reason = body.cancellation_reason.as_deref().unwrap_or("");
-            let updated = sqlx::query_as::<_, Appointment>(
-                "WITH cancelled AS (
-                    UPDATE appointments SET status = 'cancelled', cancellation_reason = $2, updated_at = NOW() WHERE id = $1 RETURNING *
-                ),
-                freed AS (
-                    UPDATE availability_slots SET is_booked = FALSE WHERE id = (SELECT slot_id FROM cancelled)
-                )
-                SELECT * FROM cancelled"
-            )
-            .bind(id)
-            .bind(reason)
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| AppError::Database(e))?;
-
-            tx.commit().await.map_err(|e| AppError::Database(e))?;
-            return Ok(Json(AppointmentResponse {
-                id: updated.id,
-                patient_id: updated.patient_id,
-                doctor_id: updated.doctor_id,
-                slot_id: updated.slot_id,
-                status: updated.status,
-                notes: updated.notes,
-                attended: updated.attended,
-                cancellation_reason: updated.cancellation_reason,
-                created_at: updated.created_at,
-            }));
-        }
-    }
-
-    if let Some(attended) = body.attended {
-        let updated = sqlx::query_as::<_, Appointment>(
+    let updated = if auth.role == "admin" || auth.role == "scheduler" {
+        sqlx::query_as::<_, Appointment>(
             "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
         )
         .bind(id)
-        .bind(attended)
-        .fetch_one(&mut *tx)
+        .bind(body.attended)
+        .fetch_one(&state.pool)
         .await
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(|e| {
+            if let sqlx::Error::RowNotFound = e {
+                AppError::NotFound("Appointment not found".to_string())
+            } else {
+                AppError::Database(e)
+            }
+        })?
+    } else {
+        let patient = get_patient_from_auth(&state, &auth).await?;
+        sqlx::query_as::<_, Appointment>(
+            "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 AND patient_id = $3 RETURNING *"
+        )
+        .bind(id)
+        .bind(body.attended)
+        .bind(patient.id)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|e| {
+            if let sqlx::Error::RowNotFound = e {
+                AppError::NotFound("Appointment not found".to_string())
+            } else {
+                AppError::Database(e)
+            }
+        })?
+    };
 
-        tx.commit().await.map_err(|e| AppError::Database(e))?;
-        return Ok(Json(AppointmentResponse {
-            id: updated.id,
-            patient_id: updated.patient_id,
-            doctor_id: updated.doctor_id,
-            slot_id: updated.slot_id,
-            status: updated.status,
-            notes: updated.notes,
-            attended: updated.attended,
-            cancellation_reason: updated.cancellation_reason,
-            created_at: updated.created_at,
-        }));
-    }
-
-    tx.rollback().await.map_err(|e| AppError::Database(e))?;
-    tracing::warn!(
-        "No valid update for appointment {} — slot_id={:?}, doctor_id={:?}, status={:?}, attended={:?}",
-        id, body.slot_id, body.doctor_id, body.status, body.attended
-    );
-    Err(AppError::BadRequest("No valid update provided".to_string()))
+    Ok(Json(AppointmentResponse {
+        id: updated.id,
+        patient_id: updated.patient_id,
+        doctor_id: updated.doctor_id,
+        slot_id: updated.slot_id,
+        status: updated.status,
+        notes: updated.notes,
+        attended: updated.attended,
+        cancellation_reason: updated.cancellation_reason,
+        created_at: updated.created_at,
+    }))
 }
 
 async fn get_patient_from_auth(
@@ -557,5 +647,8 @@ pub fn appointment_routes() -> Router<AppState> {
     Router::new()
         .route("/api/appointments", post(create_appointment))
         .route("/api/appointments/:id", get(get_appointment))
-        .route("/api/appointments/:id", patch(update_appointment))
+        .route("/api/appointments/:id/cancel", patch(cancel_appointment))
+        .route("/api/appointments/:id/reschedule", patch(reschedule_appointment))
+        .route("/api/appointments/:id/change-doctor", patch(change_doctor))
+        .route("/api/appointments/:id/attendance", patch(mark_attendance))
 }

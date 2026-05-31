@@ -398,7 +398,7 @@ export default function BookAppointment() {
 
   const handleCancelAppointment = async (appointmentId: string, reason?: string) => {
     try {
-      await api.updateAppointment(appointmentId, { status: 'cancelled', cancellation_reason: reason || '' }, token);
+      await api.cancelAppointment(appointmentId, { cancellation_reason: reason || '' }, token);
       setUpcomingAppointments((prev) => prev.filter((a) => a.id !== appointmentId));
     } catch (err: any) {
       setError(err.message || 'Failed to cancel appointment. Please try again.');
@@ -422,7 +422,7 @@ export default function BookAppointment() {
       setLoading(true);
       setError('');
       try {
-        await api.updateAppointment(rescheduling.appointmentId, { doctor_id: id }, token);
+        await api.changeDoctor(rescheduling.appointmentId, { doctor_id: id }, token);
         setRescheduling(null);
         goToStep('review');
       } catch (err: any) {
@@ -450,7 +450,7 @@ export default function BookAppointment() {
     setError('');
     try {
       if (isReschedule) {
-        await api.updateAppointment(
+        await api.rescheduleAppointment(
           rescheduling.appointmentId,
           { slot_id: slotId, doctor_id: doctorId ?? undefined },
           token

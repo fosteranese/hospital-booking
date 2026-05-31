@@ -447,7 +447,7 @@ export function ExistingPatientReview({
   };
 
   const handleMarkAttendance = async (appointmentId: string, attended: boolean) => {
-    await api.updateAppointment(appointmentId, { attended }, token);
+    await api.markAttendance(appointmentId, { attended }, token);
     setHistory((prev) => prev.map((h) => (h.id === appointmentId ? { ...h, attended } : h)));
   };
 
