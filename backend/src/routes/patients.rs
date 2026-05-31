@@ -190,6 +190,9 @@ fn validate_email(email: &str) -> Result<(), AppError> {
 }
 
 fn normalize_phone(raw: &str) -> String {
+    if raw.is_empty() {
+        return String::new();
+    }
     let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
     match digits.len() {
         9 => format!("+233{}", digits),

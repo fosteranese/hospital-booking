@@ -61,7 +61,7 @@ hospital-booking/
 │   │   │   ├── auth.rs      # OTP request/verify, token refresh
 │   │   │   ├── patients.rs  # CRUD, lookup, history, upcoming, last doctor
 │   │   │   ├── doctors.rs   # List, availability, max-date, available dates
-│   │   │   ├── appointments.rs  # Create, get, update (reschedule/cancel/attendance)
+│   │   │   ├── appointments.rs  # Create, get, cancel, reschedule, change-doctor, mark-attendance
 │   │   │   └── settings.rs  # Get/update settings groups
 │   │   ├── services/
 │   │   │   ├── otp.rs       # OTP generation and hashing
@@ -90,11 +90,14 @@ hospital-booking/
 │   │   │   ├── ExistingPatientReview.tsx  # Returning patient dashboard
 │   │   │   ├── EditProfileModal.tsx    # Edit patient name/email/phone
 │   │   │   ├── HistoryModal.tsx        # Past appointments table (paginated >10)
-│   │   │   ├── AppointmentDetailModal.tsx  # Single appointment detail view
+│   │   │   ├── AppointmentDetailModal.tsx  # Single appointment detail view (uses useClinic)
 │   │   │   ├── cancel-appointment-dialog.tsx  # Cancel confirmation (reason required)
 │   │   │   ├── AddToCalendar.tsx       # Google/Apple/Outlook calendar links
 │   │   │   ├── loading-overlay.tsx     # Spinner overlay
 │   │   │   └── ui/                     # shadcn/ui components
+│   │   ├── contexts/
+│   │   │   ├── auth-context.tsx    # AuthProvider — token, role, identifier
+│   │   │   └── clinic-context.tsx  # ClinicProvider — name, address, minAdvanceDays
 │   │   ├── lib/
 │   │   │   ├── api.ts         # API client with token auto-refresh
 │   │   │   ├── booking-storage.ts  # sessionStorage persistence
@@ -149,7 +152,10 @@ hospital-booking/
 |--------|-------|-------------|
 | POST | `/api/appointments` | Create appointment |
 | GET | `/api/appointments/:id` | Get appointment |
-| PATCH | `/api/appointments/:id` | Update (reschedule/cancel/attendance) |
+| PATCH | `/api/appointments/:id/cancel` | Cancel (frees slot) — patient, admin, scheduler |
+| PATCH | `/api/appointments/:id/reschedule` | Change time slot (±doctor) — patient, admin, scheduler |
+| PATCH | `/api/appointments/:id/change-doctor` | Change doctor only — patient, admin, scheduler |
+| PATCH | `/api/appointments/:id/attendance` | Mark attended/missed — admin, scheduler, patient (own) |
 
 ### Settings
 | Method | Route | Description |
@@ -215,7 +221,7 @@ Updating appointment settings triggers slot regeneration.
 | 3 | API: profile editing and history | API |
 | 4 | API: OTP auth and create patient flow | API |
 | 5 | API: duplicate rejection returns 409 | API |
-| 6 | API: update appointment attendance | API |
+| 6 | API: mark appointment attendance | API |
 | 7 | API: cancelled appointment appears in history | API |
 | 8 | API: token invalidation prevents use | API |
 | 9 | API: refresh fails for invalidated token | API |
@@ -316,3 +322,12 @@ Run with: `cd frontend && npx playwright test`
 31. Fixed `verify_patient_access` to look up patient by `auth.sub` (phone/email) from DB — JWT was always created with `patient_id: None` so every patient data endpoint (upcoming, history, last doctor, update) silently returned 401, causing the review page to show 0 appointments
 32. Fixed back navigation in `BookAppointment.tsx` `goBack()` — pressing Back from datetime page now goes to 'review' for returning patients (not just reschedules)
 33. Added error display with retry buttons for upcoming appointments and history API failures — errors are shown inline with a "Retry" button instead of silently showing empty state; history errors shown in modal
+34. RBAC implementation (4 roles: patient, doctor, scheduler, admin) — JWT includes role, middleware `require_role()`, route guarding, admin seeding via `ADMIN_IDENTIFIER` env var, users table migration
+35. Security audit: IDOR fixes (appointment/:id ownership check, patient/lookup uses JWT sub), TOCTOU fix (FOR UPDATE in create_appointment), input length validation, mutation rate limiter, OTP rate limiter, sanitized error messages
+36. Mobile responsiveness: OTP slots 40px on mobile, overflow-x-auto for tables, touch targets ≥44px, calendar cells 40px on mobile, stacked name fields, reduced avatar (80px), page padding reduced
+37. Fixed effect ordering bug (`BookAppointment.tsx`): save/persist useEffect moved before fetch useEffect — was causing "logged out after OTP" because fetch ran before tokenStore was populated
+38. Replaced `sessionStorage.clear()`/`localStorage.clear()` with `clearBooking()` — only removes `booking` key, avoids disrupting other apps on same subdomain
+39. Created `AuthContext` + `ClinicContext` — provides token/role/clinic-config via hooks instead of prop drilling
+40. Refactored `ExistingPatientReview`, `EditProfileModal`, `AppointmentCard`, `UpcomingAppointmentsModal`, `AppointmentDetailModal` to use `useAuth()`/`useClinic()` — removed `token`, `clinicName`, `clinicAddress` from props
+41. Fixed pre-existing `StatusBadge` missing component in `AppointmentDetailModal.tsx`
+42. Split backend `update_appointment` if-else chain into 4 dedicated endpoints: `PATCH /api/appointments/:id/cancel`, `/reschedule`, `/change-doctor`, `/attendance` — with proper role-based access (patient owns their data, admin/scheduler can act on any appointment)

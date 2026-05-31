@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::{AppError, validate_length};
-use crate::middleware::auth::{AuthUser, require_role};
+use crate::middleware::auth::{require_role, AuthUser};
 use crate::services::generate_slots;
 use crate::state::AppState;
 
@@ -26,10 +26,8 @@ pub struct UpdateSettingRequest {
 
 pub async fn get_setting(
     State(state): State<AppState>,
-    auth: AuthUser,
     Path((group, name)): Path<(String, String)>,
 ) -> Result<Json<SettingResponse>, AppError> {
-    require_role(&auth, &["admin"])?;
     let setting = state.settings.get_setting(&group, &name).await?
         .ok_or_else(|| AppError::NotFound(format!("Setting '{}/{}' not found", group, name)))?;
 
@@ -51,10 +49,8 @@ pub async fn get_setting(
 
 pub async fn get_settings_group(
     State(state): State<AppState>,
-    auth: AuthUser,
     Path(group): Path<String>,
 ) -> Result<Json<Vec<SettingResponse>>, AppError> {
-    require_role(&auth, &["admin"])?;
     let settings = state.settings.get_group(&group).await?;
     if settings.is_empty() {
         return Err(AppError::NotFound(format!("Settings group '{}' not found", group)));
