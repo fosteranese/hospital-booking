@@ -132,8 +132,10 @@ export default function BookAppointment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointmentData[]>(initialData?.upcomingAppointments ?? []);
-  const [upcomingLoading, setUpcomingLoading] = useState(false);
+  const [upcomingLoading, setUpcomingLoading] = useState(initialStep === 'review' && !!initialData?.existingPatient);
+  const [upcomingError, setUpcomingError] = useState('');
   const [rescheduling, setRescheduling] = useState<ReschedulingState | null>(initialData?.rescheduling ?? null);
+  const [prevStepBeforeDatetime, setPrevStepBeforeDatetime] = useState<Step | null>(null);
 
   const isReschedule = rescheduling !== null;
 
@@ -184,18 +186,41 @@ export default function BookAppointment() {
     setError('');
     setUpcomingAppointments([]);
     setUpcomingLoading(false);
+    setUpcomingError('');
     setRescheduling(null);
+    setPrevStepBeforeDatetime(null);
+  }, []);
+
+  const fetchUpcoming = useCallback(() => {
+    if (!existingPatient || !token) return;
+    setUpcomingLoading(true);
+    setUpcomingError('');
+    api.getUpcomingAppointments(existingPatient.id, token)
+      .then((data) => { setUpcomingAppointments(data); setUpcomingError(''); })
+      .catch((err) => { setUpcomingAppointments([]); setUpcomingError(err.message); })
+      .finally(() => setUpcomingLoading(false));
+  }, [existingPatient, token]);
+
+  useEffect(() => {
+    if (initialData?.token) {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000)
+      );
+      Promise.race([tokenStore.refresh(), timeout])
+        .then((newToken) => { if (newToken) setToken(newToken as string); })
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
+    if (step === 'confirm') setNotes('');
+  }, [step]);
+
+  useEffect(() => {
     if (step === 'review' && existingPatient && token) {
-      setUpcomingLoading(true);
-      api.getUpcomingAppointments(existingPatient.id, token)
-        .then(setUpcomingAppointments)
-        .catch(() => setUpcomingAppointments([]))
-        .finally(() => setUpcomingLoading(false));
+      fetchUpcoming();
     }
-  }, [step, existingPatient, token]);
+  }, [step, existingPatient, token, fetchUpcoming]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -243,6 +268,9 @@ export default function BookAppointment() {
 
   const goToStep = (s: Step) => {
     setDirection(stepIndex(s) > stepIndex(step) ? 1 : -1);
+    if (s === 'datetime') {
+      setPrevStepBeforeDatetime(step);
+    }
     setStep(s);
   };
 
@@ -258,7 +286,7 @@ export default function BookAppointment() {
         setRescheduling(null);
         break;
       case 'datetime':
-        setStep(isReschedule ? 'review' : 'doctor');
+        setStep(prevStepBeforeDatetime === 'doctor' ? 'doctor' : 'review');
         setRescheduling(null);
         break;
       case 'confirm':
@@ -425,7 +453,17 @@ export default function BookAppointment() {
         <div className="flex min-h-full min-w-0">
           <div className={cn("flex flex-col items-center justify-center flex-1 min-w-0 p-8 xl:p-10 mx-auto", step === 'auth' || step === 'success' ? "max-w-xl" : "max-w-2xl")}>
             <div className="w-full space-y-2">
-              {step !== 'auth' && step !== 'success' && (
+              {step === 'review' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { if (token) api.invalidateToken(token).catch(() => {}); resetAll(); }}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  Sign out
+                </Button>
+              )}
+              {step !== 'auth' && step !== 'success' && step !== 'review' && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -451,13 +489,15 @@ export default function BookAppointment() {
                     <AuthFlow onVerified={handleVerified} />
                   )}
 
-                  {step === 'review' && existingPatient && (
+                    {step === 'review' && existingPatient && (
                     <ExistingPatientReview
                       patient={existingPatient}
                       lastDoctor={lastDoctor}
                       doctorCount={doctorCount}
                       upcomingAppointments={upcomingAppointments}
                       upcomingLoading={upcomingLoading}
+                      upcomingError={upcomingError}
+                      onRetryUpcoming={fetchUpcoming}
                       token={token}
                       onRebookWithLastDoctor={handleRebookWithLastDoctor}
                       onChangeDoctor={handleChangeDoctor}
@@ -605,8 +645,8 @@ export default function BookAppointment() {
                           endTime={bookEndTime}
                         />
 
-                        <Button onClick={resetAll} className="w-full h-11 text-base shadow-xs">
-                          Book Another Appointment
+                        <Button onClick={() => goToStep('review')} className="w-full h-11 text-base shadow-xs">
+                          View your bookings
                         </Button>
                       </div>
                     </motion.div>

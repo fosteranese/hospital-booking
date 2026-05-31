@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,10 @@ function CancelAppointmentDialog({
   isCancelling,
 }: CancelAppointmentDialogProps) {
   const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    if (open) setReason('');
+  }, [open]);
 
   const handleConfirm = () => {
     onConfirm(reason.trim());

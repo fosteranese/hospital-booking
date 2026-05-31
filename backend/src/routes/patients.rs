@@ -47,11 +47,18 @@ pub async fn create_patient(
 ) -> Result<Json<Patient>, AppError> {
     let first_name = body.first_name.trim().to_string();
     let last_name = body.last_name.trim().to_string();
-    let phone = body.phone.trim().to_string();
+    let phone = normalize_phone(body.phone.trim());
     let email = body.email.trim().to_lowercase();
 
     if first_name.is_empty() || last_name.is_empty() {
         return Err(AppError::Validation("First name and last name are required".to_string()));
+    }
+
+    if !email.is_empty() {
+        validate_email(&email)?;
+    }
+    if !phone.is_empty() {
+        validate_phone(&phone)?;
     }
 
     if !email.is_empty() || !phone.is_empty() {
@@ -109,7 +116,7 @@ pub async fn lookup_patient(
     _auth: AuthUser,
     Query(query): Query<LookupQuery>,
 ) -> Result<Json<Patient>, AppError> {
-    let identifier = query.identifier.trim().to_lowercase();
+    let identifier = normalize_phone_or_raw(&query.identifier.trim().to_lowercase());
 
     let patient = if identifier.contains('@') {
         sqlx::query_as::<_, Patient>(
@@ -131,11 +138,80 @@ pub async fn lookup_patient(
     Ok(Json(patient))
 }
 
+async fn verify_patient_access(pool: &sqlx::PgPool, auth: &AuthUser, patient_id: Uuid) -> Result<(), AppError> {
+    let lookup = normalize_phone_or_raw(&auth.sub);
+    let patient = if lookup.contains('@') {
+        sqlx::query_as::<_, Patient>("SELECT * FROM patients WHERE email = $1")
+            .bind(&lookup)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+    } else {
+        sqlx::query_as::<_, Patient>("SELECT * FROM patients WHERE phone = $1")
+            .bind(&lookup)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+    };
+
+    match patient {
+        Some(p) if p.id == patient_id => Ok(()),
+        Some(_) => Err(AppError::Unauthorized("You can only access your own patient data".to_string())),
+        None => Err(AppError::Unauthorized("No patient profile linked to this account".to_string())),
+    }
+}
+
+fn validate_email(email: &str) -> Result<(), AppError> {
+    if !email.is_empty() {
+        let parts: Vec<&str> = email.split('@').collect();
+        if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() || !parts[1].contains('.') {
+            return Err(AppError::Validation("Invalid email format".to_string()));
+        }
+    }
+    Ok(())
+}
+
+fn normalize_phone(raw: &str) -> String {
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    match digits.len() {
+        9 => format!("+233{}", digits),
+        10 if digits.starts_with('0') => format!("+233{}", &digits[1..]),
+        12 if digits.starts_with("233") => format!("+{}", digits),
+        13 if digits.starts_with("2330") => format!("+233{}", &digits[4..]),
+        _ => {
+            if raw.starts_with('+') {
+                raw.to_string()
+            } else {
+                format!("+{}", digits)
+            }
+        }
+    }
+}
+
+pub(crate) fn normalize_phone_or_raw(raw: &str) -> String {
+    if raw.contains('@') {
+        raw.to_lowercase()
+    } else {
+        normalize_phone(raw)
+    }
+}
+
+fn validate_phone(phone: &str) -> Result<(), AppError> {
+    if !phone.is_empty() {
+        let digits: String = phone.chars().filter(|c| c.is_ascii_digit()).collect();
+        if digits.len() < 10 {
+            return Err(AppError::Validation("Phone number must contain at least 10 digits".to_string()));
+        }
+    }
+    Ok(())
+}
+
 pub async fn get_last_doctor(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
 ) -> Result<Json<Option<LastDoctorInfo>>, AppError> {
+    verify_patient_access(&state.pool, &auth, patient_id).await?;
     let result = sqlx::query_as::<_, (Uuid, String, String, chrono::NaiveDate, chrono::NaiveTime)>(
         "SELECT d.id, d.first_name || ' ' || d.last_name, d.specialization, s.slot_date, s.start_time
          FROM appointments a
@@ -161,9 +237,10 @@ pub async fn get_last_doctor(
 
 pub async fn get_upcoming_appointments(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
 ) -> Result<Json<Vec<UpcomingAppointment>>, AppError> {
+    verify_patient_access(&state.pool, &auth, patient_id).await?;
     let appointments = sqlx::query_as::<_, UpcomingAppointment>(
         "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes
@@ -184,9 +261,10 @@ pub async fn get_upcoming_appointments(
 
 pub async fn get_appointment_history(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
 ) -> Result<Json<Vec<AppointmentHistoryItem>>, AppError> {
+    verify_patient_access(&state.pool, &auth, patient_id).await?;
     let appointments = sqlx::query_as::<_, AppointmentHistoryItem>(
         "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended, a.cancellation_reason
@@ -207,10 +285,11 @@ pub async fn get_appointment_history(
 
 pub async fn update_patient(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
     Json(body): Json<UpdatePatientRequest>,
 ) -> Result<Json<Patient>, AppError> {
+    verify_patient_access(&state.pool, &auth, patient_id).await?;
     let current = sqlx::query_as::<_, Patient>(
         "SELECT * FROM patients WHERE id = $1"
     )
@@ -222,8 +301,15 @@ pub async fn update_patient(
 
     let first_name = body.first_name.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.first_name.clone());
     let last_name = body.last_name.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.last_name.clone());
-    let phone = body.phone.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.phone.clone());
+    let phone = body.phone.map(|v| normalize_phone(v.trim())).filter(|v| !v.is_empty()).unwrap_or_else(|| current.phone.clone());
     let email = body.email.map(|v| v.trim().to_lowercase()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.email.clone());
+
+    if !email.is_empty() {
+        validate_email(&email)?;
+    }
+    if !phone.is_empty() {
+        validate_phone(&phone)?;
+    }
 
     if email != current.email || phone != current.phone {
         let existing = sqlx::query_scalar::<_, i64>(
@@ -279,7 +365,7 @@ pub async fn check_patient_exists(
     };
 
     let phone_taken = if let Some(phone) = &query.phone {
-        let phone = phone.trim().to_string();
+        let phone = normalize_phone(phone.trim());
         if phone.is_empty() {
             false
         } else {
