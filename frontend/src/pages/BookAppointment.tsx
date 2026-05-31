@@ -246,12 +246,8 @@ export default function BookAppointment() {
     }
   }, [existingPatient, token, setSearchParams]);
 
-  useEffect(() => {
-    if (step === 'review' && existingPatient && token) {
-      fetchUpcoming();
-    }
-  }, [step, existingPatient, token, fetchUpcoming]);
-
+  // Save effect must run BEFORE fetch effect so tokenStore is populated
+  // when fetchUpcoming calls tokenStore.refresh().
   useEffect(() => {
     const params = new URLSearchParams();
     if (step !== 'auth') {
@@ -296,6 +292,12 @@ export default function BookAppointment() {
     slotId, bookDate, bookTime, bookEndTime,
     rescheduling, upcomingAppointments,
   ]);
+
+  useEffect(() => {
+    if (step === 'review' && existingPatient && token) {
+      fetchUpcoming();
+    }
+  }, [step, existingPatient, token, fetchUpcoming]);
 
   const goToStep = (s: Step) => {
     setDirection(stepIndex(s) > stepIndex(step) ? 1 : -1);
