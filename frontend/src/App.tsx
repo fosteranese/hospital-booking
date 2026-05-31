@@ -12,19 +12,7 @@ import { ClinicProvider } from '@/contexts/clinic-context';
 
 function ProtectedDashboard({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) {
   const { token, userRole } = useAuth();
-  if (!token) return <Navigate to="/" replace />;
-  if (!allowedRoles.includes(userRole)) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-foreground">Access Denied</h2>
-            <p className="text-sm text-muted-foreground mt-1">You do not have permission to view this page.</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  if (!token || !allowedRoles.includes(userRole)) return <Navigate to="/" replace />;
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
@@ -36,9 +24,8 @@ function DashboardRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedDashboard allowedRoles={['admin', 'scheduler', 'doctor', 'patient']}>
+          <ProtectedDashboard allowedRoles={['admin', 'scheduler', 'doctor']}>
             {userRole === 'doctor' ? <DoctorDashboard /> :
-             userRole === 'admin' ? <AdminDashboard /> :
              userRole === 'scheduler' ? <SchedulerDashboard /> :
              <AdminDashboard />}
           </ProtectedDashboard>

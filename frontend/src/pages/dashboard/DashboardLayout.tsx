@@ -17,16 +17,13 @@ const roleNav = {
   doctor: [
     { label: 'Today', href: '/dashboard', icon: DashboardSquare01Icon },
   ],
-  patient: [
-    { label: 'My Appointments', href: '/dashboard', icon: Calendar01Icon },
-  ],
 } as const;
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userRole, clearAuth, otpIdentifier } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const role = (userRole in roleNav ? userRole : 'patient') as keyof typeof roleNav;
+  const role = (userRole in roleNav ? userRole : 'admin') as keyof typeof roleNav;
   const navItems = roleNav[role];
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
 
