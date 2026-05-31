@@ -27,6 +27,7 @@ pub struct VerifyOtpRequest {
 #[derive(Serialize)]
 pub struct VerifyOtpResponse {
     pub token: String,
+    pub role: String,
 }
 
 pub async fn request_otp(
@@ -106,10 +107,27 @@ pub async fn verify_otp_handler(
         return Err(AppError::Unauthorized("Invalid or expired OTP".to_string()));
     }
 
-    let token = create_token(&identifier, &state.jwt_secret)
+    // Ensure user record exists (default role: patient)
+    sqlx::query(
+        "INSERT INTO users (identifier, role) VALUES ($1, 'patient') ON CONFLICT (identifier) DO NOTHING"
+    )
+    .bind(&identifier)
+    .execute(&state.pool)
+    .await
+    .map_err(|_| AppError::Internal("Failed to create user".to_string()))?;
+
+    let role: String = sqlx::query_scalar(
+        "SELECT role FROM users WHERE identifier = $1"
+    )
+    .bind(&identifier)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|_| AppError::Internal("Failed to get user role".to_string()))?;
+
+    let token = create_token(&identifier, &role, &state.jwt_secret)
         .map_err(|_| AppError::Internal("Failed to create token. Please try again.".to_string()))?;
 
-    Ok(Json(VerifyOtpResponse { token }))
+    Ok(Json(VerifyOtpResponse { token, role }))
 }
 
 #[derive(Deserialize)]
@@ -182,12 +200,12 @@ pub async fn refresh_token_handler(
         return Err(AppError::Unauthorized("Session expired. Please login again.".to_string()));
     }
 
-    let token = create_token(&claims.sub, &state.jwt_secret)
+    let token = create_token(&claims.sub, &claims.role, &state.jwt_secret)
         .map_err(|_| AppError::Internal("Failed to refresh token. Please login again.".to_string()))?;
 
     cleanup_blacklist(&state.pool).await;
 
-    Ok(Json(VerifyOtpResponse { token }))
+    Ok(Json(VerifyOtpResponse { token, role: claims.role }))
 }
 
 pub fn auth_routes() -> axum::Router<AppState> {

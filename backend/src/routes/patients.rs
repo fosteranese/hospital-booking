@@ -2,7 +2,7 @@ use axum::{Json, extract::{Query, State}, Router, routing::{get, post, put}};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::error::AppError;
+use crate::error::{AppError, validate_length};
 use crate::middleware::auth::AuthUser;
 use crate::models::{AppointmentHistoryItem, LastDoctorInfo, Patient, UpcomingAppointment};
 use crate::state::AppState;
@@ -24,11 +24,6 @@ pub struct UpdatePatientRequest {
 }
 
 #[derive(Deserialize)]
-pub struct LookupQuery {
-    pub identifier: String,
-}
-
-#[derive(Deserialize)]
 pub struct CheckPatientQuery {
     pub email: Option<String>,
     pub phone: Option<String>,
@@ -45,6 +40,8 @@ pub async fn create_patient(
     _auth: AuthUser,
     Json(body): Json<CreatePatientRequest>,
 ) -> Result<Json<Patient>, AppError> {
+    state.check_mutation_rate_limit(&format!("create_patient:{}", _auth.sub))?;
+
     let first_name = body.first_name.trim().to_string();
     let last_name = body.last_name.trim().to_string();
     let phone = normalize_phone(body.phone.trim());
@@ -53,6 +50,11 @@ pub async fn create_patient(
     if first_name.is_empty() || last_name.is_empty() {
         return Err(AppError::Validation("First name and last name are required".to_string()));
     }
+
+    validate_length(&first_name, "First name", 100)?;
+    validate_length(&last_name, "Last name", 100)?;
+    validate_length(&email, "Email", 255)?;
+    validate_length(&phone, "Phone", 20)?;
 
     if !email.is_empty() {
         validate_email(&email)?;
@@ -114,9 +116,8 @@ pub async fn create_patient(
 pub async fn lookup_patient(
     State(state): State<AppState>,
     _auth: AuthUser,
-    Query(query): Query<LookupQuery>,
 ) -> Result<Json<Patient>, AppError> {
-    let identifier = normalize_phone_or_raw(&query.identifier.trim().to_lowercase());
+    let identifier = normalize_phone_or_raw(&_auth.sub);
 
     let patient = if identifier.contains('@') {
         sqlx::query_as::<_, Patient>(
@@ -139,6 +140,23 @@ pub async fn lookup_patient(
 }
 
 async fn verify_patient_access(pool: &sqlx::PgPool, auth: &AuthUser, patient_id: Uuid) -> Result<(), AppError> {
+    // Admin and scheduler can access any patient data
+    if auth.role == "admin" || auth.role == "scheduler" {
+        // Verify patient exists
+        let exists = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM patients WHERE id = $1"
+        )
+        .bind(patient_id)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| AppError::Database(e))?;
+        return if exists > 0 {
+            Ok(())
+        } else {
+            Err(AppError::NotFound("Patient not found".to_string()))
+        };
+    }
+
     let lookup = normalize_phone_or_raw(&auth.sub);
     let patient = if lookup.contains('@') {
         sqlx::query_as::<_, Patient>("SELECT * FROM patients WHERE email = $1")
@@ -289,6 +307,7 @@ pub async fn update_patient(
     axum::extract::Path(patient_id): axum::extract::Path<Uuid>,
     Json(body): Json<UpdatePatientRequest>,
 ) -> Result<Json<Patient>, AppError> {
+    state.check_mutation_rate_limit(&format!("update_patient:{}", auth.sub))?;
     verify_patient_access(&state.pool, &auth, patient_id).await?;
     let current = sqlx::query_as::<_, Patient>(
         "SELECT * FROM patients WHERE id = $1"
@@ -303,6 +322,11 @@ pub async fn update_patient(
     let last_name = body.last_name.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.last_name.clone());
     let phone = body.phone.map(|v| normalize_phone(v.trim())).filter(|v| !v.is_empty()).unwrap_or_else(|| current.phone.clone());
     let email = body.email.map(|v| v.trim().to_lowercase()).filter(|v| !v.is_empty()).unwrap_or_else(|| current.email.clone());
+
+    validate_length(&first_name, "First name", 100)?;
+    validate_length(&last_name, "Last name", 100)?;
+    validate_length(&email, "Email", 255)?;
+    validate_length(&phone, "Phone", 20)?;
 
     if !email.is_empty() {
         validate_email(&email)?;

@@ -12,6 +12,7 @@ use crate::state::AppState;
 #[allow(dead_code)]
 pub struct AuthUser {
     pub sub: String,
+    pub role: String,
     pub patient_id: Option<Uuid>,
 }
 
@@ -50,7 +51,16 @@ impl FromRequestParts<AppState> for AuthUser
 
         Ok(AuthUser {
             sub: claims.sub,
+            role: claims.role,
             patient_id: claims.patient_id,
         })
+    }
+}
+
+pub fn require_role(auth: &AuthUser, roles: &[&str]) -> Result<(), AppError> {
+    if roles.contains(&auth.role.as_str()) {
+        Ok(())
+    } else {
+        Err(AppError::Unauthorized("Insufficient permissions".to_string()))
     }
 }

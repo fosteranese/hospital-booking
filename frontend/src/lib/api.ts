@@ -198,7 +198,7 @@ export const api = {
     }),
 
   verifyOtp: (identifier: string, code: string) =>
-    request<{ token: string }>('/auth/verify-otp', {
+    request<{ token: string; role: string }>('/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ identifier, code }),
     }),

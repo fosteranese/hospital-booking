@@ -67,6 +67,20 @@ async fn main() {
         std::process::exit(1);
     }
 
+    // Seed admin user from environment variable
+    if let Ok(admin_identifier) = std::env::var("ADMIN_IDENTIFIER") {
+        let normalized = admin_identifier.trim().to_lowercase();
+        if !normalized.is_empty() {
+            let _ = sqlx::query(
+                "INSERT INTO users (identifier, role) VALUES ($1, 'admin') ON CONFLICT (identifier) DO UPDATE SET role = 'admin'"
+            )
+            .bind(&normalized)
+            .execute(&pool)
+            .await;
+            tracing::info!("Admin user seeded: {}", normalized);
+        }
+    }
+
     // Background task: keep slots fresh and clean stale blacklist entries every hour
     let bg_pool = pool.clone();
     let bg_settings = settings.clone();
@@ -135,6 +149,7 @@ async fn main() {
         clinic_address: Arc::new(RwLock::new(clinic_address)),
         settings,
         otp_limiter: Arc::new(Mutex::new(RateLimiter::new(5, 300))),
+        mutation_limiter: Arc::new(Mutex::new(RateLimiter::new(20, 60))),
     };
 
     let cors = {

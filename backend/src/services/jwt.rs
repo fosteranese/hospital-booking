@@ -13,15 +13,17 @@ pub fn hash_token(token: &str) -> String {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,      // identifier (email/phone)
+    pub role: String,
     pub patient_id: Option<Uuid>,
     pub exp: usize,
     pub iat: usize,
 }
 
-pub fn create_token(identifier: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn create_token(identifier: &str, role: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Utc::now();
     let claims = Claims {
         sub: identifier.to_string(),
+        role: role.to_string(),
         patient_id: None,
         iat: now.timestamp() as usize,
         exp: (now + Duration::minutes(15)).timestamp() as usize,

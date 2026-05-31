@@ -2,10 +2,10 @@ use axum::{Json, extract::{Path, State}, Router, routing::{get, patch, post}};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::error::AppError;
+use crate::error::{AppError, validate_length};
 use crate::middleware::auth::AuthUser;
 use crate::routes::patients::normalize_phone_or_raw;
-use crate::models::{Appointment, DoctorUnavailability};
+use crate::models::Appointment;
 use crate::state::AppState;
 
 async fn check_slot_unavailability_in_tx(
@@ -14,7 +14,7 @@ async fn check_slot_unavailability_in_tx(
     slot_date: chrono::NaiveDate,
     start_time: chrono::NaiveTime,
 ) -> Result<(), AppError> {
-    let unavail = sqlx::query_as::<_, DoctorUnavailability>(
+    let unavail = sqlx::query_as::<_, crate::models::DoctorUnavailability>(
         "SELECT * FROM doctor_unavailability WHERE doctor_id = $1 AND slot_date = $2"
     )
     .bind(doctor_id)
@@ -72,14 +72,20 @@ pub struct AppointmentResponse {
 
 pub async fn create_appointment(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(body): Json<CreateAppointmentRequest>,
 ) -> Result<Json<AppointmentResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("create_appointment:{}", auth.sub))?;
+
+    if let Some(ref notes) = body.notes {
+        validate_length(notes, "Notes", 1000)?;
+    }
+
     let mut tx = state.pool.begin().await.map_err(|e| AppError::Database(e))?;
 
     let patient = if let Some(pid) = body.patient_id {
         sqlx::query_as::<_, crate::models::Patient>(
-            "SELECT * FROM patients WHERE id = $1"
+            "SELECT * FROM patients WHERE id = $1 FOR UPDATE"
         )
         .bind(pid)
         .fetch_optional(&mut *tx)
@@ -87,7 +93,26 @@ pub async fn create_appointment(
         .map_err(|e| AppError::Database(e))?
         .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?
     } else {
-        get_patient_from_auth(&state, &_auth).await?
+        let lookup = normalize_phone_or_raw(&auth.sub);
+        if lookup.contains('@') {
+            sqlx::query_as::<_, crate::models::Patient>(
+                "SELECT * FROM patients WHERE email = $1 FOR UPDATE"
+            )
+            .bind(&lookup)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?
+        } else {
+            sqlx::query_as::<_, crate::models::Patient>(
+                "SELECT * FROM patients WHERE phone = $1 FOR UPDATE"
+            )
+            .bind(&lookup)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::BadRequest("Patient profile not found".to_string()))?
+        }
     };
 
     let upcoming_count: i64 = sqlx::query_scalar(
@@ -201,17 +226,30 @@ pub async fn create_appointment(
 
 pub async fn get_appointment(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<AppointmentResponse>, AppError> {
-    let appointment = sqlx::query_as::<_, Appointment>(
-        "SELECT * FROM appointments WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_optional(&state.pool)
-    .await
-    .map_err(|e| AppError::Database(e))?
-    .ok_or_else(|| AppError::NotFound("Appointment not found".to_string()))?;
+    let appointment = if auth.role == "admin" || auth.role == "scheduler" {
+        sqlx::query_as::<_, Appointment>(
+            "SELECT * FROM appointments WHERE id = $1"
+        )
+        .bind(id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::NotFound("Appointment not found".to_string()))?
+    } else {
+        let patient = get_patient_from_auth(&state, &auth).await?;
+        sqlx::query_as::<_, Appointment>(
+            "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2"
+        )
+        .bind(id)
+        .bind(patient.id)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::NotFound("Appointment not found".to_string()))?
+    };
 
     Ok(Json(AppointmentResponse {
         id: appointment.id,
@@ -228,12 +266,17 @@ pub async fn get_appointment(
 
 pub async fn update_appointment(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateAppointmentRequest>,
 ) -> Result<Json<AppointmentResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("update_appointment:{}", auth.sub))?;
+
+    if let Some(ref reason) = body.cancellation_reason {
+        validate_length(reason, "Cancellation reason", 500)?;
+    }
     let mut tx = state.pool.begin().await.map_err(|e| AppError::Database(e))?;
-    let patient = get_patient_from_auth(&state, &_auth).await?;
+    let patient = get_patient_from_auth(&state, &auth).await?;
 
     let _appointment = sqlx::query_as::<_, Appointment>(
         "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2 AND status = 'confirmed'"

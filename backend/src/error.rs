@@ -3,6 +3,15 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
 
+pub fn validate_length(field: &str, name: &str, max: usize) -> Result<(), AppError> {
+    if field.len() > max {
+        return Err(AppError::Validation(
+            format!("{} must be at most {} characters", name, max)
+        ));
+    }
+    Ok(())
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
     #[error("Database error: {0}")]

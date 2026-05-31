@@ -29,6 +29,7 @@ function stepIndex(s: Step) {
 
 interface BookingSnapshot {
   token: string;
+  userRole: string;
   otpIdentifier: string;
   patientFirstName: string;
   patientLastName: string;
@@ -118,6 +119,7 @@ export default function BookAppointment() {
   }
 
   const [token, setToken] = useState(initialData?.token ?? '');
+  const [userRole, setUserRole] = useState(initialData?.userRole ?? '');
   const [otpIdentifier, setOtpIdentifier] = useState(initialData?.otpIdentifier ?? '');
   const [patientFirstName, setPatientFirstName] = useState(initialData?.patientFirstName ?? '');
   const [patientLastName, setPatientLastName] = useState(initialData?.patientLastName ?? '');
@@ -263,6 +265,7 @@ export default function BookAppointment() {
     if (step !== 'auth') {
       saveBooking({
         token,
+        userRole,
         otpIdentifier,
         patientFirstName,
         patientLastName,
@@ -285,7 +288,7 @@ export default function BookAppointment() {
       clearBooking();
     }
   }, [
-    step, token, otpIdentifier,
+    step, token, userRole, otpIdentifier,
     patientFirstName, patientLastName, patientPhone, patientEmail,
     notes,
     existingPatient, lastDoctor, doctorCount,
@@ -323,10 +326,11 @@ export default function BookAppointment() {
     }
   };
 
-  const handleVerified = async (newToken: string, identifier: string) => {
+  const handleVerified = async (newToken: string, identifier: string, role: string) => {
     setToken(newToken);
     tokenStore.set(newToken);
     setOtpIdentifier(identifier);
+    setUserRole(role);
 
     let patientData: Patient;
     try {

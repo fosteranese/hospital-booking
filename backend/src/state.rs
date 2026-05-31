@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock, PoisonError, Mutex};
 use sqlx::PgPool;
+use crate::error::AppError;
 use crate::services::{EmailService, SettingsService, SmsService};
 use crate::ratelimit::RateLimiter;
 
@@ -16,6 +17,7 @@ pub struct AppState {
     pub clinic_address: Arc<RwLock<String>>,
     pub settings: SettingsService,
     pub otp_limiter: Arc<Mutex<RateLimiter>>,
+    pub mutation_limiter: Arc<Mutex<RateLimiter>>,
 }
 
 impl AppState {
@@ -57,5 +59,13 @@ impl AppState {
 
     pub fn set_clinic_address(&self, val: String) {
         *self.clinic_address.write().unwrap_or_else(PoisonError::into_inner) = val;
+    }
+
+    pub fn check_mutation_rate_limit(&self, key: &str) -> Result<(), AppError> {
+        let limiter = self.mutation_limiter.lock().unwrap_or_else(PoisonError::into_inner);
+        if !limiter.check(key) {
+            return Err(AppError::TooManyRequests("Too many requests. Please try again later.".to_string()));
+        }
+        Ok(())
     }
 }

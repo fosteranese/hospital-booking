@@ -29,7 +29,7 @@ function normalizePhoneForDisplay(code: string, number: string): string {
 }
 
 interface AuthFlowProps {
-  onVerified: (token: string, identifier: string) => void;
+  onVerified: (token: string, identifier: string, role: string) => void;
 }
 
 export function AuthFlow({ onVerified }: AuthFlowProps) {
@@ -140,7 +140,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
     setError('');
     try {
       const res = await api.verifyOtp(id, otp);
-      onVerified(res.token, id);
+      onVerified(res.token, id, res.role);
     } catch (err: any) {
       setError(err.message);
       setOtp('');

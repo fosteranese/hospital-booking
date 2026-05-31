@@ -4,8 +4,8 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::error::AppError;
-use crate::middleware::auth::AuthUser;
+use crate::error::{AppError, validate_length};
+use crate::middleware::auth::{AuthUser, require_role};
 use crate::services::generate_slots;
 use crate::state::AppState;
 
@@ -26,9 +26,10 @@ pub struct UpdateSettingRequest {
 
 pub async fn get_setting(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path((group, name)): Path<(String, String)>,
 ) -> Result<Json<SettingResponse>, AppError> {
+    require_role(&auth, &["admin"])?;
     let setting = state.settings.get_setting(&group, &name).await?
         .ok_or_else(|| AppError::NotFound(format!("Setting '{}/{}' not found", group, name)))?;
 
@@ -50,9 +51,10 @@ pub async fn get_setting(
 
 pub async fn get_settings_group(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(group): Path<String>,
 ) -> Result<Json<Vec<SettingResponse>>, AppError> {
+    require_role(&auth, &["admin"])?;
     let settings = state.settings.get_group(&group).await?;
     if settings.is_empty() {
         return Err(AppError::NotFound(format!("Settings group '{}' not found", group)));
@@ -82,10 +84,13 @@ pub async fn get_settings_group(
 
 pub async fn update_setting(
     State(state): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path((group, name)): Path<(String, String)>,
     Json(body): Json<UpdateSettingRequest>,
 ) -> Result<Json<SettingResponse>, AppError> {
+    state.check_mutation_rate_limit(&format!("update_setting:{}", auth.sub))?;
+    require_role(&auth, &["admin"])?;
+    validate_length(&body.value, "Setting value", 10000)?;
     let existing = state.settings.get_setting(&group, &name).await?
         .ok_or_else(|| AppError::NotFound(format!("Setting '{}/{}' not found", group, name)))?;
 
