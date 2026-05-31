@@ -10,6 +10,7 @@ import { Cancel01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import { ErrorMessage } from '@/components/ui/error-message';
 import { COUNTRY_CODES } from '@/lib/country-codes';
 import { api, Patient } from '@/lib/api';
+import { useAuth } from '@/contexts/auth-context';
 
 function getInitials(first: string, last: string): string {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
@@ -17,12 +18,12 @@ function getInitials(first: string, last: string): string {
 
 interface EditProfileModalProps {
   patient: Patient;
-  token: string;
   onClose: () => void;
   onSaved: (updated: Patient) => void;
 }
 
-export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfileModalProps) {
+export function EditProfileModal({ patient, onClose, onSaved }: EditProfileModalProps) {
+  const { token } = useAuth();
   const [firstName, setFirstName] = useState(patient.first_name);
   const [lastName, setLastName] = useState(patient.last_name);
   const [email, setEmail] = useState(patient.email);

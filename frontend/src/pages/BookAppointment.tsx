@@ -19,6 +19,8 @@ import { AddToCalendar } from '@/components/AddToCalendar';
 import { useSearchParams } from 'react-router-dom';
 import { saveBooking, loadBooking, clearBooking } from '@/lib/booking-storage';
 import { cn } from '@/lib/utils';
+import { AuthProvider } from '@/contexts/auth-context';
+import { ClinicProvider } from '@/contexts/clinic-context';
 
 const STEPS = ['auth', 'review', 'patient', 'doctor', 'datetime', 'confirm', 'success'] as const;
 type Step = typeof STEPS[number];
@@ -73,16 +75,12 @@ export default function BookAppointment() {
     cleared.current = true;
     oldToken.current = tokenStore.token;
     tokenStore.clear();
-    sessionStorage.clear();
-    localStorage.clear();
+    clearBooking();
   }
 
   useEffect(() => {
     if (shouldClear && oldToken.current) {
       api.invalidateToken(oldToken.current).catch(() => {});
-    }
-    if (shouldClear && typeof caches !== 'undefined') {
-      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).catch(() => {});
     }
   }, [shouldClear]);
 
@@ -480,6 +478,8 @@ export default function BookAppointment() {
   };
 
   return (
+    <AuthProvider initialToken={token} initialRole={userRole} initialIdentifier={otpIdentifier}>
+    <ClinicProvider config={{ clinicName: clinicConfig.clinicName, clinicAddress: clinicConfig.clinicAddress, minAdvanceDays: clinicConfig.minAdvanceDays }}>
     <div className="flex h-screen">
       <LeftPanel step={step} wide={step === 'auth' || step === 'success'} />
 
@@ -530,15 +530,12 @@ export default function BookAppointment() {
                       upcomingLoading={upcomingLoading}
                       upcomingError={upcomingError}
                       onRetryUpcoming={fetchUpcoming}
-                      token={token}
                       onRebookWithLastDoctor={handleRebookWithLastDoctor}
                       onChangeDoctor={handleChangeDoctor}
                       onRescheduleTime={handleRescheduleTime}
                       onRescheduleDoctor={handleRescheduleDoctor}
                       onCancelAppointment={handleCancelAppointment}
                       onPatientUpdated={handlePatientUpdated}
-                      clinicName={clinicConfig.clinicName}
-                      clinicAddress={clinicConfig.clinicAddress}
                     />
                   )}
 
@@ -690,5 +687,7 @@ export default function BookAppointment() {
         </div>
       </main>
     </div>
+    </ClinicProvider>
+    </AuthProvider>
   );
 }

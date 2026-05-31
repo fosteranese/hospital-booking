@@ -14,6 +14,8 @@ import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { Spinner } from '@/components/ui/spinner';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { getAvatarColor } from '@/lib/avatar';
+import { useAuth } from '@/contexts/auth-context';
+import { useClinic } from '@/contexts/clinic-context';
 import { formatDate, formatTime } from '@/lib/format';
 
 export interface ExistingPatientData {
@@ -52,15 +54,12 @@ interface ExistingPatientReviewProps {
   upcomingLoading?: boolean;
   upcomingError?: string;
   onRetryUpcoming?: () => void;
-  token: string;
   onRebookWithLastDoctor: (doctorId: string, doctorName: string) => void;
   onChangeDoctor: () => void;
   onRescheduleTime: (appointment: UpcomingAppointmentData) => void;
   onRescheduleDoctor: (appointment: UpcomingAppointmentData) => void;
   onCancelAppointment: (appointmentId: string, reason?: string) => Promise<void>;
   onPatientUpdated: (patient: ExistingPatientData) => void;
-  clinicName: string;
-  clinicAddress: string;
 }
 
 function getInitials(first: string, last: string): string {
@@ -73,17 +72,14 @@ function AppointmentCard({
   onRescheduleDoctor,
   onCancel,
   cancelling,
-  clinicName,
-  clinicAddress,
 }: {
   appointment: UpcomingAppointmentData;
   onRescheduleTime: () => void;
   onRescheduleDoctor: () => void;
   onCancel: () => void;
   cancelling: boolean;
-  clinicName: string;
-  clinicAddress: string;
 }) {
+  const { clinicName, clinicAddress } = useClinic();
   const fullAddress = `${clinicName}, ${clinicAddress}`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddress)}`;
 
@@ -201,17 +197,14 @@ function UpcomingAppointmentsModal({
   onRescheduleTime,
   onRescheduleDoctor,
   onCancelAppointment,
-  clinicName,
-  clinicAddress,
 }: {
   appointments: UpcomingAppointmentData[];
   onClose: () => void;
   onRescheduleTime: (appt: UpcomingAppointmentData) => void;
   onRescheduleDoctor: (appt: UpcomingAppointmentData) => void;
   onCancelAppointment: (appointmentId: string, reason?: string) => Promise<void>;
-  clinicName: string;
-  clinicAddress: string;
 }) {
+  const { clinicName, clinicAddress } = useClinic();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -388,8 +381,6 @@ function UpcomingAppointmentsModal({
           onRescheduleTime={() => { setSelectedAppointment(null); onRescheduleTime(selectedAppointment); }}
           onRescheduleDoctor={() => { setSelectedAppointment(null); onRescheduleDoctor(selectedAppointment); }}
           onCancel={onCancelAppointment}
-          clinicName={clinicName}
-          clinicAddress={clinicAddress}
         />
       )}
     </AnimatePresence>
@@ -402,19 +393,18 @@ export function ExistingPatientReview({
   lastDoctor,
   doctorCount,
   upcomingAppointments,
-  upcomingLoading = false,
+  upcomingLoading,
   upcomingError,
   onRetryUpcoming,
-  token,
   onRebookWithLastDoctor,
   onChangeDoctor,
   onRescheduleTime,
   onRescheduleDoctor,
   onCancelAppointment,
   onPatientUpdated,
-  clinicName,
-  clinicAddress,
 }: ExistingPatientReviewProps) {
+  const { token } = useAuth();
+  const { clinicName, clinicAddress } = useClinic();
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -588,8 +578,6 @@ export function ExistingPatientReview({
                           onRescheduleDoctor={() => onRescheduleDoctor(soonest)}
                           onCancel={() => setPendingCancelId(soonest.id)}
                           cancelling={cancellingId === soonest.id}
-                          clinicName={clinicName}
-                          clinicAddress={clinicAddress}
                         />
                       </motion.div>
                     )}
@@ -681,10 +669,8 @@ export function ExistingPatientReview({
             onClose={() => setShowAllModal(false)}
             onRescheduleTime={onRescheduleTime}
             onRescheduleDoctor={onRescheduleDoctor}
-            onCancelAppointment={onCancelAppointment}
-            clinicName={clinicName}
-            clinicAddress={clinicAddress}
-          />
+              onCancelAppointment={onCancelAppointment}
+            />
         )}
       </AnimatePresence>
 
@@ -713,7 +699,6 @@ export function ExistingPatientReview({
         {showEditModal && (
           <EditProfileModal
             patient={patient}
-            token={token}
             onClose={() => setShowEditModal(false)}
             onSaved={onPatientUpdated}
           />

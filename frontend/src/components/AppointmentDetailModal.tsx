@@ -10,6 +10,7 @@ import { AddToCalendar } from '@/components/AddToCalendar';
 import { CancelAppointmentDialog } from '@/components/cancel-appointment-dialog';
 import { getAvatarColor } from '@/lib/avatar';
 import { formatDate, formatTime } from '@/lib/format';
+import { useClinic } from '@/contexts/clinic-context';
 import type { UpcomingAppointmentData } from '@/components/ExistingPatientReview';
 
 interface AppointmentDetail {
@@ -31,24 +32,23 @@ interface AppointmentDetailModalProps {
   onRescheduleTime?: () => void;
   onRescheduleDoctor?: () => void;
   onCancel?: (id: string, reason?: string) => Promise<void>;
-  clinicName?: string;
-  clinicAddress?: string;
 }
 
-function StatusBadge({ status, attended }: { status: string; attended?: boolean | null }) {
+export function StatusBadge({ status, attended }: { status: string; attended?: boolean | null }) {
   if (status === 'cancelled') {
-    return <Badge variant="outline" className="text-xs text-rose-600 border-rose-200 bg-rose-50">Cancelled</Badge>;
+    return <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-200 bg-rose-50">Cancelled</Badge>;
   }
   if (attended === true) {
-    return <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700 bg-emerald-50 gap-1"><HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3" /> Attended</Badge>;
+    return <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700 bg-emerald-50 gap-1"><HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3" /> Attended</Badge>;
   }
   if (attended === false) {
-    return <Badge variant="outline" className="text-xs border-rose-300 text-rose-700 bg-rose-50 gap-1"><HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-3" /> Missed</Badge>;
+    return <Badge variant="outline" className="text-[10px] border-rose-300 text-rose-700 bg-rose-50 gap-1"><HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-3" /> Missed</Badge>;
   }
-  return <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50">Confirmed</Badge>;
+  return <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 bg-amber-50 gap-1"><HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-3" /> Confirmed</Badge>;
 }
 
-export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime, onRescheduleDoctor, onCancel, clinicName = 'MEDIPORT FERTILITY SERVICES', clinicAddress = 'Bissau Avenue, East-Legon, Accra, Ghana' }: AppointmentDetailModalProps) {
+export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime, onRescheduleDoctor, onCancel }: AppointmentDetailModalProps) {
+  const { clinicName, clinicAddress } = useClinic();
   const [cancelling, setCancelling] = useState(false);
   const [pendingCancel, setPendingCancel] = useState(false);
 
@@ -253,7 +253,7 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Location</p>
-                        {!isCancelled && (
+                {onRescheduleTime && onRescheduleDoctor && onCancel && !isCancelled && (
                           <button
                             type="button"
                             onClick={() => window.open(directionsUrl, '_blank', 'noopener')}

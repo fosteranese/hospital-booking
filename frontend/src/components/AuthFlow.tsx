@@ -12,6 +12,7 @@ import { Mail01Icon, CallIcon, ArrowLeft01Icon, Hospital01Icon } from '@hugeicon
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Spinner } from '@/components/ui/spinner';
 import { COUNTRY_CODES } from '@/lib/country-codes';
+import { clearBooking } from '@/lib/booking-storage';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -39,11 +40,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
       api.invalidateToken(staleToken).catch(() => {});
       tokenStore.clear();
     }
-    sessionStorage.clear();
-    localStorage.clear();
-    if (typeof caches !== 'undefined') {
-      caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).catch(() => {});
-    }
+    clearBooking();
   }, []);
 
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
