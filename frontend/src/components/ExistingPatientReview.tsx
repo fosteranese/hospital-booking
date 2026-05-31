@@ -117,7 +117,7 @@ function AppointmentCard({
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Date</p>
-              <p className="text-sm font-medium text-foreground mt-0.5 whitespace-nowrap">{formatDate(appointment.slot_date)}</p>
+              <p className="text-sm font-medium text-foreground mt-0.5">{formatDate(appointment.slot_date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3.5 px-5 py-4">
@@ -126,7 +126,7 @@ function AppointmentCard({
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Time</p>
-              <p className="text-sm font-medium text-foreground mt-0.5 whitespace-nowrap">{formatTime(appointment.start_time)} — {formatTime(endTime)}</p>
+              <p className="text-sm font-medium text-foreground mt-0.5">{formatTime(appointment.start_time)} — {formatTime(endTime)}</p>
             </div>
           </div>
         </div>
@@ -165,11 +165,11 @@ function AppointmentCard({
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-3 px-5 py-3.5 bg-muted/20 border-t border-foreground/5">
+      <div className="flex items-center justify-end gap-1 sm:gap-3 px-5 py-3 bg-muted/20 border-t border-foreground/5">
         <button
           type="button"
           onClick={onRescheduleTime}
-          className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors"
+          className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors py-2 px-1.5"
         >
           Reschedule
         </button>
@@ -177,7 +177,7 @@ function AppointmentCard({
         <button
           type="button"
           onClick={onRescheduleDoctor}
-          className="text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors"
+          className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors py-2 px-1.5"
         >
           Change doctor
         </button>
@@ -186,7 +186,7 @@ function AppointmentCard({
           type="button"
           onClick={onCancel}
           disabled={cancelling}
-          className="text-xs font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40"
+          className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-2 px-1.5"
         >
           {cancelling ? 'Cancelling...' : 'Cancel'}
         </button>
@@ -271,13 +271,14 @@ function UpcomingAppointmentsModal({
           <button
             type="button"
             onClick={onClose}
-            className="size-7 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
+            className="size-8 sm:size-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
           >
             <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4 text-muted-foreground" />
           </button>
         </div>
 
         <div className="overflow-y-auto flex-1">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted/20 border-b border-foreground/5">
@@ -314,7 +315,7 @@ function UpcomingAppointmentsModal({
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onRescheduleTime(appt); }}
-                        className="text-[11px] font-medium text-primary underline-offset-2 hover:underline transition-colors"
+                        className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors py-1.5 px-1"
                       >
                         Reschedule
                       </button>
@@ -322,7 +323,7 @@ function UpcomingAppointmentsModal({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setPendingCancelId(appt.id); }}
                         disabled={cancellingId === appt.id}
-                        className="text-[11px] font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40"
+                        className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-1.5 px-1"
                       >
                         {cancellingId === appt.id ? '...' : 'Cancel'}
                       </button>
@@ -332,6 +333,7 @@ function UpcomingAppointmentsModal({
               ))}
             </tbody>
           </table>
+          </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-foreground/5">
               <p className="text-[11px] text-muted-foreground">
@@ -342,7 +344,7 @@ function UpcomingAppointmentsModal({
                   type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="text-[11px] font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline"
+                  className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline py-1.5 px-2"
                 >
                   Previous
                 </button>
@@ -350,7 +352,7 @@ function UpcomingAppointmentsModal({
                   type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="text-[11px] font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline"
+                  className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline py-1.5 px-2"
                 >
                   Next
                 </button>
@@ -480,7 +482,7 @@ export function ExistingPatientReview({
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 onClick={() => setShowEditModal(true)}
               >
                 <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
@@ -488,7 +490,7 @@ export function ExistingPatientReview({
               </Button>
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 onClick={() => setShowHistoryModal(true)}
               >
                 History
@@ -496,7 +498,7 @@ export function ExistingPatientReview({
             </div>
             <CardContent className="relative pb-0">
               <div className="flex flex-row items-start gap-5">
-                <Avatar className="border-4 border-[#ffffff] shadow-lg -mt-12 size-28">
+                <Avatar className="border-4 border-[#ffffff] shadow-lg -mt-12 size-20 sm:size-28">
                   <AvatarFallback className="bg-slate-300 text-xl font-semibold text-slate-900">
                     {getInitials(patient.first_name, patient.last_name)}
                   </AvatarFallback>

@@ -483,14 +483,13 @@ export default function BookAppointment() {
 
       <main className="flex-1 overflow-y-auto transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
         <div className="flex min-h-full min-w-0">
-          <div className={cn("flex flex-col items-center justify-center flex-1 min-w-0 p-8 xl:p-10 mx-auto", step === 'auth' || step === 'success' ? "max-w-xl" : "max-w-2xl")}>
+          <div className={cn("flex flex-col items-center justify-center flex-1 min-w-0 p-5 sm:p-8 xl:p-10 mx-auto", step === 'auth' || step === 'success' ? "max-w-xl" : "max-w-2xl")}>
             <div className="w-full space-y-2">
               {step === 'review' && (
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={() => { if (token) api.invalidateToken(token).catch(() => {}); resetAll(); }}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="h-10 text-muted-foreground hover:text-destructive"
                 >
                   Sign out
                 </Button>
@@ -498,9 +497,8 @@ export default function BookAppointment() {
               {step !== 'auth' && step !== 'success' && step !== 'review' && (
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={goBack}
-                  className="-ml-2 text-muted-foreground hover:text-foreground"
+                  className="-ml-2 h-10 text-muted-foreground hover:text-foreground"
                 >
                   <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
                   Back

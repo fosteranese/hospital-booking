@@ -187,7 +187,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                   <Label htmlFor="phone">Phone</Label>
                   <div className="flex gap-2">
                     <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
-                      <SelectTrigger size="xl" className="w-[160px] shrink-0 bg-white">
+                      <SelectTrigger size="xl" className="w-[120px] sm:w-[160px] shrink-0 bg-white">
                         <SelectValue>
                           {(() => {
                             const c = COUNTRY_CODES.find((c) => c.code === countryCode);
@@ -268,7 +268,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
               className="space-y-6"
               >
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" onClick={() => setStep('input')}>
+                <Button variant="ghost" className="-ml-1 h-10 text-muted-foreground hover:text-foreground" onClick={() => setStep('input')}>
                   <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-4 mr-1" />
                   Back
                 </Button>
@@ -285,7 +285,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                     }
                   </p>
                 </div>
-                <Button variant="outline" size="sm" className="shrink-0 mt-0.5 bg-white/80" onClick={switchMethod}>
+                <Button variant="outline" className="shrink-0 mt-0.5 h-10 bg-white/80" onClick={switchMethod}>
                   {method === 'phone' ? 'Use email' : 'Use phone'}
                 </Button>
               </div>
@@ -339,21 +339,21 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                 </motion.div>
               )}
 
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-center text-xs sm:text-sm text-muted-foreground">
                 {cooldown > 0 ? (
                   <p>Didn't receive the code? <span className="text-foreground/60">Resend in {cooldown}s</span></p>
                 ) : (
-                  <p>
-                    Didn't receive the code?{' '}
+                  <div className="flex items-center justify-center gap-1 flex-wrap">
+                    <span>Didn't receive the code?</span>
                     <button
                       type="button"
                       onClick={handleResendOtp}
                       disabled={resending}
-                      className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default"
+                      className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default py-2 px-1 leading-none"
                     >
                       {resending ? 'Sending...' : 'Resend'}
                     </button>
-                  </p>
+                  </div>
                 )}
               </div>
 

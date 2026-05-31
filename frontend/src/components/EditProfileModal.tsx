@@ -112,7 +112,7 @@ export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfi
             <div className="rounded-xl bg-white shadow-sm shadow-black/[0.03] border overflow-hidden divide-y divide-foreground/5">
               <div className="p-5">
                 <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest mb-4">Name</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="edit-first-name" className="text-xs text-muted-foreground">First name</Label>
                     <Input
@@ -155,7 +155,7 @@ export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfi
                     <Label htmlFor="edit-phone" className="text-xs text-muted-foreground">Phone</Label>
                     <div className="flex border rounded-lg overflow-hidden focus-within:ring-3 focus-within:ring-ring/50 focus-within:border-ring border-input">
                         <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
-                          <SelectTrigger size="xl" className="w-[120px] shrink-0 border-0 rounded-none shadow-none pl-3">
+                          <SelectTrigger size="xl" className="w-[100px] sm:w-[120px] shrink-0 border-0 rounded-none shadow-none pl-3">
                             <SelectValue>
                               {(() => {
                                 const c = COUNTRY_CODES.find((cc) => cc.code === countryCode);
@@ -207,10 +207,10 @@ export function EditProfileModal({ patient, token, onClose, onSaved }: EditProfi
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 pb-4 pt-0">
-          <Button variant="outline" className="h-10 text-sm" onClick={onClose}>
+          <Button variant="outline" className="h-11 text-sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button className="h-10 text-sm gap-1.5" onClick={handleSave} disabled={saving}>
+          <Button className="h-11 text-sm gap-1.5" onClick={handleSave} disabled={saving}>
             <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-4" />
             {saving ? 'Saving...' : 'Save'}
           </Button>

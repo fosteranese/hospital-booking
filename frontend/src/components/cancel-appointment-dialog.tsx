@@ -62,7 +62,7 @@ function CancelAppointmentDialog({
                 type="button"
                 onClick={handleClose}
                 disabled={isCancelling}
-                className="size-7 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors disabled:opacity-40"
+                className="size-8 sm:size-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors disabled:opacity-40"
               >
                 <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4 text-muted-foreground" />
               </button>
@@ -119,10 +119,10 @@ function CancelAppointmentDialog({
             </div>
 
             <div className="sticky bottom-0 flex items-center justify-end gap-2 bg-white px-5 py-4">
-              <Button variant="outline" className="h-10 text-sm" onClick={handleClose} disabled={isCancelling}>
+              <Button variant="outline" className="h-11 text-sm" onClick={handleClose} disabled={isCancelling}>
                 No, keep it
               </Button>
-              <Button variant="destructive" className="h-10 text-sm gap-1.5" onClick={handleConfirm} disabled={!reason.trim() || isCancelling}>
+              <Button variant="destructive" className="h-11 text-sm gap-1.5" onClick={handleConfirm} disabled={!reason.trim() || isCancelling}>
                 {isCancelling ? (
                   <span className="flex items-center gap-2">
                     <span className="size-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />

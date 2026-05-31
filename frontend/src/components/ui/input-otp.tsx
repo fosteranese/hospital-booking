@@ -24,11 +24,11 @@ function InputOTP({
         data-size={inputSize ?? "default"}
         containerClassName={cn(
           "cn-input-otp flex items-center has-disabled:opacity-50",
-          inputSize === "xl" && "gap-5",
+          inputSize === "xl" && "gap-2 sm:gap-5",
           containerClassName
         )}
         spellCheck={false}
-        className={cn("disabled:cursor-not-allowed", inputSize === "xl" && "gap-5", className)}
+        className={cn("disabled:cursor-not-allowed", inputSize === "xl" && "gap-2 sm:gap-5", className)}
         {...props}
       />
     </OTPInputSizeContext.Provider>
@@ -65,7 +65,7 @@ function InputOTPSlot({
       data-active={isActive}
       className={cn(
         "relative flex items-center justify-center border-y border-r border-input shadow-xs transition-all outline-none first:rounded-l-md first:border-l last:rounded-r-md aria-invalid:border-destructive data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-3 data-[active=true]:ring-ring/50 data-[active=true]:aria-invalid:border-destructive data-[active=true]:aria-invalid:ring-destructive/20 dark:bg-input/30 dark:data-[active=true]:aria-invalid:ring-destructive/40",
-        size === "xl" ? "size-12 text-lg" : "size-9 text-sm",
+        size === "xl" ? "size-10 sm:size-12 text-base sm:text-lg" : "size-9 text-sm",
         className
       )}
       {...props}

@@ -92,7 +92,7 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
         <CardDescription>We just need a few details to get started</CardDescription>
       </CardHeader>
       <CardContent className="px-0 space-y-5">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>
             <Input id="firstName" inputSize="xl" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="bg-white data-[size=xl]:pl-4" />
@@ -107,7 +107,7 @@ export function PatientForm({ defaultFirstName, defaultLastName, defaultPhone, d
           <Label htmlFor="phone">Phone</Label>
           <div className={`flex border rounded-lg overflow-hidden bg-white focus-within:ring-3 focus-within:ring-ring/50 focus-within:border-ring ${phoneError ? 'border-destructive' : 'border-input'}`}>
             <Select value={countryCode} onValueChange={(v) => v && setCountryCode(v)}>
-              <SelectTrigger size="xl" className="w-[120px] shrink-0 border-0 rounded-none shadow-none bg-white pl-3">
+              <SelectTrigger size="xl" className="w-[100px] sm:w-[120px] shrink-0 border-0 rounded-none shadow-none bg-white pl-3">
                 <SelectValue>
                   {(() => {
                     const c = COUNTRY_CODES.find((c) => c.code === countryCode);

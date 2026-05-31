@@ -56,7 +56,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
           <button
             type="button"
             onClick={onClose}
-            className="size-7 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
+            className="size-8 sm:size-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
           >
             <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4 text-muted-foreground" />
           </button>
@@ -102,6 +102,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
             </div>
           ) : (
             <>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted/20 border-b border-foreground/5">
@@ -117,6 +118,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
                 ))}
               </tbody>
             </table>
+            </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-foreground/5">
                 <p className="text-[11px] text-muted-foreground">
@@ -127,7 +129,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="text-[11px] font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline"
+                    className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline py-1.5 px-2"
                   >
                     Previous
                   </button>
@@ -135,7 +137,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
                     type="button"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="text-[11px] font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline"
+                    className="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors disabled:opacity-30 disabled:no-underline py-1.5 px-2"
                   >
                     Next
                   </button>
@@ -240,14 +242,14 @@ function HistoryRow({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); handleMark(true); }}
-              className="text-[11px] font-medium text-emerald-600 underline-offset-2 hover:underline transition-colors"
+              className="text-xs sm:text-sm font-medium text-emerald-600 underline-offset-2 hover:underline transition-colors py-1.5 px-1"
             >
               Attended
             </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); handleMark(false); }}
-              className="text-[11px] font-medium text-rose-600 underline-offset-2 hover:underline transition-colors"
+              className="text-xs sm:text-sm font-medium text-rose-600 underline-offset-2 hover:underline transition-colors py-1.5 px-1"
             >
               Missed
             </button>

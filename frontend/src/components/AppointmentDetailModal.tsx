@@ -111,7 +111,7 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
           <button
             type="button"
             onClick={onClose}
-            className="size-7 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
+            className="size-8 sm:size-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors"
           >
             <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4 text-muted-foreground" />
           </button>
@@ -208,7 +208,7 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Date</p>
-                        <p className="text-sm font-medium text-foreground mt-0.5 whitespace-nowrap">{formatDate(appointment.slot_date)}</p>
+                        <p className="text-sm font-medium text-foreground mt-0.5">{formatDate(appointment.slot_date)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3.5 px-5 py-4">
@@ -217,7 +217,7 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Time</p>
-                        <p className="text-sm font-medium text-foreground mt-0.5 whitespace-nowrap">{formatTime(appointment.start_time)} — {formatTime(endTime)}</p>
+                        <p className="text-sm font-medium text-foreground mt-0.5">{formatTime(appointment.start_time)} — {formatTime(endTime)}</p>
                       </div>
                     </div>
                   </div>
