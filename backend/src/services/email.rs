@@ -55,15 +55,15 @@ impl EmailService {
             {
                 Ok(email) => {
                     if let Err(e) = transport.send(email).await {
-                        info!("[EMAIL FALLBACK] SMTP send failed ({}), logging OTP for {}: {}", e, to_email, code);
+                        info!("[EMAIL FALLBACK] SMTP send failed ({}), logging OTP for {}", e, to_email);
                     }
                 }
                 Err(e) => {
-                    info!("[EMAIL FALLBACK] Email build failed ({}), logging OTP for {}: {}", e, to_email, code);
+                    info!("[EMAIL FALLBACK] Email build failed ({}), logging OTP for {}", e, to_email);
                 }
             }
         } else {
-            info!("[EMAIL MOCK] OTP for {}: {}", to_email, code);
+            info!("[EMAIL MOCK] OTP sent to {}", to_email);
         }
 
         Ok(())

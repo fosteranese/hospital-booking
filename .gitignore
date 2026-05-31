@@ -8,6 +8,7 @@ frontend/dist/
 
 # Env
 .env
+.env.backup
 backend/.env
 frontend/.env
 

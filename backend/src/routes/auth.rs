@@ -39,6 +39,24 @@ pub async fn request_otp(
         return Err(AppError::Validation("Identifier is required".to_string()));
     }
 
+    if identifier.contains('@') && !identifier.contains('.') {
+        return Err(AppError::Validation("Invalid email format".to_string()));
+    }
+
+    if !identifier.contains('@') {
+        let digits: String = identifier.chars().filter(|c| c.is_ascii_digit()).collect();
+        if digits.len() < 7 || digits.len() > 15 {
+            return Err(AppError::Validation("Invalid phone number format".to_string()));
+        }
+    }
+
+    {
+        let limiter = state.otp_limiter.lock().unwrap();
+        if !limiter.check(&identifier) {
+            return Err(AppError::TooManyRequests("Too many OTP requests. Please try again later.".to_string()));
+        }
+    }
+
     let otp_length: usize = state.settings.get("otp", "length").await.ok().flatten()
         .and_then(|v| v.parse().ok())
         .unwrap_or(6);
@@ -69,16 +87,27 @@ pub async fn verify_otp_handler(
     let identifier = body.identifier.trim().to_lowercase();
     let code = body.code.trim().to_string();
 
+    if code.len() < 4 || code.len() > 8 || !code.chars().all(|c| c.is_ascii_digit()) {
+        return Err(AppError::Validation("Invalid verification code format".to_string()));
+    }
+
+    {
+        let limiter = state.otp_limiter.lock().unwrap();
+        if !limiter.check(&format!("verify:{}", identifier)) {
+            return Err(AppError::TooManyRequests("Too many verification attempts. Please try again later.".to_string()));
+        }
+    }
+
     let valid = verify_otp(&state.pool, &identifier, &code)
         .await
-        .map_err(|e| AppError::Internal(format!("Failed to verify OTP: {}", e)))?;
+        .map_err(|_| AppError::Internal("Failed to verify OTP. Please try again.".to_string()))?;
 
     if !valid {
         return Err(AppError::Unauthorized("Invalid or expired OTP".to_string()));
     }
 
     let token = create_token(&identifier, &state.jwt_secret)
-        .map_err(|e| AppError::Internal(format!("Failed to create token: {}", e)))?;
+        .map_err(|_| AppError::Internal("Failed to create token. Please try again.".to_string()))?;
 
     Ok(Json(VerifyOtpResponse { token }))
 }
@@ -154,7 +183,7 @@ pub async fn refresh_token_handler(
     }
 
     let token = create_token(&claims.sub, &state.jwt_secret)
-        .map_err(|e| AppError::Internal(format!("Failed to create token: {}", e)))?;
+        .map_err(|_| AppError::Internal("Failed to refresh token. Please login again.".to_string()))?;
 
     cleanup_blacklist(&state.pool).await;
 

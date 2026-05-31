@@ -1,6 +1,7 @@
-use std::sync::{Arc, RwLock, PoisonError};
+use std::sync::{Arc, RwLock, PoisonError, Mutex};
 use sqlx::PgPool;
 use crate::services::{EmailService, SettingsService, SmsService};
+use crate::ratelimit::RateLimiter;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,6 +15,7 @@ pub struct AppState {
     pub clinic_name: Arc<RwLock<String>>,
     pub clinic_address: Arc<RwLock<String>>,
     pub settings: SettingsService,
+    pub otp_limiter: Arc<Mutex<RateLimiter>>,
 }
 
 impl AppState {

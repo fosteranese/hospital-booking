@@ -2,6 +2,7 @@ use std::sync::{Arc, RwLock};
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::get;
+use std::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -11,11 +12,13 @@ mod db;
 mod error;
 mod middleware;
 mod models;
+mod ratelimit;
 mod routes;
 mod services;
 mod state;
 
 use crate::state::AppState;
+use crate::ratelimit::RateLimiter;
 use crate::services::{EmailService, SettingsService, SmsService, generate_slots};
 
 async fn health() -> &'static str {
@@ -89,7 +92,13 @@ async fn main() {
     let sms_service = SmsService::new();
 
     let jwt_secret = match std::env::var("JWT_SECRET") {
-        Ok(k) => k,
+        Ok(k) => {
+            if k.len() < 32 {
+                tracing::error!("JWT_SECRET must be at least 32 characters long (got {})", k.len());
+                std::process::exit(1);
+            }
+            k
+        }
         Err(_) => {
             tracing::error!("JWT_SECRET must be set");
             std::process::exit(1);
@@ -125,6 +134,7 @@ async fn main() {
         clinic_name: Arc::new(RwLock::new(clinic_name)),
         clinic_address: Arc::new(RwLock::new(clinic_address)),
         settings,
+        otp_limiter: Arc::new(Mutex::new(RateLimiter::new(5, 300))),
     };
 
     let cors = {
@@ -143,6 +153,7 @@ async fn main() {
                 .allow_origin(origins)
         }
     }
+        .allow_credentials(true)
         .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT, axum::http::Method::PATCH, axum::http::Method::DELETE, axum::http::Method::OPTIONS])
         .allow_headers([
             axum::http::header::CONTENT_TYPE,
