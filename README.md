@@ -41,13 +41,16 @@ cd hospital-booking
 # Start backend (runs on :3000, auto-runs migrations on first start)
 cd backend && cargo run
 
-# In another terminal, start frontend (runs on :5173, proxies /api to :3000)
+# In another terminal, start patient portal (runs on :5173, proxies /api to :3000)
 cd frontend && npm install && npm run dev
+
+# In another terminal, start staff dashboard (runs on :5174, proxies /api to :3000)
+cd frontend-admin && npm install && npm run dev
 ```
 
-Or use `make dev` to run both concurrently.
+Or use `make dev` to run patient portal + backend concurrently.
 
-Open http://localhost:5173 in your browser.
+Open http://localhost:5173 (patient) or http://localhost:5174 (staff dashboard) in your browser.
 
 ## Environment Variables
 
@@ -111,18 +114,61 @@ hospital-booking/
 
 All routes are prefixed with `/api`.
 
-| Group | Endpoints |
-|-------|-----------|
-| Auth | `POST /api/auth/request-otp`, `POST /api/auth/verify-otp` |
-| Patients | `GET /api/patients/:phone` |
-| Doctors | `GET /api/doctors`, `GET /api/doctors/:id` |
-| Appointments | `GET /api/appointments/availability`, `POST /api/appointments` |
-| Settings | `GET /api/settings`, `PUT /api/settings` |
+| Group | Key Endpoints |
+|-------|---------------|
+| Auth (patient) | `POST /api/auth/request-otp`, `POST /api/auth/verify-otp` |
+| Auth (staff) | `POST /api/auth/login`, `POST /api/auth/mfa/challenge`, `POST /api/auth/mfa/verify` |
+| Auth (settings) | `POST /api/auth/set-password`, `GET /api/auth/mfa-status`, `PUT /api/auth/mfa` |
+| Patients | `GET /api/patients/search`, `GET /api/patients/:id/history` |
+| Doctors | `GET /api/doctors`, `GET /api/doctors/:id`, `POST /api/doctors` |
+| Appointments | `GET /api/appointments`, `GET /api/appointments/export`, `GET /api/appointments/:id` |
+| Settings | `GET /api/settings/:group`, `PUT /api/settings/:group/:name` |
+| Analytics | `GET /api/analytics/overview`, `GET /api/analytics/doctor-stats` |
+| Users | `GET /api/users`, `PUT /api/users/:identifier/role` |
 
 ## Development Notes
 
-- OTP dev mode: enter `123456` when `DEV_MODE=true`
-- Frontend dev server proxies `/api` requests to `localhost:3000`
+### Ports
+
+| Service | URL |
+|---------|-----|
+| Patient Portal (Vite) | http://localhost:5173 |
+| Staff Dashboard (Vite) | http://localhost:5174 |
+| Backend API (Axum) | http://localhost:3000 |
+
+### Dev Credentials — Staff Dashboard
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@hospital.com` | `staff1234` |
+| Doctor | `doctor@hospital.com` | `staff1234` |
+| Scheduler | `scheduler@hospital.com` | `staff1234` |
+
+All staff accounts have **email MFA** pre-configured. The OTP code in dev mode is always `123456`.
+
+### Login Flow (Staff)
+1. Enter email + password
+2. OTP is auto-sent to the staff email (in dev: `123456`)
+3. Enter the code (or switch to SMS / authenticator app)
+
+### OTP Dev Mode
+- Enter `123456` for any OTP code when `DEV_MODE=true` (works for both patients and staff MFA)
+
+### Staff Dashboard Sections
+
+| Section | URL | Roles |
+|---------|-----|-------|
+| Appointments | `/dashboard` | admin, scheduler, doctor |
+| Unavailability | `/dashboard/unavailability` | admin, scheduler |
+| Analytics | `/dashboard/analytics` | admin |
+| Doctors | `/dashboard/doctors` | admin |
+| Schedules | `/dashboard/schedules` | admin, scheduler |
+| Patients | `/dashboard/patients` | admin, scheduler |
+| Users | `/dashboard/users` | admin |
+| Settings | `/dashboard/settings` | admin |
+
+### General
+- Frontend dev servers proxy `/api` requests to `localhost:3000`
 - CORS is wide-open for development
 - Slot settings (duration, hours per day, days ahead) are stored in the DB `settings` table
 - Minimum gap between same-patient appointments defaults to 180 minutes (configurable)

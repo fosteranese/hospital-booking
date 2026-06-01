@@ -12,11 +12,19 @@ pub fn hash_token(token: &str) -> String {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,      // identifier (email/phone)
+    pub sub: String,
     pub role: String,
     pub patient_id: Option<Uuid>,
     pub exp: usize,
     pub iat: usize,
+    #[serde(default)]
+    pub mfa_session: bool,
+    #[serde(default)]
+    pub mfa_method: String,
+    #[serde(default)]
+    pub mfa_session_phase: String,
+    #[serde(default)]
+    pub password_reset: bool,
 }
 
 pub fn create_token(identifier: &str, role: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
@@ -27,6 +35,79 @@ pub fn create_token(identifier: &str, role: &str, secret: &str) -> Result<String
         patient_id: None,
         iat: now.timestamp() as usize,
         exp: (now + Duration::minutes(15)).timestamp() as usize,
+        mfa_session: false,
+        mfa_method: String::new(),
+        mfa_session_phase: String::new(),
+        password_reset: false,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+}
+
+pub fn create_mfa_session_token(identifier: &str, role: &str, method: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let now = Utc::now();
+    let claims = Claims {
+        sub: identifier.to_string(),
+        role: role.to_string(),
+        patient_id: None,
+        iat: now.timestamp() as usize,
+        exp: (now + Duration::minutes(5)).timestamp() as usize,
+        mfa_session: true,
+        mfa_method: method.to_string(),
+        mfa_session_phase: String::new(),
+        password_reset: false,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+}
+
+pub fn create_forgot_password_session_token(
+    identifier: &str,
+    role: &str,
+    method: &str,
+    phase: &str,
+    secret: &str,
+) -> Result<String, jsonwebtoken::errors::Error> {
+    let now = Utc::now();
+    let claims = Claims {
+        sub: identifier.to_string(),
+        role: role.to_string(),
+        patient_id: None,
+        iat: now.timestamp() as usize,
+        exp: (now + Duration::minutes(10)).timestamp() as usize,
+        mfa_session: true,
+        mfa_method: method.to_string(),
+        mfa_session_phase: phase.to_string(),
+        password_reset: false,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+}
+
+pub fn create_reset_token(identifier: &str, role: &str, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let now = Utc::now();
+    let claims = Claims {
+        sub: identifier.to_string(),
+        role: role.to_string(),
+        patient_id: None,
+        iat: now.timestamp() as usize,
+        exp: (now + Duration::minutes(5)).timestamp() as usize,
+        mfa_session: false,
+        mfa_method: String::new(),
+        mfa_session_phase: String::new(),
+        password_reset: true,
     };
 
     encode(

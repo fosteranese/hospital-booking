@@ -157,7 +157,7 @@ async fn main() {
 
     let cors = {
         let origins: Vec<axum::http::HeaderValue> = std::env::var("CORS_ORIGIN")
-            .unwrap_or_else(|_| "http://localhost:5173".to_string())
+            .unwrap_or_else(|_| "http://localhost:5173,http://localhost:5174".to_string())
             .split(',')
             .filter_map(|s| s.trim().parse().ok())
             .collect();
@@ -187,6 +187,8 @@ async fn main() {
         .merge(routes::appointments::appointment_routes())
         .merge(routes::settings::settings_routes())
         .merge(routes::unavailability::unavailability_routes())
+        .merge(routes::users::users_routes())
+        .merge(routes::analytics::analytics_routes())
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(cors)
         .layer(

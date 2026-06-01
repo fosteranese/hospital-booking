@@ -25,7 +25,23 @@ pub async fn list_unavailability(
     auth: AuthUser,
     Path(doctor_id): Path<Uuid>,
 ) -> Result<Json<Vec<DoctorUnavailability>>, AppError> {
-    require_role(&auth, &["admin", "scheduler"])?;
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("You can only view your own unavailability".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
     let rows = sqlx::query_as::<_, DoctorUnavailability>(
         "SELECT * FROM doctor_unavailability WHERE doctor_id = $1 ORDER BY slot_date, start_time"
     )
@@ -44,7 +60,25 @@ pub async fn create_unavailability(
     Json(body): Json<CreateUnavailabilityRequest>,
 ) -> Result<Json<DoctorUnavailability>, AppError> {
     state.check_mutation_rate_limit(&format!("create_unavailability:{}", auth.sub))?;
-    require_role(&auth, &["admin", "scheduler"])?;
+
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("You can only set your own unavailability".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
+
     if let Some(ref reason) = body.reason {
         validate_length(reason, "Reason", 500)?;
     }
@@ -109,7 +143,25 @@ pub async fn delete_unavailability(
     Path((doctor_id, unavail_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<&'static str>, AppError> {
     state.check_mutation_rate_limit(&format!("delete_unavailability:{}", auth.sub))?;
-    require_role(&auth, &["admin", "scheduler"])?;
+
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("You can only delete your own unavailability".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
+
     let result = sqlx::query(
         "DELETE FROM doctor_unavailability WHERE id = $1 AND doctor_id = $2"
     )

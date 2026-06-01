@@ -42,6 +42,8 @@ pub struct Appointment {
 #[derive(Debug, Serialize, FromRow)]
 pub struct AppointmentHistoryItem {
     pub id: Uuid,
+    pub patient_id: Uuid,
+    pub patient_name: String,
     pub doctor_id: Uuid,
     pub doctor_name: String,
     pub specialization: String,
@@ -52,6 +54,11 @@ pub struct AppointmentHistoryItem {
     pub notes: String,
     pub attended: Option<bool>,
     pub cancellation_reason: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAppointmentRequest {
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::{AppError, validate_length};
-use crate::middleware::auth::AuthUser;
+use crate::middleware::auth::{AuthUser, require_role};
 use crate::models::{AppointmentHistoryItem, LastDoctorInfo, Patient, UpcomingAppointment};
 use crate::state::AppState;
 
@@ -372,6 +372,50 @@ pub async fn update_patient(
     Ok(Json(patient))
 }
 
+// --- Patient search (admin/scheduler) ---
+
+#[derive(Deserialize)]
+pub struct PatientSearchQuery {
+    pub q: String,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct PatientSearchResult {
+    pub id: Uuid,
+    pub first_name: String,
+    pub last_name: String,
+    pub phone: String,
+    pub email: String,
+}
+
+pub async fn search_patients(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Query(query): Query<PatientSearchQuery>,
+) -> Result<Json<Vec<PatientSearchResult>>, AppError> {
+    require_role(&auth, &["admin", "scheduler"])?;
+    let q = query.q.trim().to_lowercase();
+    if q.is_empty() {
+        return Ok(Json(vec![]));
+    }
+
+    let like = format!("%{}%", q);
+    let patients = sqlx::query_as::<_, PatientSearchResult>(
+        "SELECT id, first_name, last_name, phone, email FROM patients
+         WHERE LOWER(first_name) LIKE $1
+            OR LOWER(last_name) LIKE $1
+            OR LOWER(email) LIKE $1
+            OR phone LIKE $1
+         ORDER BY first_name LIMIT 50"
+    )
+    .bind(&like)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(patients))
+}
+
 pub async fn check_patient_exists(
     State(state): State<AppState>,
     Query(query): Query<CheckPatientQuery>,
@@ -414,6 +458,7 @@ pub fn patient_routes() -> Router<AppState> {
         .route("/api/patients/check", get(check_patient_exists))
         .route("/api/patients", post(create_patient))
         .route("/api/patients/lookup", get(lookup_patient))
+        .route("/api/patients/search", get(search_patients))
         .route("/api/patients/:id/last-doctor", get(get_last_doctor))
         .route("/api/patients/:id/upcoming-appointments", get(get_upcoming_appointments))
         .route("/api/patients/:id/history", get(get_appointment_history))

@@ -1,0 +1,227 @@
+import { useState, useEffect, useCallback } from 'react';
+import { api, ProfileResponse } from '@/lib/api';
+import { useAuth } from '@/contexts/auth-context';
+import { PageHeader } from '@/components/PageHeader';
+import { Card, CardHeader } from '@/components/Card';
+import { Button } from '@/components/Button';
+import { EmptyState } from '@/components/EmptyState';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  Clock01Icon,
+  Add01Icon,
+  Delete01Icon,
+  AlertCircleIcon,
+  Calendar02Icon,
+} from '@hugeicons/core-free-icons';
+
+const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+
+interface UnavailRecord {
+  id: string;
+  slot_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string;
+}
+
+export function DoctorUnavailabilityPage() {
+  const { token } = useAuth();
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [newDate, setNewDate] = useState('');
+  const [newStart, setNewStart] = useState('');
+  const [newEnd, setNewEnd] = useState('');
+  const [newReason, setNewReason] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile: ProfileResponse = await api.getProfile(token);
+        if (profile.doctor_id) {
+          setDoctorId(profile.doctor_id);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setProfileLoading(false);
+      }
+    })();
+  }, [token]);
+
+  const fetchUnavailability = useCallback(async () => {
+    if (!doctorId) return;
+    setLoading(true);
+    try {
+      const data = await api.getDoctorUnavailability(doctorId, token);
+      setUnavail(data);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [doctorId, token]);
+
+  useEffect(() => {
+    if (doctorId) fetchUnavailability();
+  }, [doctorId, fetchUnavailability]);
+
+  const handleCreate = async () => {
+    if (!newDate || !doctorId) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.createDoctorUnavailability(doctorId, {
+        slot_date: newDate,
+        start_time: newStart || undefined,
+        end_time: newEnd || undefined,
+        reason: newReason || undefined,
+      }, token);
+      setNewDate(''); setNewStart(''); setNewEnd(''); setNewReason('');
+      fetchUnavailability();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!doctorId) return;
+    try {
+      await api.deleteDoctorUnavailability(doctorId, id, token);
+      setUnavail(prev => prev.filter(u => u.id !== id));
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  if (profileLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="My Unavailability" description="Manage your time off and blackout periods" icon={Clock01Icon} />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!doctorId) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="My Unavailability" description="Manage your time off and blackout periods" icon={Clock01Icon} />
+        <Card>
+          <EmptyState
+            icon={Clock01Icon}
+            title="Doctor profile not found"
+            description="Your account is not linked to a doctor profile. Please contact an administrator."
+          />
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="My Unavailability"
+        description="Manage your time off and blackout periods"
+        icon={Clock01Icon}
+      />
+
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
+          <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader title="Add Unavailability" description="Mark a date or time range when you won't be available" />
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Date *</label>
+            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={`${inputClass} w-[170px]`} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time</label>
+            <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-[130px]`} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">End time</label>
+            <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-[130px]`} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
+            <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-[180px]`} />
+          </div>
+          <Button onClick={handleCreate} loading={saving} disabled={!newDate} icon={Add01Icon}>
+            Add
+          </Button>
+        </div>
+        <p className="text-xs text-slate-500 mt-3">Leave times empty for a full-day unavailability.</p>
+      </Card>
+
+      <Card padding="none">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <CardHeader title={`Unavailability Records (${unavail.length})`} />
+        </div>
+        {loading ? (
+          <div className="p-8">
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          </div>
+        ) : unavail.length === 0 ? (
+          <EmptyState
+            icon={Calendar02Icon}
+            title="No unavailability records"
+            description="You have no blackout periods set."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Date</th>
+                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Time</th>
+                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Reason</th>
+                  <th className="w-16 px-5 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {unavail.map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{u.slot_date}</td>
+                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                      {u.start_time && u.end_time
+                        ? `${u.start_time.slice(0, 5)} – ${u.end_time.slice(0, 5)}`
+                        : <span className="italic text-slate-400">All day</span>}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-500">{u.reason || '—'}</td>
+                    <td className="px-5 py-3.5">
+                      <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                        <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-500" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

@@ -4,6 +4,8 @@ mod email;
 mod sms;
 mod settings;
 mod slots;
+mod password;
+mod totp;
 
 pub use otp::*;
 pub use jwt::*;
@@ -11,3 +13,5 @@ pub use email::*;
 pub use sms::*;
 pub use settings::*;
 pub use slots::*;
+pub use password::*;
+pub use totp::*;
