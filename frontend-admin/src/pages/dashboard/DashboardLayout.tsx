@@ -8,6 +8,7 @@ import {
   Clock01Icon,
   Logout01Icon,
   DashboardSquare01Icon,
+  Appointment01Icon,
   UserGroupIcon,
   ChartHistogramIcon,
   UserMultiple02Icon,
@@ -18,6 +19,7 @@ import {
   ChevronDownIcon,
   UserIcon,
   UserSettingsIcon,
+  Calendar02Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
@@ -85,8 +87,8 @@ const roleNav: Record<string, NavGroup[]> = {
     {
       label: 'Appointments',
       items: [
-        { label: "Today's Appointments", href: '/dashboard/today-appointments', icon: Calendar01Icon },
-        { label: 'Upcoming Appointments', href: '/dashboard/my-appointments', icon: Calendar01Icon },
+        { label: "Today's", href: '/dashboard/today-appointments', icon: Calendar01Icon },
+        { label: 'Upcoming', href: '/dashboard/my-appointments', icon: Calendar02Icon },
         { label: 'Calendar', href: '/dashboard/calendar', icon: Calendar01Icon },
       ],
     },
@@ -117,105 +119,88 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8fafc]">
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar — Google Calendar-inspired minimal nav */}
       <aside
         className={cn(
-          'shrink-0 flex flex-col bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out',
-          collapsed ? 'w-[72px]' : 'w-[260px]'
+          'shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border/60 transition-all duration-300 z-30 select-none',
+          collapsed ? 'w-[64px]' : 'w-[220px]'
         )}
       >
-        {/* Logo */}
+        {/* Brand — clean minimal */}
         <div className={cn(
-          'flex items-center h-16 border-b border-slate-100 shrink-0',
-          collapsed ? 'justify-center px-3' : 'px-5'
+          'flex items-center shrink-0',
+          collapsed ? 'justify-center h-14' : 'h-14 px-4 gap-2.5'
         )}>
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-sm shadow-emerald-200">
-              <HugeiconsIcon icon={Hospital01Icon} className="size-[18px] text-white" />
-            </div>
-            {!collapsed && (
-              <div className="animate-in fade-in slide-in-from-left-2 duration-200">
-                <p className="text-sm font-bold text-slate-900 tracking-tight leading-none">MediPort</p>
-                <p className="text-[10px] text-slate-400 font-medium mt-0.5">Staff Portal</p>
-              </div>
-            )}
+          <div className="size-7 rounded-md bg-emerald-600 flex items-center justify-center shrink-0">
+            <HugeiconsIcon icon={Hospital01Icon} className="size-3.5 text-white" />
           </div>
+          {!collapsed && (
+            <span className="text-sm font-bold text-sidebar-foreground tracking-tight">MediPort</span>
+          )}
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 scrollbar-none">
+        {/* Navigation — compact, no group headers */}
+        <nav className="flex-1 overflow-y-auto py-1 px-2 scrollbar-none space-y-3">
           {navGroups.map((group, gi) => (
-            <div key={gi} className={cn(!collapsed && 'mb-4')}>
-              {!collapsed && (
-                <p className="px-5 mb-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                  {group.label}
-                </p>
-              )}
-              <div className={cn('space-y-0.5', collapsed ? 'px-2' : 'px-3')}>
-                {group.items.map((item) => {
-                  const isActive = location.pathname === item.href;
-                  return (
-                    <button
-                      key={item.href}
-                      onClick={() => navigate(item.href)}
-                      title={collapsed ? item.label : undefined}
+            <div key={gi} className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => navigate(item.href)}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      'flex items-center w-full rounded-md text-sm transition-all duration-150 relative',
+                      collapsed ? 'justify-center h-9' : 'gap-3 h-9 px-3',
+                      isActive
+                        ? 'bg-emerald-50/70 text-emerald-700 font-medium'
+                        : 'text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground/80'
+                    )}
+                  >
+                    {/* Active indicator — thin left bar like GC color dot */}
+                    {isActive && !collapsed && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-emerald-500" />
+                    )}
+                    <HugeiconsIcon
+                      icon={item.icon}
                       className={cn(
-                        'flex items-center gap-3 w-full rounded-lg text-[13px] font-medium transition-all duration-150',
-                        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
-                        isActive
-                          ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100/50'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        'size-[17px] shrink-0 transition-colors',
+                        isActive ? 'text-emerald-600' : 'text-sidebar-foreground/35'
                       )}
-                    >
-                      <HugeiconsIcon
-                        icon={item.icon}
-                        className={cn(
-                          'size-[18px] shrink-0 transition-colors',
-                          isActive ? 'text-emerald-600' : 'text-slate-400'
-                        )}
-                      />
-                      {!collapsed && <span>{item.label}</span>}
-                      {isActive && !collapsed && (
-                        <div className="ml-auto size-1.5 rounded-full bg-emerald-500" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                    />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </button>
+                );
+              })}
             </div>
           ))}
         </nav>
 
-        {/* User Profile */}
-        <div className={cn(
-          'border-t border-slate-100 shrink-0',
-          collapsed ? 'p-2' : 'p-3'
-        )}>
-          <div className="relative">
+        {/* Footer — profile + collapse */}
+        <div className="border-t border-sidebar-border/60 shrink-0">
+          {/* Profile */}
+          <div className="relative px-2 pt-1.5 pb-1">
             <button
               onClick={() => setProfileOpen(!profileOpen)}
               className={cn(
-                'flex items-center w-full rounded-lg transition-colors hover:bg-slate-50',
-                collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'
+                'flex items-center w-full rounded-md transition-colors',
+                collapsed ? 'justify-center h-9' : 'gap-2.5 h-9 px-2 hover:bg-sidebar-accent'
               )}
             >
-              <div className={cn(
-                'rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-white font-semibold shrink-0',
-                collapsed ? 'size-9 text-sm' : 'size-9 text-sm'
-              )}>
+              <div className="size-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white font-semibold text-[10px] shrink-0 shadow-sm">
                 {userInitial}
               </div>
               {!collapsed && (
                 <>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-medium text-slate-900 truncate">{otpIdentifier}</p>
-                    <p className="text-[11px] text-slate-400 font-medium">{roleLabel}</p>
+                    <p className="text-xs font-medium text-sidebar-foreground truncate leading-tight">{otpIdentifier}</p>
                   </div>
                   <HugeiconsIcon
                     icon={ChevronDownIcon}
                     className={cn(
-                      'size-4 text-slate-400 transition-transform duration-200',
+                      'size-3 text-sidebar-foreground/25 transition-transform duration-200',
                       profileOpen && 'rotate-180'
                     )}
                   />
@@ -225,37 +210,32 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
             {/* Profile Dropdown */}
             {profileOpen && !collapsed && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-lg shadow-slate-200/50 border border-slate-200/80 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
-                <div className="p-3 border-b border-slate-100">
-                  <p className="text-sm font-medium text-slate-900 truncate">{otpIdentifier}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{roleLabel} Account</p>
+              <div className="absolute bottom-full left-2 right-2 mb-1 bg-white rounded-lg shadow-lg shadow-slate-200/60 border border-sidebar-border/60 overflow-hidden z-50">
+                <div className="px-3 py-2 border-b border-sidebar-border/40">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">{otpIdentifier}</p>
+                  <p className="text-[11px] text-sidebar-foreground/40">{roleLabel} Account</p>
                 </div>
-                <div className="p-1.5">
+                <div className="p-1">
                   <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate('/dashboard/profile');
-                    }}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    onClick={() => { setProfileOpen(false); navigate('/dashboard/profile'); }}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-xs text-sidebar-foreground/65 hover:bg-sidebar-accent transition-colors"
                   >
-                    <HugeiconsIcon icon={UserIcon} className="size-4 text-slate-400" />
-                    My Profile
+                    <HugeiconsIcon icon={UserIcon} className="size-3.5 text-sidebar-foreground/35" />
+                    Profile
                   </button>
                   <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate('/dashboard/settings');
-                    }}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    onClick={() => { setProfileOpen(false); navigate('/dashboard/settings'); }}
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-xs text-sidebar-foreground/65 hover:bg-sidebar-accent transition-colors"
                   >
-                    <HugeiconsIcon icon={UserSettingsIcon} className="size-4 text-slate-400" />
+                    <HugeiconsIcon icon={UserSettingsIcon} className="size-3.5 text-sidebar-foreground/35" />
                     Account Settings
                   </button>
+                  <div className="mx-2 my-0.5 h-px bg-sidebar-border/40" />
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-xs text-red-600 hover:bg-red-50 transition-colors"
                   >
-                    <HugeiconsIcon icon={Logout01Icon} className="size-4" />
+                    <HugeiconsIcon icon={Logout01Icon} className="size-3.5" />
                     Sign Out
                   </button>
                 </div>
@@ -263,29 +243,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* Collapse Toggle */}
-          {!collapsed && (
+          {/* Collapse toggle — subtle */}
+          <div className="px-2 pb-1.5">
             <button
-              onClick={() => setCollapsed(true)}
-              className="flex items-center justify-center w-full mt-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+              onClick={() => setCollapsed(!collapsed)}
+              className="flex items-center justify-center w-full h-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors"
             >
-              <HugeiconsIcon icon={Menu02Icon} className="size-4" />
+              <HugeiconsIcon icon={collapsed ? Menu01Icon : Menu02Icon} className={collapsed ? 'size-4' : 'size-3.5'} />
             </button>
-          )}
-          {collapsed && (
-            <button
-              onClick={() => setCollapsed(false)}
-              className="flex items-center justify-center w-full mt-1 py-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <HugeiconsIcon icon={Menu01Icon} className="size-4" />
-            </button>
-          )}
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto p-6 lg:p-8">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-5">
           {children}
         </div>
       </main>

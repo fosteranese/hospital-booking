@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 interface ClinicConfig {
   clinicName: string;
   clinicAddress: string;
+  clinicLocationUrl: string;
   minAdvanceDays: number;
 }
 
@@ -33,17 +34,23 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ClinicConfig>(() => loadCached() || {
     clinicName: '',
     clinicAddress: '',
+    clinicLocationUrl: '',
     minAdvanceDays: 1,
   });
 
   useEffect(() => {
     if (config.clinicName) return;
-    api.getAppointmentConfig().then((settings) => {
+    Promise.all([
+      api.getAppointmentConfig(),
+      api.getSettingsGroup('clinic').catch(() => [] as any[]),
+    ]).then(([appt, clinic]) => {
       const map: Record<string, string> = {};
-      settings.forEach((s: any) => { map[s.name] = s.value; });
+      appt.forEach((s: any) => { map[s.name] = s.value; });
+      clinic.forEach((s: any) => { map[s.name] = s.value; });
       const cfg: ClinicConfig = {
         clinicName: map.clinic_name || 'Clinic',
         clinicAddress: map.clinic_address || '',
+        clinicLocationUrl: map.clinic_location_url || '',
         minAdvanceDays: parseInt(map.min_advance_days || '1', 10),
       };
       setConfig(cfg);

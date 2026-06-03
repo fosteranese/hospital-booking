@@ -369,10 +369,10 @@ export const api = {
   },
 
   getSettingsGroup: (group: string) =>
-    request<Array<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string }>>(`/settings/${group}`),
+    request<Array<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string; value_type: string }>>(`/settings/${group}`),
 
   updateSetting: (group: string, name: string, value: string, token: string) =>
-    request<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string }>(`/settings/${group}/${name}`, {
+    request<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string; value_type: string }>(`/settings/${group}/${name}`, {
       method: 'PUT',
       body: JSON.stringify({ value }),
       headers: { Authorization: `Bearer ${token}` },

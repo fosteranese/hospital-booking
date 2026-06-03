@@ -1,25 +1,27 @@
 import { HugeiconsIcon } from '@hugeicons/react';
+import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
   title: string;
   description?: string;
   icon?: any;
   actions?: React.ReactNode;
+  className?: string;
 }
 
-export function PageHeader({ title, description, icon, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, icon, actions, className }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="flex items-start gap-3">
         {icon && (
-          <div className="size-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-            <HugeiconsIcon icon={icon} className="size-5 text-emerald-600" />
+          <div className="size-9 rounded-lg flex items-center justify-center shrink-0 text-emerald-600">
+            <HugeiconsIcon icon={icon} className="size-5" />
           </div>
         )}
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h1>
+          <h1 className="text-lg font-bold text-foreground tracking-tight">{title}</h1>
           {description && (
-            <p className="text-sm text-slate-500 mt-0.5">{description}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
           )}
         </div>
       </div>

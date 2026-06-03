@@ -48,7 +48,7 @@ export function StatusBadge({ status, attended }: { status: string; attended?: b
 }
 
 export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime, onRescheduleDoctor, onCancel }: AppointmentDetailModalProps) {
-  const { clinicName, clinicAddress } = useClinic();
+  const { clinicName, clinicAddress, clinicLocationUrl } = useClinic();
   const [cancelling, setCancelling] = useState(false);
   const [pendingCancel, setPendingCancel] = useState(false);
 
@@ -265,7 +265,13 @@ export function AppointmentDetailModal({ appointment, onClose, onRescheduleTime,
                         )}
                       </div>
                       <p className="text-sm font-medium text-foreground mt-0.5">{clinicName}</p>
-                      <p className="text-xs text-muted-foreground/60">{clinicAddress}</p>
+                      {clinicLocationUrl ? (
+                        <a href={clinicLocationUrl} target="_blank" rel="noopener" className="text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors">
+                          {clinicAddress}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/60">{clinicAddress}</p>
+                      )}
                     </div>
                   </div>
 

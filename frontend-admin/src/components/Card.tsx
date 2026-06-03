@@ -4,6 +4,7 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
 }
 
 const paddingClasses = {
@@ -13,13 +14,16 @@ const paddingClasses = {
   lg: 'p-6',
 };
 
-export function Card({ children, className, padding = 'md' }: CardProps) {
+export function Card({ children, className, padding = 'md', hover }: CardProps) {
   return (
-    <div className={cn(
-      'bg-white rounded-xl border border-slate-200/80 shadow-sm shadow-slate-100/50',
-      paddingClasses[padding],
-      className
-    )}>
+    <div
+      className={cn(
+        'bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]',
+        hover && 'transition-shadow duration-200 hover:shadow-[0_4px_12px_0_rgb(0,0,0,0.08)]',
+        paddingClasses[padding],
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -34,11 +38,11 @@ interface CardHeaderProps {
 
 export function CardHeader({ title, description, action, className }: CardHeaderProps) {
   return (
-    <div className={cn('flex items-start justify-between gap-3 mb-4', className)}>
+    <div className={cn('flex items-start justify-between gap-3', className)}>
       <div>
-        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {description && (
-          <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

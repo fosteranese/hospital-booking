@@ -131,10 +131,10 @@ async fn main() {
         .and_then(|v| v.parse().ok())
         .unwrap_or(3);
 
-    let clinic_name = settings.get("appointment", "clinic_name").await.ok().flatten()
+    let clinic_name = settings.get("clinic", "clinic_name").await.ok().flatten()
         .unwrap_or_else(|| "MEDIPORT FERTILITY SERVICES".to_string());
 
-    let clinic_address = settings.get("appointment", "clinic_address").await.ok().flatten()
+    let clinic_address = settings.get("clinic", "clinic_address").await.ok().flatten()
         .unwrap_or_else(|| "Bissau Avenue, East-Legon, Accra, Ghana".to_string());
 
     let notification_email = std::env::var("CLINIC_NOTIFICATION_EMAIL").ok();

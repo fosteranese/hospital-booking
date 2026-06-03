@@ -21,6 +21,7 @@ pub struct Setting {
     pub value: Option<String>,
     pub is_sensitive: bool,
     pub description: String,
+    pub value_type: String,
 }
 
 #[derive(Clone)]
@@ -42,37 +43,38 @@ impl SettingsService {
     }
 
     pub async fn seed_defaults(&self) -> Result<(), AppError> {
-        let defaults: Vec<(&str, &str, &str, bool, &str)> = vec![
-            ("smtp", "host", "smtp.example.com", false, "SMTP server hostname"),
-            ("smtp", "port", "587", false, "SMTP server port"),
-            ("smtp", "user", "noreply@hospital.com", true, "SMTP username"),
-            ("smtp", "pass", "your-smtp-password", true, "SMTP password"),
-            ("smtp", "from_email", "noreply@hospital.com", false, "Sender email address for outgoing emails"),
-            ("appointment", "min_gap_minutes", "180", false, "Minimum gap in minutes between same patient's appointments"),
-            ("appointment", "slot_duration_minutes", "30", false, "Duration of each appointment time slot in minutes"),
-            ("appointment", "monday_start", "09:00", false, "Monday first slot (HH:MM, empty=closed)"),
-            ("appointment", "monday_end", "17:00", false, "Monday last slot end (HH:MM)"),
-            ("appointment", "tuesday_start", "09:00", false, "Tuesday first slot (HH:MM, empty=closed)"),
-            ("appointment", "tuesday_end", "17:00", false, "Tuesday last slot end (HH:MM)"),
-            ("appointment", "wednesday_start", "09:00", false, "Wednesday first slot (HH:MM, empty=closed)"),
-            ("appointment", "wednesday_end", "17:00", false, "Wednesday last slot end (HH:MM)"),
-            ("appointment", "thursday_start", "09:00", false, "Thursday first slot (HH:MM, empty=closed)"),
-            ("appointment", "thursday_end", "17:00", false, "Thursday last slot end (HH:MM)"),
-            ("appointment", "friday_start", "09:00", false, "Friday first slot (HH:MM, empty=closed)"),
-            ("appointment", "friday_end", "17:00", false, "Friday last slot end (HH:MM)"),
-            ("appointment", "saturday_start", "", false, "Saturday first slot (HH:MM, empty=closed)"),
-            ("appointment", "saturday_end", "", false, "Saturday last slot end (HH:MM)"),
-            ("appointment", "sunday_start", "", false, "Sunday first slot (HH:MM, empty=closed)"),
-            ("appointment", "sunday_end", "", false, "Sunday last slot end (HH:MM)"),
-            ("appointment", "slot_days_ahead", "14", false, "Number of days ahead to generate slots"),
-            ("appointment", "min_advance_days", "7", false, "Minimum number of days in advance required when booking an appointment"),
-            ("appointment", "clinic_name", "MEDIPORT FERTILITY SERVICES", false, "Clinic name displayed in emails and UI"),
-            ("appointment", "max_upcoming_appointments", "3", false, "Maximum number of upcoming appointments a patient can have at a time"),
-            ("appointment", "clinic_address", "Bissau Avenue, East-Legon, Accra, Ghana", false, "Clinic address line displayed in UI"),
-            ("otp", "length", "6", false, "OTP code length (number of digits)"),
+        let defaults: Vec<(&str, &str, &str, bool, &str, &str)> = vec![
+            ("smtp", "host", "smtp.example.com", false, "SMTP server hostname", "text"),
+            ("smtp", "port", "587", false, "SMTP server port", "integer"),
+            ("smtp", "user", "noreply@hospital.com", true, "SMTP username", "email"),
+            ("smtp", "pass", "your-smtp-password", true, "SMTP password", "password"),
+            ("smtp", "from_email", "noreply@hospital.com", false, "Sender email address for outgoing emails", "email"),
+            ("appointment", "min_gap_minutes", "180", false, "Minimum gap in minutes between same patient's appointments", "integer"),
+            ("appointment", "slot_duration_minutes", "30", false, "Duration of each appointment time slot in minutes", "integer"),
+            ("appointment", "monday_start", "09:00", false, "Monday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "monday_end", "17:00", false, "Monday last slot end (HH:MM)", "time"),
+            ("appointment", "tuesday_start", "09:00", false, "Tuesday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "tuesday_end", "17:00", false, "Tuesday last slot end (HH:MM)", "time"),
+            ("appointment", "wednesday_start", "09:00", false, "Wednesday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "wednesday_end", "17:00", false, "Wednesday last slot end (HH:MM)", "time"),
+            ("appointment", "thursday_start", "09:00", false, "Thursday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "thursday_end", "17:00", false, "Thursday last slot end (HH:MM)", "time"),
+            ("appointment", "friday_start", "09:00", false, "Friday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "friday_end", "17:00", false, "Friday last slot end (HH:MM)", "time"),
+            ("appointment", "saturday_start", "", false, "Saturday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "saturday_end", "", false, "Saturday last slot end (HH:MM)", "time"),
+            ("appointment", "sunday_start", "", false, "Sunday first slot (HH:MM, empty=closed)", "time"),
+            ("appointment", "sunday_end", "", false, "Sunday last slot end (HH:MM)", "time"),
+            ("appointment", "slot_days_ahead", "14", false, "Number of days ahead to generate slots", "integer"),
+            ("appointment", "min_advance_days", "7", false, "Minimum number of days in advance required when booking an appointment", "integer"),
+            ("clinic", "clinic_name", "MEDIPORT FERTILITY SERVICES", false, "Clinic name displayed in emails and UI", "text"),
+            ("clinic", "clinic_address", "Bissau Avenue, East-Legon, Accra, Ghana", false, "Clinic address line displayed in UI", "address"),
+            ("clinic", "clinic_location_url", "", false, "Google Maps location URL for the clinic", "url"),
+            ("appointment", "max_upcoming_appointments", "3", false, "Maximum number of upcoming appointments a patient can have at a time", "integer"),
+            ("otp", "length", "6", false, "OTP code length (number of digits)", "integer"),
         ];
 
-        for (group, name, default_value, sensitive, description) in defaults {
+        for (group, name, default_value, sensitive, description, value_type) in defaults {
             let value = if sensitive {
                 self.encrypt(default_value)
             } else {
@@ -80,17 +82,19 @@ impl SettingsService {
             };
 
             sqlx::query(
-                "INSERT INTO settings (group_name, name, value, is_sensitive, description)
-                 VALUES ($1, $2, $3, $4, $5)
+                "INSERT INTO settings (group_name, name, value, is_sensitive, description, value_type)
+                 VALUES ($1, $2, $3, $4, $5, $6)
                  ON CONFLICT (group_name, name) DO UPDATE SET
                    value = CASE WHEN settings.is_sensitive THEN settings.value ELSE EXCLUDED.value END,
-                   description = EXCLUDED.description"
+                   description = EXCLUDED.description,
+                   value_type = EXCLUDED.value_type"
             )
             .bind(group)
             .bind(name)
             .bind(&value)
             .bind(sensitive)
             .bind(description)
+            .bind(value_type)
             .execute(&self.pool)
             .await
             .map_err(|e| AppError::Database(e))?;
@@ -101,7 +105,7 @@ impl SettingsService {
 
     pub async fn get(&self, group: &str, name: &str) -> Result<Option<String>, AppError> {
         let row = sqlx::query_as::<_, Setting>(
-            "SELECT id, group_name, name, value, is_sensitive, description FROM settings WHERE group_name = $1 AND name = $2"
+            "SELECT id, group_name, name, value, is_sensitive, description, value_type FROM settings WHERE group_name = $1 AND name = $2"
         )
         .bind(group)
         .bind(name)
@@ -121,7 +125,7 @@ impl SettingsService {
 
     pub async fn get_setting(&self, group: &str, name: &str) -> Result<Option<Setting>, AppError> {
         let mut row = sqlx::query_as::<_, Setting>(
-            "SELECT id, group_name, name, value, is_sensitive, description FROM settings WHERE group_name = $1 AND name = $2"
+            "SELECT id, group_name, name, value, is_sensitive, description, value_type FROM settings WHERE group_name = $1 AND name = $2"
         )
         .bind(group)
         .bind(name)
@@ -139,7 +143,7 @@ impl SettingsService {
 
     pub async fn get_group(&self, group: &str) -> Result<Vec<Setting>, AppError> {
         let rows = sqlx::query_as::<_, Setting>(
-            "SELECT id, group_name, name, value, is_sensitive, description FROM settings WHERE group_name = $1 ORDER BY name"
+            "SELECT id, group_name, name, value, is_sensitive, description, value_type FROM settings WHERE group_name = $1 ORDER BY name"
         )
         .bind(group)
         .fetch_all(&self.pool)
