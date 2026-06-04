@@ -26,19 +26,33 @@ function formatTime(timeStr: string) {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-function StatusDot({ status, attended }: { status: string; attended: boolean | null }) {
+function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 'confirmed' | 'cancelled' {
+  if (a.status === 'cancelled') return 'cancelled';
+  if (a.attended === true) return 'attended';
+  if (a.attended === false) return 'missed';
+  const now = new Date();
+  const [h, m] = a.end_time.split(':').map(Number);
+  const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+  if (now >= slotEnd) return 'missed';
+  return 'confirmed';
+}
+
+function StatusDot({ status, attended, minutes_late }: { status: string; attended: boolean | null; minutes_late: number | null }) {
+  const effective = getEffectiveStatus({ status, attended, end_time: '', minutes_late } as AppointmentHistoryItem);
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
     missed:    { label: 'Missed',    color: 'bg-red-500' },
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
-  const key = attended === true ? 'attended' : attended === false ? 'missed' : status === 'cancelled' ? 'cancelled' : 'confirmed';
-  const s = map[key];
+  const s = map[effective];
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
       <span className={`size-1.5 rounded-full ${s.color}`} />
       {s.label}
+      {attended === true && minutes_late != null && minutes_late > 0 && (
+        <span className="text-amber-600 font-medium">{minutes_late} min late</span>
+      )}
     </span>
   );
 }
@@ -174,7 +188,14 @@ function TodayStatCard({
 
 /* ── Row 2 stat card with trend ── */
 
-function TrendBadge({ value, label }: { value: number; label: string }) {
+function TrendBadge({ value, label }: { value: number | null; label: string }) {
+  if (value === null) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-slate-400">
+        —<span className="text-slate-400 ml-0.5">{label}</span>
+      </span>
+    );
+  }
   const isUp = value > 0;
   const isNeutral = value === 0;
   return (
@@ -223,7 +244,7 @@ function FutureStatCard({
 }: {
   label: string;
   value: number;
-  trend: number;
+  trend: number | null;
   icon: any;
   accentClass: string;
   borderClass: string;
@@ -254,6 +275,7 @@ export function DoctorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -270,9 +292,10 @@ export function DoctorDashboard() {
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  const handleMarkAttendance = useCallback(async (id: string, attended: boolean) => {
+  const handleConfirmAttend = useCallback(async (id: string, attended: boolean, minutes_late?: number | null) => {
     try {
-      await api.markAttendance(id, { attended }, token);
+      await api.markAttendance(id, { attended, minutes_late }, token);
+      setLatenessInput(null);
       fetchAppointments();
     } catch (e: any) {
       setError(e.message || 'Failed to update attendance');
@@ -280,7 +303,6 @@ export function DoctorDashboard() {
   }, [token, fetchAppointments]);
 
   const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const weekRange = getWeekRange(new Date());
   const prevWeekStart = new Date(new Date(weekRange.start).getTime() - 7 * 86400000).toISOString().slice(0, 10);
@@ -295,34 +317,28 @@ export function DoctorDashboard() {
   const prevYearStart = (now.getFullYear() - 1) + '-01-01';
   const prevYearEnd = (now.getFullYear() - 1) + '-12-31';
 
-  const pendingToday = appointments.filter(a => a.slot_date === today && a.status === 'confirmed' && a.attended !== true).length;
-  const attendedToday = appointments.filter(a => a.slot_date === today && a.attended === true).length;
-  const missedToday = appointments.filter(a => a.slot_date === today && a.attended === false).length;
+  const todayAppts = appointments.filter(a => a.slot_date === today);
+
+  const pendingToday = todayAppts.filter(a => getEffectiveStatus(a) === 'confirmed').length;
+  const attendedToday = todayAppts.filter(a => getEffectiveStatus(a) === 'attended').length;
+  const missedToday = todayAppts.filter(a => getEffectiveStatus(a) === 'missed').length;
   const totalToday = pendingToday + attendedToday + missedToday;
 
-  const yesterdayPending = appointments.filter(a => a.slot_date === yesterday && a.status === 'confirmed' && a.attended !== true).length;
-  const yesterdayAttended = appointments.filter(a => a.slot_date === yesterday && a.attended === true).length;
-  const yesterdayMissed = appointments.filter(a => a.slot_date === yesterday && a.attended === false).length;
-  const yesterdayTotal = yesterdayPending + yesterdayAttended + yesterdayMissed;
-
   const tomorrowTotal = appointments.filter(a => a.slot_date === tomorrow && a.status !== 'cancelled').length;
-  const dayAfterTomorrow = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
-  const dayAfterTotal = appointments.filter(a => a.slot_date === dayAfterTomorrow && a.status !== 'cancelled').length;
-  const tomorrowTrend = Math.max(dayAfterTotal, 1) > 0 ? Math.round(((tomorrowTotal - dayAfterTotal) / Math.max(dayAfterTotal, 1)) * 100) : 0;
+  const todayNonCancelled = appointments.filter(a => a.slot_date === today && a.status !== 'cancelled').length;
+  const tomorrowTrend = todayNonCancelled > 0 ? Math.round(((tomorrowTotal - todayNonCancelled) / todayNonCancelled) * 100) : null;
 
   const thisWeekTotal = appointments.filter(a => a.slot_date >= weekRange.start && a.slot_date <= weekRange.end && a.status !== 'cancelled').length;
   const prevWeekTotal = appointments.filter(a => a.slot_date >= prevWeekStart && a.slot_date <= prevWeekEnd && a.status !== 'cancelled').length;
-  const weekTrend = Math.max(prevWeekTotal, 1) > 0 ? Math.round(((thisWeekTotal - prevWeekTotal) / Math.max(prevWeekTotal, 1)) * 100) : 0;
+  const weekTrend = prevWeekTotal > 0 ? Math.round(((thisWeekTotal - prevWeekTotal) / prevWeekTotal) * 100) : null;
 
   const thisMonthTotal = appointments.filter(a => a.slot_date >= monthStart && a.slot_date <= monthEnd && a.status !== 'cancelled').length;
   const prevMonthTotal = appointments.filter(a => a.slot_date >= prevMonthStart && a.slot_date <= prevMonthEnd && a.status !== 'cancelled').length;
-  const monthTrend = Math.max(prevMonthTotal, 1) > 0 ? Math.round(((thisMonthTotal - prevMonthTotal) / Math.max(prevMonthTotal, 1)) * 100) : 0;
+  const monthTrend = prevMonthTotal > 0 ? Math.round(((thisMonthTotal - prevMonthTotal) / prevMonthTotal) * 100) : null;
 
   const thisYearTotal = appointments.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
   const prevYearTotal = appointments.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
-  const yearTrend = Math.max(prevYearTotal, 1) > 0 ? Math.round(((thisYearTotal - prevYearTotal) / Math.max(prevYearTotal, 1)) * 100) : 0;
-
-  const todayAppts = appointments.filter(a => a.slot_date === today);
+  const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
 
   return (
     <div className="space-y-7">
@@ -344,13 +360,13 @@ export function DoctorDashboard() {
         <QuickActionsBar
           pendingCount={pendingToday}
           onMarkAttendance={() => {
-            const firstPending = todayAppts.find(a => a.status === 'confirmed' && a.attended !== true);
+            const firstPending = todayAppts.find(a => getEffectiveStatus(a) === 'confirmed');
             if (firstPending) setSelectedAppointmentId(firstPending.id);
           }}
         />
       )}
 
-      {/* Row 1: Today's stats with mini donuts */}
+      {/* Row 1: Today's stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="col-span-1">
           {loading ? (
@@ -438,7 +454,7 @@ export function DoctorDashboard() {
         </div>
       </div>
 
-      {/* Today's schedule with enhanced rows */}
+      {/* Today's schedule */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-slate-500" />
@@ -460,10 +476,20 @@ export function DoctorDashboard() {
               {todayAppts
                 .sort((a, b) => a.start_time.localeCompare(b.start_time))
                 .map(a => {
-                  const isAttended = a.attended === true;
-                  const isMissed = a.attended === false;
-                  const isCancelled = a.status === 'cancelled';
+                  const effective = getEffectiveStatus(a);
+                  const isAttended = effective === 'attended';
+                  const isMissed = effective === 'missed';
+                  const isCancelled = effective === 'cancelled';
+                  const isPending = effective === 'confirmed';
                   const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : isCancelled ? '#cbd5e1' : '#f59e0b';
+                  const isEditingLatness = latenessInput?.id === a.id;
+
+                  const autoLatness = (() => {
+                    const [h, m] = a.start_time.split(':').map(Number);
+                    const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+                    return Math.max(0, Math.floor((now.getTime() - slotStart.getTime()) / 60000));
+                  })();
+
                   return (
                     <div
                       key={a.id}
@@ -480,33 +506,63 @@ export function DoctorDashboard() {
                         <div className="text-sm font-medium text-slate-900">{a.patient_name || 'Patient'}</div>
                         {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                       </div>
-                      <StatusDot status={a.status} attended={a.attended} />
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {!isAttended && !isMissed && !isCancelled && (
-                          <>
-                            <button
-                              onClick={e => { e.stopPropagation(); handleMarkAttendance(a.id, true); }}
-                              className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
-                              title="Mark attended"
-                            >
-                              <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); handleMarkAttendance(a.id, false); }}
-                              className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
-                              title="Mark missed"
-                            >
-                              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => setSelectedAppointmentId(a.id)}
-                          className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                        >
-                          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-                        </button>
-                      </div>
+                      <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} />
+
+                      {isEditingLatness ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] text-slate-500 whitespace-nowrap">Late:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-16 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                            value={latenessInput.minutes}
+                            onChange={e => setLatenessInput({ ...latenessInput, minutes: Math.max(0, parseInt(e.target.value) || 0) })}
+                            autoFocus
+                          />
+                          <span className="text-[11px] text-slate-500">min</span>
+                          <button
+                            onClick={() => handleConfirmAttend(a.id, true, latenessInput.minutes)}
+                            className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                            title="Confirm"
+                          >
+                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => setLatenessInput(null)}
+                            className="p-1 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                            title="Cancel"
+                          >
+                            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {isPending && (
+                            <>
+                              <button
+                                onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, minutes: autoLatness }); }}
+                                className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                                title="Mark attended"
+                              >
+                                <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
+                              </button>
+                              <button
+                                onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, false); }}
+                                className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
+                                title="Mark missed"
+                              >
+                                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setSelectedAppointmentId(a.id)}
+                            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                          >
+                            <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

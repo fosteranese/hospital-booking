@@ -101,6 +101,7 @@ export interface AppointmentHistoryItem {
   status: string;
   notes: string;
   attended: boolean | null;
+  minutes_late: number | null;
   cancellation_reason: string;
 }
 
@@ -112,6 +113,7 @@ export interface AppointmentResponse {
   status: string;
   notes: string;
   attended: boolean | null;
+  minutes_late: number | null;
   cancellation_reason: string;
   created_at: string;
 }
@@ -404,8 +406,8 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  markAttendance: (id: string, data: { attended: boolean }, token: string) =>
-    request<{ id: string }>(`/appointments/${id}/attendance`, {
+  markAttendance: (id: string, data: { attended: boolean; minutes_late?: number | null }, token: string) =>
+    request<AppointmentResponse>(`/appointments/${id}/attendance`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },

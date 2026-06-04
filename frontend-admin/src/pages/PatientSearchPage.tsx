@@ -63,7 +63,7 @@ export function PatientSearchPage() {
         api.getPatientUpcoming(p.id, token),
         api.getPatientHistory(p.id, token),
       ]);
-      setHistory([...upcoming.map(a => ({ ...a, patient_id: '', patient_name: '', attended: null, cancellation_reason: '' })), ...past]);
+      setHistory([...upcoming.map(a => ({ ...a, patient_id: '', patient_name: '', attended: null, minutes_late: null, cancellation_reason: '' })), ...past]);
     } catch (e: any) {
       setError(e.message);
     } finally {

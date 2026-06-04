@@ -72,6 +72,7 @@ pub struct CancelAppointmentRequest {
 #[derive(Deserialize)]
 pub struct MarkAttendanceRequest {
     pub attended: bool,
+    pub minutes_late: Option<i32>,
 }
 
 #[derive(Deserialize)]
@@ -92,6 +93,7 @@ pub struct AppointmentResponse {
     pub status: String,
     pub notes: String,
     pub attended: Option<bool>,
+    pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -133,7 +135,7 @@ pub async fn list_appointments(
         "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.cancellation_reason
+                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
@@ -197,7 +199,7 @@ pub async fn export_appointments(
         "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.cancellation_reason
+                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
@@ -535,6 +537,7 @@ pub async fn create_appointment(
         status: appointment.status,
         notes: appointment.notes,
         attended: appointment.attended,
+        minutes_late: None,
         cancellation_reason: appointment.cancellation_reason,
         created_at: appointment.created_at,
     }))
@@ -575,6 +578,7 @@ pub async fn get_appointment(
         status: appointment.status,
         notes: appointment.notes,
         attended: appointment.attended,
+        minutes_late: None,
         cancellation_reason: appointment.cancellation_reason,
         created_at: appointment.created_at,
     }))
@@ -685,6 +689,7 @@ pub async fn cancel_appointment(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
@@ -784,6 +789,7 @@ pub async fn reschedule_appointment(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
@@ -826,6 +832,7 @@ pub async fn change_doctor(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
@@ -841,10 +848,11 @@ pub async fn mark_attendance(
 
     let updated = if auth.role == "admin" || auth.role == "scheduler" {
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 RETURNING *"
+            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
+        .bind(body.minutes_late)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| {
@@ -865,10 +873,11 @@ pub async fn mark_attendance(
         .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
 
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 AND doctor_id = $3 RETURNING *"
+            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 AND doctor_id = $4 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
+        .bind(body.minutes_late)
         .bind(doctor_id)
         .fetch_one(&state.pool)
         .await
@@ -882,10 +891,11 @@ pub async fn mark_attendance(
     } else {
         let patient = get_patient_from_auth(&state, &auth).await?;
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, updated_at = NOW() WHERE id = $1 AND patient_id = $3 RETURNING *"
+            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 AND patient_id = $4 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
+        .bind(body.minutes_late)
         .bind(patient.id)
         .fetch_one(&state.pool)
         .await
@@ -906,6 +916,7 @@ pub async fn mark_attendance(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: updated.minutes_late,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
@@ -977,6 +988,7 @@ pub async fn update_appointment(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
@@ -1226,6 +1238,7 @@ pub async fn reschedule_appointment_by_time(
         status: updated.status,
         notes: updated.notes,
         attended: updated.attended,
+        minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
         created_at: updated.created_at,
     }))
