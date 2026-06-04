@@ -210,10 +210,15 @@ function TrendBadge({ value, label }: { value: number | null; label: string }) {
 }
 
 function PatientAvatar({ name }: { name: string }) {
-  const initial = (name || 'P').charAt(0).toUpperCase();
+  const initials = (name || 'P')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase())
+    .join('');
   return (
-    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-xs font-semibold text-slate-600">
-      {initial}
+    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">
+      {initials}
     </div>
   );
 }
@@ -472,101 +477,110 @@ export function DoctorDashboard() {
               description="You have no appointments scheduled for today."
             />
           ) : (
-            <div className="divide-y divide-slate-100">
-              {todayAppts
-                .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                .map(a => {
-                  const effective = getEffectiveStatus(a);
-                  const isAttended = effective === 'attended';
-                  const isMissed = effective === 'missed';
-                  const isCancelled = effective === 'cancelled';
-                  const isPending = effective === 'confirmed';
-                  const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : isCancelled ? '#cbd5e1' : '#f59e0b';
-                  const isEditingLatness = latenessInput?.id === a.id;
+            <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+              <tbody>
+                {todayAppts
+                  .sort((a, b) => a.start_time.localeCompare(b.start_time))
+                  .map(a => {
+                    const effective = getEffectiveStatus(a);
+                    const isAttended = effective === 'attended';
+                    const isMissed = effective === 'missed';
+                    const isCancelled = effective === 'cancelled';
+                    const isPending = effective === 'confirmed';
+                    const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : isCancelled ? '#cbd5e1' : '#f59e0b';
+                    const isEditingLatness = latenessInput?.id === a.id;
 
-                  const autoLatness = (() => {
-                    const [h, m] = a.start_time.split(':').map(Number);
-                    const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-                    return Math.max(0, Math.floor((now.getTime() - slotStart.getTime()) / 60000));
-                  })();
+                    const autoLatness = (() => {
+                      const [h, m] = a.start_time.split(':').map(Number);
+                      const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+                      return Math.max(0, Math.floor((now.getTime() - slotStart.getTime()) / 60000));
+                    })();
 
-                  return (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-3 pl-4 pr-3 py-3 border-l-4 cursor-pointer transition-colors hover:bg-slate-50/80 group"
-                      style={{ borderLeftColor: borderColor }}
-                    >
-                      <PatientAvatar name={a.patient_name} />
-                      <div className="flex flex-col items-center w-14 shrink-0">
-                        <span className="text-sm font-semibold text-slate-900">{formatTime(a.start_time)}</span>
-                        <span className="text-[10px] text-slate-400">{formatTime(a.end_time)}</span>
-                      </div>
-                      <div className="w-px h-8 bg-slate-100 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-900">{a.patient_name || 'Patient'}</div>
-                        {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
-                      </div>
-                      <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} />
-
-                      {isEditingLatness ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-slate-500 whitespace-nowrap">Late:</span>
-                          <input
-                            type="number"
-                            min={0}
-                            className="w-16 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                            value={latenessInput.minutes}
-                            onChange={e => setLatenessInput({ ...latenessInput, minutes: Math.max(0, parseInt(e.target.value) || 0) })}
-                            autoFocus
-                          />
-                          <span className="text-[11px] text-slate-500">min</span>
-                          <button
-                            onClick={() => handleConfirmAttend(a.id, true, latenessInput.minutes)}
-                            className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
-                            title="Confirm"
-                          >
-                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
-                          </button>
-                          <button
-                            onClick={() => setLatenessInput(null)}
-                            className="p-1 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                            title="Cancel"
-                          >
-                            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {isPending && (
-                            <>
+                    return (
+                      <tr
+                        key={a.id}
+                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group"
+                        onClick={() => setSelectedAppointmentId(a.id)}
+                        style={{ transformOrigin: 'center left' }}
+                      >
+                        <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                          <div className="flex flex-col items-start">
+                            <span className="text-base font-semibold text-slate-900">{formatTime(a.start_time)}</span>
+                            <span className="text-xs text-slate-400">{formatTime(a.end_time)}</span>
+                          </div>
+                        </td>
+                        <td className="w-10 p-2 border-b border-slate-100 text-center">
+                          <PatientAvatar name={a.patient_name} />
+                        </td>
+                        <td className="min-w-0 py-4 border-b border-slate-100 align-top">
+                          <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                          {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
+                        </td>
+                        <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} /></td>
+                        <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                          {isEditingLatness ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-slate-500 whitespace-nowrap">Late:</span>
+                              <input
+                                type="number"
+                                min={0}
+                                className="w-16 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                value={latenessInput.minutes}
+                                onChange={e => setLatenessInput({ ...latenessInput, minutes: Math.max(0, parseInt(e.target.value) || 0) })}
+                                autoFocus
+                              />
+                              <span className="text-[11px] text-slate-500">min</span>
                               <button
-                                onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, minutes: autoLatness }); }}
-                                className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
-                                title="Mark attended"
+                                onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.minutes); }}
+                                className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                                title="Confirm"
                               >
                                 <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                               </button>
                               <button
-                                onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, false); }}
-                                className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
-                                title="Mark missed"
+                                onClick={() => setLatenessInput(null)}
+                                className="p-1 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                title="Cancel"
                               >
                                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                               </button>
-                            </>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              {isPending && (
+                                <>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, minutes: autoLatness }); }}
+                                    className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                                    title="Mark attended"
+                                  >
+                                    <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleConfirmAttend(a.id, false)}
+                                    className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
+                                    title="Mark missed"
+                                  >
+                                    <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => setSelectedAppointmentId(a.id)}
+                                className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                              >
+                                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                              </button>
+                            </div>
                           )}
-                          <button
-                            onClick={() => setSelectedAppointmentId(a.id)}
-                            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                          >
-                            <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           )}
         </Card>
       </div>

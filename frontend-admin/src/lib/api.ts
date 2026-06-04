@@ -92,6 +92,8 @@ export interface AppointmentHistoryItem {
   id: string;
   patient_id: string;
   patient_name: string;
+  patient_email: string;
+  patient_phone: string | null;
   doctor_id: string;
   doctor_name: string;
   specialization: string;

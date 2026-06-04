@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -24,6 +24,27 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 
+const ContentContainerContext = createContext<{
+  containerClass: string;
+  setContainerClass: (value: string) => void;
+}>({
+  containerClass: 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200',
+  setContainerClass: () => {},
+});
+
+export function useContentContainer() {
+  return useContext(ContentContainerContext);
+}
+
+export function ContentContainerProvider({ children }: { children: React.ReactNode }) {
+  const [containerClass, setContainerClass] = useState('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+  return (
+    <ContentContainerContext.Provider value={{ containerClass, setContainerClass }}>
+      {children}
+    </ContentContainerContext.Provider>
+  );
+}
+
 interface NavItem {
   label: string;
   href: string;
@@ -41,6 +62,7 @@ const roleNav: Record<string, NavGroup[]> = {
       label: 'Overview',
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: Calendar01Icon },
+        { label: 'Today', href: '/dashboard/today', icon: TimeScheduleIcon },
         { label: 'Analytics', href: '/dashboard/analytics', icon: ChartHistogramIcon },
       ],
     },
@@ -66,6 +88,7 @@ const roleNav: Record<string, NavGroup[]> = {
       label: 'Overview',
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: Calendar01Icon },
+        { label: 'Today', href: '/dashboard/today', icon: TimeScheduleIcon },
         { label: 'Analytics', href: '/dashboard/analytics', icon: ChartHistogramIcon },
       ],
     },
@@ -117,6 +140,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     clearAuth();
     navigate('/');
   };
+
+  const { containerClass } = useContentContainer();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -257,7 +282,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-5">
+          <div className={containerClass}>
           {children}
         </div>
       </main>

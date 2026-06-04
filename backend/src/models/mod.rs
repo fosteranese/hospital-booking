@@ -45,6 +45,8 @@ pub struct AppointmentHistoryItem {
     pub id: Uuid,
     pub patient_id: Uuid,
     pub patient_name: String,
+    pub patient_email: String,
+    pub patient_phone: Option<String>,
     pub doctor_id: Uuid,
     pub doctor_name: String,
     pub specialization: String,

@@ -287,9 +287,13 @@ pub async fn get_appointment_history(
 ) -> Result<Json<Vec<AppointmentHistoryItem>>, AppError> {
     verify_patient_access(&state.pool, &auth, patient_id).await?;
     let appointments = sqlx::query_as::<_, AppointmentHistoryItem>(
-        "SELECT a.id, d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
-                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended, a.cancellation_reason
+        "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
+                p.email AS patient_email, p.phone AS patient_phone,
+                d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
+                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended,
+                a.minutes_late, a.cancellation_reason
          FROM appointments a
+         JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
           WHERE a.patient_id = $1 AND (s.slot_date < CURRENT_DATE OR a.status = 'cancelled')

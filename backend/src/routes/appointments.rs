@@ -81,6 +81,7 @@ pub struct RescheduleByTimeRequest {
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
     pub doctor_id: Option<Uuid>,
+    #[allow(dead_code)]
     pub reason: Option<String>,
 }
 
@@ -133,6 +134,7 @@ pub async fn list_appointments(
 
     let mut sql = String::from(
         "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
+                p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
                 a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason
@@ -197,6 +199,7 @@ pub async fn export_appointments(
 
     let mut sql = String::from(
         "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
+                p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
                 a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason

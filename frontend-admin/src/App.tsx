@@ -2,10 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ClinicProvider } from '@/contexts/clinic-context';
 import { LoginPage } from '@/pages/LoginPage';
-import { DashboardLayout } from '@/pages/dashboard/DashboardLayout';
+import { DashboardLayout, ContentContainerProvider } from '@/pages/dashboard/DashboardLayout';
 import { AdminDashboard } from '@/pages/dashboard/AdminDashboard';
 import { DoctorDashboard } from '@/pages/dashboard/DoctorDashboard';
 import { DoctorTodayAppointmentsPage } from '@/pages/dashboard/DoctorTodayAppointmentsPage';
+import { TodayPage } from '@/pages/dashboard/TodayPage';
 import { DoctorAppointmentsPage } from '@/pages/dashboard/DoctorAppointmentsPage';
 import { DoctorUnavailabilityPage } from '@/pages/dashboard/DoctorUnavailabilityPage';
 import { CalendarPage } from '@/pages/dashboard/CalendarPage';
@@ -48,8 +49,9 @@ function DashboardRouter() {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<LoginPage />} />
+    <ContentContainerProvider>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
       <Route
         path="/dashboard"
         element={
@@ -76,6 +78,16 @@ function AppRoutes() {
           <DashboardGuard>
             <DashboardLayout>
               <DoctorTodayAppointmentsPage />
+            </DashboardLayout>
+          </DashboardGuard>
+        }
+      />
+      <Route
+        path="/dashboard/today"
+        element={
+          <DashboardGuard>
+            <DashboardLayout>
+              <TodayPage />
             </DashboardLayout>
           </DashboardGuard>
         }
@@ -192,6 +204,7 @@ function AppRoutes() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </ContentContainerProvider>
   );
 }
 
