@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
+import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
-import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Calendar01Icon,
@@ -279,7 +280,7 @@ export function DoctorDashboard() {
   const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
 
   const fetchAppointments = useCallback(async () => {
@@ -301,6 +302,16 @@ export function DoctorDashboard() {
     try {
       await api.markAttendance(id, { attended, minutes_late }, token);
       setLatenessInput(null);
+      fetchAppointments();
+    } catch (e: any) {
+      setError(e.message || 'Failed to update attendance');
+    }
+  }, [token, fetchAppointments]);
+
+  const handlePanelAttendance = useCallback(async (id: string, attended: boolean, minutes?: number) => {
+    try {
+      await api.markAttendance(id, { attended, minutes_late: minutes }, token);
+      setSelectedAppointment(null);
       fetchAppointments();
     } catch (e: any) {
       setError(e.message || 'Failed to update attendance');
@@ -344,9 +355,19 @@ export function DoctorDashboard() {
   const thisYearTotal = appointments.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
   const prevYearTotal = appointments.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
   const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
+  const { setContainerClass } = useContentContainer();
+
+  useEffect(() => {
+    setContainerClass(selectedAppointment
+      ? 'max-w-[2000px] lg:max-w-[calc(80rem+440px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
+      : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+    return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+  }, [selectedAppointment, setContainerClass]);
 
   return (
-    <div className="space-y-7">
+    <div className={`space-y-7 transition-all duration-200 ${
+      selectedAppointment ? 'lg:mr-[520px] px-8' : ''
+    }`}>
       <PageHeader
         title={`Welcome, Dr. ${otpIdentifier ? otpIdentifier.charAt(0).toUpperCase() + otpIdentifier.split('@')[0].slice(1) : 'Doctor'}`}
         description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
@@ -366,7 +387,7 @@ export function DoctorDashboard() {
           pendingCount={pendingToday}
           onMarkAttendance={() => {
             const firstPending = todayAppts.find(a => getEffectiveStatus(a) === 'confirmed');
-            if (firstPending) setSelectedAppointmentId(firstPending.id);
+            if (firstPending) setSelectedAppointment(firstPending);
           }}
         />
       )}
@@ -500,7 +521,7 @@ export function DoctorDashboard() {
                       <tr
                         key={a.id}
                         className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group"
-                        onClick={() => setSelectedAppointmentId(a.id)}
+                        onClick={() => setSelectedAppointment(a)}
                         style={{ transformOrigin: 'center left' }}
                       >
                         <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
@@ -568,7 +589,7 @@ export function DoctorDashboard() {
                                 </>
                               )}
                               <button
-                                onClick={() => setSelectedAppointmentId(a.id)}
+                                onClick={() => setSelectedAppointment(a)}
                                 className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
                               >
                                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
@@ -585,11 +606,11 @@ export function DoctorDashboard() {
         </Card>
       </div>
 
-      {selectedAppointmentId && (
-        <AppointmentDetailModal
-          appointmentId={selectedAppointmentId}
-          onClose={() => setSelectedAppointmentId(null)}
-          onUpdated={() => fetchAppointments()}
+      {selectedAppointment && (
+        <AppointmentSlidePanel
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onMarkAttendance={handlePanelAttendance}
         />
       )}
     </div>
