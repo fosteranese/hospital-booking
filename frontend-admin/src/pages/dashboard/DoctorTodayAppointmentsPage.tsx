@@ -208,11 +208,11 @@ export function DoctorTodayAppointmentsPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center h-10 max-w-sm rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="relative p-2" ref={filterRef}>
+        <div className="flex items-center h-12 max-w-lg rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="relative p-1.5" ref={filterRef}>
             <button
               onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1.5 h-full rounded-md py-1 px-2.5 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
+              className="flex items-center gap-1.5 h-full rounded-md py-2 px-3 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
             >
               {currentFilter?.label}
               <HugeiconsIcon icon={ChevronDownIcon} className={`size-3 transition-transform duration-150 ${filterOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
@@ -243,14 +243,14 @@ export function DoctorTodayAppointmentsPage() {
             placeholder={placeholderMap[searchFilter]}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 h-full pl-2 pr-2.5 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="shrink-0 mr-1.5 p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="shrink-0 mr-2 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
             </button>
           )}
         </div>
