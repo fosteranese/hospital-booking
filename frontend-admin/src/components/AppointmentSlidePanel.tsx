@@ -18,11 +18,11 @@ function formatTime(timeStr: string) {
 export function AppointmentSlidePanel({
   appointment,
   onClose,
-  onMarkAttendance,
+  onRequestAttendance,
 }: {
   appointment: AppointmentHistoryItem;
   onClose: () => void;
-  onMarkAttendance: (id: string, attended: boolean, minutes?: number) => void;
+  onRequestAttendance: (id: string, attended: boolean) => void;
 }) {
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -142,14 +142,14 @@ export function AppointmentSlidePanel({
             <p className="text-xs font-medium text-slate-400 mb-3 text-center">Mark this appointment as:</p>
             <div className="flex gap-3">
               <button
-                onClick={() => { onMarkAttendance(appointment.id, true); handleClose(); }}
+                onClick={() => onRequestAttendance(appointment.id, true)}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-sm"
               >
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                 Attended
               </button>
               <button
-                onClick={() => { onMarkAttendance(appointment.id, false); handleClose(); }}
+                onClick={() => onRequestAttendance(appointment.id, false)}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
               >
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />

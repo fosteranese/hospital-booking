@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
+import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -282,6 +283,10 @@ export function DoctorDashboard() {
   const [error, setError] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
+  const [pendingAttendance, setPendingAttendance] = useState<{
+    id: string;
+    attended: boolean;
+  } | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -308,15 +313,26 @@ export function DoctorDashboard() {
     }
   }, [token, fetchAppointments]);
 
-  const handlePanelAttendance = useCallback(async (id: string, attended: boolean, minutes?: number) => {
+  const requestAttendance = useCallback((id: string, attended: boolean) => {
+    setPendingAttendance({ id, attended });
+  }, []);
+
+  const confirmAttendance = useCallback(async (minutesLate?: number) => {
+    if (!pendingAttendance) return;
     try {
-      await api.markAttendance(id, { attended, minutes_late: minutes }, token);
+      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
+      setPendingAttendance(null);
       setSelectedAppointment(null);
       fetchAppointments();
     } catch (e: any) {
       setError(e.message || 'Failed to update attendance');
+      setPendingAttendance(null);
     }
-  }, [token, fetchAppointments]);
+  }, [pendingAttendance, token, fetchAppointments]);
+
+  const selectedForModal = pendingAttendance
+    ? appointments.find(a => a.id === pendingAttendance.id)
+    : null;
 
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -610,7 +626,20 @@ export function DoctorDashboard() {
         <AppointmentSlidePanel
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
-          onMarkAttendance={handlePanelAttendance}
+          onRequestAttendance={requestAttendance}
+        />
+      )}
+
+      {selectedForModal && (
+        <ConfirmAttendanceModal
+          open={!!pendingAttendance}
+          patientName={selectedForModal.patient_name}
+          slotDate={selectedForModal.slot_date}
+          startTime={selectedForModal.start_time}
+          endTime={selectedForModal.end_time}
+          attended={pendingAttendance!.attended}
+          onConfirm={confirmAttendance}
+          onCancel={() => setPendingAttendance(null)}
         />
       )}
     </div>

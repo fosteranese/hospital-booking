@@ -3,6 +3,7 @@ import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
+import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -127,6 +128,10 @@ export function DoctorTodayAppointmentsPage() {
   const [searchFilter, setSearchFilter] = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const [pendingAttendance, setPendingAttendance] = useState<{
+    id: string;
+    attended: boolean;
+  } | null>(null);
   const { setContainerClass } = useContentContainer();
 
   useEffect(() => {
@@ -138,6 +143,27 @@ export function DoctorTodayAppointmentsPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const requestAttendance = useCallback((id: string, attended: boolean) => {
+    setPendingAttendance({ id, attended });
+  }, []);
+
+  const confirmAttendance = useCallback(async (minutesLate?: number) => {
+    if (!pendingAttendance) return;
+    try {
+      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
+      setTodayAppts(prev => prev.map(a => a.id === pendingAttendance.id ? { ...a, attended: pendingAttendance.attended, status: 'confirmed' } : a));
+      setPendingAttendance(null);
+      setSelectedAppointment(null);
+    } catch (e: any) {
+      setTodayError(e.message);
+      setPendingAttendance(null);
+    }
+  }, [pendingAttendance, token]);
+
+  const selectedForModal = pendingAttendance
+    ? todayAppts.find(a => a.id === pendingAttendance.id)
+    : null;
 
   useEffect(() => {
     setContainerClass(selectedAppointment
@@ -209,7 +235,7 @@ export function DoctorTodayAppointmentsPage() {
 
       <div className="flex items-center gap-2">
         <div className="flex items-center h-12 max-w-lg rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="relative p-1.5" ref={filterRef}>
+          <div className="relative p-2" ref={filterRef}>
             <button
               onClick={() => setFilterOpen(v => !v)}
               className="flex items-center gap-1.5 h-full rounded-md py-2 px-3 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
@@ -317,14 +343,14 @@ export function DoctorTodayAppointmentsPage() {
                             onClick={e => e.stopPropagation()}
                           >
                             <button
-                              onClick={e => { e.stopPropagation(); handleAttendance(a.id, true); }}
+                              onClick={e => { e.stopPropagation(); requestAttendance(a.id, true); }}
                               className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
                               title="Mark attended"
                             >
                               <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                             </button>
                             <button
-                              onClick={e => { e.stopPropagation(); handleAttendance(a.id, false); }}
+                              onClick={e => { e.stopPropagation(); requestAttendance(a.id, false); }}
                               className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
                               title="Mark missed"
                             >
@@ -362,7 +388,20 @@ export function DoctorTodayAppointmentsPage() {
         <AppointmentSlidePanel
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
-          onMarkAttendance={handleAttendance}
+          onRequestAttendance={requestAttendance}
+        />
+      )}
+
+      {selectedForModal && (
+        <ConfirmAttendanceModal
+          open={!!pendingAttendance}
+          patientName={selectedForModal.patient_name}
+          slotDate={selectedForModal.slot_date}
+          startTime={selectedForModal.start_time}
+          endTime={selectedForModal.end_time}
+          attended={pendingAttendance!.attended}
+          onConfirm={confirmAttendance}
+          onCancel={() => setPendingAttendance(null)}
         />
       )}
     </div>
