@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
@@ -13,6 +13,8 @@ import {
   CheckmarkCircle01Icon,
   Cancel01Icon,
   ArrowRight01Icon,
+  Search01Icon,
+  ChevronDownIcon,
 } from '@hugeicons/core-free-icons';
 
 
@@ -72,6 +74,22 @@ function StatusDot({ status, attended, minutes_late }: { status: string; attende
   );
 }
 
+const filterOptions = [
+  { value: 'all', label: 'All' },
+  { value: 'name', label: 'Name' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'time', label: 'Time' },
+];
+
+const placeholderMap: Record<string, string> = {
+  all: 'Search patients...',
+  name: 'Search by patient name...',
+  email: 'Search by email...',
+  phone: 'Search by phone...',
+  time: 'Search by time...',
+};
+
 export function DoctorTodayAppointmentsPage() {
   const { token } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
@@ -105,7 +123,21 @@ export function DoctorTodayAppointmentsPage() {
 
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('confirmed');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilter, setSearchFilter] = useState('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
   const { setContainerClass } = useContentContainer();
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setContainerClass(selectedAppointment
@@ -129,7 +161,23 @@ export function DoctorTodayAppointmentsPage() {
     if (statusFilter === 'missed') return a.attended === false;
     if (statusFilter === 'cancelled') return a.status === 'cancelled';
     return true;
+  }).filter(a => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);
+    if (searchFilter === 'email') return a.patient_email && a.patient_email.toLowerCase().includes(q);
+    if (searchFilter === 'phone') return a.patient_phone && a.patient_phone.toLowerCase().includes(q);
+    if (searchFilter === 'time') return (a.start_time && a.start_time.toLowerCase().includes(q)) || (a.end_time && a.end_time.toLowerCase().includes(q));
+    return (
+      (a.patient_name && a.patient_name.toLowerCase().includes(q)) ||
+      (a.patient_email && a.patient_email.toLowerCase().includes(q)) ||
+      (a.patient_phone && a.patient_phone.toLowerCase().includes(q)) ||
+      (a.start_time && a.start_time.toLowerCase().includes(q)) ||
+      (a.end_time && a.end_time.toLowerCase().includes(q))
+    );
   });
+
+  const currentFilter = filterOptions.find(o => o.value === searchFilter);
 
   return (
     <div className={`space-y-6 transition-all duration-200 ${
@@ -156,6 +204,55 @@ export function DoctorTodayAppointmentsPage() {
               {s.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="flex items-center h-10 max-w-sm rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="relative p-2" ref={filterRef}>
+            <button
+              onClick={() => setFilterOpen(v => !v)}
+              className="flex items-center gap-1.5 h-full rounded-md py-1 px-2.5 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
+            >
+              {currentFilter?.label}
+              <HugeiconsIcon icon={ChevronDownIcon} className={`size-3 transition-transform duration-150 ${filterOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
+            </button>
+            {filterOpen && (
+              <div className="absolute left-0 top-full mt-1.5 min-w-[8rem] bg-white border border-slate-200 rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
+                {filterOptions.map((opt, i) => (
+                  <button
+                    key={opt.value}
+                    onMouseDown={e => { e.preventDefault(); setSearchFilter(opt.value); setFilterOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-xs transition-colors ${
+                      opt.value === searchFilter
+                        ? 'bg-emerald-50 text-emerald-600 font-semibold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 text-slate-400 ml-3">
+            <HugeiconsIcon icon={Search01Icon} className="size-4" />
+          </div>
+          <input
+            type="text"
+            placeholder={placeholderMap[searchFilter]}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 h-full pl-2 pr-2.5 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="shrink-0 mr-1.5 p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
