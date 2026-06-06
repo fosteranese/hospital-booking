@@ -41,7 +41,15 @@ function PatientAvatar({ name }: { name: string }) {
   );
 }
 
-function StatusDot({ status, attended, minutes_late }: { status: string; attended: boolean | null; minutes_late: number | null }) {
+function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+  if (has_conflict) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 rounded-full bg-red-500 shrink-0" />
+        <span className="text-xs text-red-600 font-medium">Conflict</span>
+      </div>
+    );
+  }
   if (attended === true) {
     return (
       <div className="flex items-center gap-1.5">
@@ -321,9 +329,9 @@ export function DoctorTodayAppointmentsPage() {
                   return (
                     <tr
                       key={a.id}
-                      className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group"
-                      onClick={() => setSelectedAppointment(a)}
-                      style={{ transformOrigin: 'center left' }}
+                    className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-amber-50/30' : ''}`}
+                    onClick={() => setSelectedAppointment(a)}
+                    style={{ transformOrigin: 'center' }}
                     >
                       <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                         <div className="flex flex-col items-start">
@@ -335,10 +343,13 @@ export function DoctorTodayAppointmentsPage() {
                         <PatientAvatar name={a.patient_name} />
                       </td>
                       <td className="min-w-0 py-4 border-b border-slate-100 align-top">
-                        <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                          {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
+                        </div>
                         {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                       </td>
-                      <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} /></td>
+                      <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} /></td>
                       <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                         {isPending ? (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"

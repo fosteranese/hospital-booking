@@ -45,7 +45,15 @@ function PatientAvatar({ name }: { name: string }) {
   );
 }
 
-function StatusDot({ status, attended, minutes_late }: { status: string; attended: boolean | null; minutes_late: number | null }) {
+function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+  if (has_conflict) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 rounded-full bg-red-500 shrink-0" />
+        <span className="text-xs text-red-600 font-medium">Conflict</span>
+      </div>
+    );
+  }
   if (attended === true) {
     return (
       <div className="flex items-center gap-1.5">
@@ -114,6 +122,7 @@ export function DoctorAppointmentsPage() {
     id: string;
     attended: boolean;
   } | null>(null);
+  const [conflictFilter, setConflictFilter] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -193,7 +202,9 @@ export function DoctorAppointmentsPage() {
   }, []);
 
 
-  const filtered = appointments.filter(a => a.attended === null).filter(a => !filterDate || a.slot_date === filterDate).filter(a => {
+  const conflictCount = useMemo(() => appointments.filter(a => a.attended === null && a.has_conflict).length, [appointments]);
+
+  const filtered = appointments.filter(a => a.attended === null).filter(a => !filterDate || a.slot_date === filterDate).filter(a => !conflictFilter || a.has_conflict).filter(a => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);
@@ -234,7 +245,9 @@ export function DoctorAppointmentsPage() {
       <div className="flex items-start justify-between gap-4">
         <PageHeader
           title="Upcoming Appointments"
-          description={`${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
+          description={conflictFilter
+            ? `${filtered.length} appointment${filtered.length !== 1 ? 's' : ''} with conflicts`
+            : `${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
           icon={Calendar01Icon}
         />
       </div>
@@ -286,9 +299,27 @@ export function DoctorAppointmentsPage() {
             )}
           </div>
         </div>
+        {conflictCount > 0 && (
+          <button
+            onClick={() => setConflictFilter(v => !v)}
+            className={`flex items-center gap-1.5 h-12 px-3.5 rounded-lg border text-xs font-medium transition-all shadow-sm shrink-0 ${
+              conflictFilter
+                ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-amber-100/30'
+                : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <HugeiconsIcon icon={AlertCircleIcon} className={`size-4 ${conflictFilter ? 'text-amber-500' : 'text-slate-400'}`} />
+            Conflicts
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+              conflictFilter ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+            }`}>
+              {conflictCount}
+            </span>
+          </button>
+        )}
         <div className="relative ml-auto" ref={calendarDropdownRef}>
           <button
-            onClick={() => setCalendarOpen(v => !v)}
+            onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
             className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
               filterDate || calendarOpen
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
@@ -379,9 +410,9 @@ export function DoctorAppointmentsPage() {
                         return (
                           <tr
                             key={a.id}
-                            className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group"
+                            className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-amber-50/30' : ''}`}
                             onClick={() => selectAppointment(a)}
-                            style={{ transformOrigin: 'center left' }}
+                            style={{ transformOrigin: 'center' }}
                           >
                             <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                               <div className="flex flex-col items-start">
@@ -393,11 +424,14 @@ export function DoctorAppointmentsPage() {
                               <PatientAvatar name={a.patient_name} />
                             </td>
                             <td className="min-w-0 py-4 border-b border-slate-100 align-top">
-                              <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                                {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
+                              </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>
                             <td className="w-[100px] py-4 border-b border-slate-100 align-top">
-                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} />
+                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} />
                             </td>
                             <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                               {canAttend ? (

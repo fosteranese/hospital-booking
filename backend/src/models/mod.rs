@@ -58,6 +58,7 @@ pub struct AppointmentHistoryItem {
     pub attended: Option<bool>,
     pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
+    pub has_conflict: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -102,6 +103,18 @@ pub struct DoctorUnavailability {
     pub end_time: Option<NaiveTime>,
     pub reason: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+pub struct DoctorUnavailabilityWithConflicts {
+    pub id: Uuid,
+    pub doctor_id: Uuid,
+    pub slot_date: NaiveDate,
+    pub start_time: Option<NaiveTime>,
+    pub end_time: Option<NaiveTime>,
+    pub reason: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub conflict_count: i64,
 }
 
 #[derive(Debug, Serialize, FromRow)]

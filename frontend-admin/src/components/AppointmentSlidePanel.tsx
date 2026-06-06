@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { AppointmentHistoryItem } from '@/lib/api';
+import { api, AppointmentHistoryItem } from '@/lib/api';
+import { useAuth } from '@/contexts/auth-context';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
   Cancel01Icon,
   Mail01Icon,
   CallIcon,
+  AlertCircleIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -14,6 +16,8 @@ function formatTime(timeStr: string) {
   const hour12 = h % 12 || 12;
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
+
+const inputClass = "h-8 px-2.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
 
 export function AppointmentSlidePanel({
   appointment,
@@ -24,8 +28,16 @@ export function AppointmentSlidePanel({
   onClose: () => void;
   onRequestAttendance: (id: string, attended: boolean) => void;
 }) {
+  const { token } = useAuth();
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState('');
+
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
@@ -41,6 +53,27 @@ export function AppointmentSlidePanel({
   const handleClose = () => {
     setVisible(false);
     setTimeout(() => onClose(), 200);
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleDate || !rescheduleTime) return;
+    setRescheduling(true);
+    setRescheduleError('');
+    try {
+      const [h, m] = rescheduleTime.split(':');
+      const endH = String(parseInt(h) + 1).padStart(2, '0');
+      await api.rescheduleAppointmentToTime(appointment.id, {
+        slot_date: rescheduleDate,
+        start_time: rescheduleTime,
+        end_time: `${endH}:${m}`,
+        doctor_id: appointment.doctor_id,
+      }, token);
+      onClose();
+    } catch (e: any) {
+      setRescheduleError(e.message);
+    } finally {
+      setRescheduling(false);
+    }
   };
 
   const isAttended = appointment.attended === true;
@@ -65,6 +98,13 @@ export function AppointmentSlidePanel({
       <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
       <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
+
+        {appointment.has_conflict && (
+          <div className="flex items-center gap-1.5 px-7 py-2.5 bg-amber-50 border-b border-amber-100">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />
+            <span className="text-xs text-amber-700">This appointment conflicts with your unavailability</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Appointment Details</div>
@@ -138,7 +178,7 @@ export function AppointmentSlidePanel({
         </div>
 
         {isPending && (
-          <div className="shrink-0 border-t border-slate-100 bg-white px-7 py-5">
+          <div className="shrink-0 border-t border-slate-100 bg-white px-7 py-5 space-y-3">
             <p className="text-xs font-medium text-slate-400 mb-3 text-center">Mark this appointment as:</p>
             <div className="flex gap-3">
               <button
@@ -155,6 +195,42 @@ export function AppointmentSlidePanel({
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 Missed
               </button>
+            </div>
+            <div className="border-t border-slate-100 pt-3">
+              {showReschedule ? (
+                <div className="space-y-2">
+                  {rescheduleError && (
+                    <div className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{rescheduleError}</div>
+                  )}
+                  <div className="flex gap-2">
+                    <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${inputClass} flex-1 min-w-0`} />
+                    <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-[100px]`} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleReschedule}
+                      disabled={!rescheduleDate || !rescheduleTime || rescheduling}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-amber-700 bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                    >
+                      {rescheduling ? 'Rescheduling...' : 'Confirm Reschedule'}
+                    </button>
+                    <button
+                      onClick={() => { setShowReschedule(false); setRescheduleDate(''); setRescheduleTime(''); setRescheduleError(''); }}
+                      className="px-3 py-2.5 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowReschedule(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-600 bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />
+                  Reschedule
+                </button>
+              )}
             </div>
           </div>
         )}

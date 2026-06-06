@@ -146,7 +146,7 @@ export function AnalyticsPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {doctorStats.map((d) => (
-                  <tr key={d.doctor_id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={d.doctor_id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <div className="size-8 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">

@@ -20,6 +20,7 @@ import {
   UserIcon,
   UserSettingsIcon,
   Calendar02Icon,
+  AlertCircleIcon,
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
@@ -119,6 +120,7 @@ const roleNav: Record<string, NavGroup[]> = {
       label: 'Availability',
       items: [
         { label: 'My Unavailability', href: '/dashboard/my-unavailability', icon: Clock01Icon },
+        { label: 'Conflicts', href: '/dashboard/conflicts', icon: AlertCircleIcon },
       ],
     },
   ],

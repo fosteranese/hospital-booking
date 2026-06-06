@@ -287,7 +287,7 @@ export function ApplicationSettingsPage() {
                         const badge = TYPE_BADGE[s.value_type] || TYPE_BADGE.text;
                         const dv = displayValue(s);
                         return (
-                          <tr key={s.id} className="group transition-colors hover:bg-slate-50 border-b border-slate-50 last:border-0">
+                          <tr key={s.id} className="group transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0" style={{ transformOrigin: 'center' }}>
                             <td className="py-2.5 px-5 align-top">
                               <div className="pt-0.5">
                                 <span className="text-sm font-medium text-slate-900">{displayName(s.name)}</span>

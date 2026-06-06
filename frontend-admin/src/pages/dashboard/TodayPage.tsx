@@ -33,7 +33,15 @@ function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 
   return 'confirmed';
 }
 
-function StatusDot({ status, attended, minutes_late }: { status: string; attended: boolean | null; minutes_late: number | null }) {
+function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+  if (has_conflict) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium">
+        <span className="size-1.5 rounded-full bg-red-600" />
+        Conflict
+      </span>
+    );
+  }
   const effective = getEffectiveStatus({ status, attended, end_time: '', minutes_late } as AppointmentHistoryItem);
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
@@ -266,9 +274,9 @@ export function TodayPage() {
                     return (
                       <tr
                         key={a.id}
-                        className="cursor-pointer transition-colors hover:bg-slate-50/80 group"
+                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group border-b border-slate-100 last:border-b-0"
                         onClick={() => setSelectedAppointmentId(a.id)}
-                        style={{ borderBottom: '1px solid #f1f5f9' }}
+                        style={{ transformOrigin: 'center' }}
                       >
                         <td className="pl-4 py-3" style={{ borderLeft: `4px solid ${borderColor}` }}>
                           <PatientAvatar name={a.patient_name} />
@@ -285,7 +293,7 @@ export function TodayPage() {
                           <div className="text-[11px] text-slate-400 truncate">{a.doctor_name}</div>
                           {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                         </td>
-                        <td className="w-[144px] py-3"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} /></td>
+                        <td className="w-[144px] py-3"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} /></td>
                         <td className="pr-3 w-0 py-3">
                           {isEditingLatness ? (
                             <div className="flex items-center gap-1.5">

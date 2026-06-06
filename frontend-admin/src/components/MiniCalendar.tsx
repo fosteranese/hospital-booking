@@ -110,6 +110,14 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
           );
         })}
       </div>
+      <div className="mt-3 text-center">
+        <button
+          onClick={() => { setCurrentMonth(startOfMonth(new Date())); onDateChange(new Date()); }}
+          className="text-xs text-slate-400 hover:text-emerald-600 transition-colors font-medium"
+        >
+          Today
+        </button>
+      </div>
     </div>
   );
 }

@@ -22,7 +22,15 @@ function formatTime(timeStr: string) {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-function StatusDot({ status, attended }: { status: string; attended: boolean | null }) {
+function StatusDot({ status, attended, has_conflict }: { status: string; attended: boolean | null; has_conflict?: boolean }) {
+  if (has_conflict) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium">
+        <span className="size-1.5 rounded-full bg-red-600" />
+        Conflict
+      </span>
+    );
+  }
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
     missed:    { label: 'Missed',    color: 'bg-red-500' },
@@ -170,7 +178,8 @@ export function AdminDashboard() {
                   <tr
                     key={a.id}
                     onClick={() => setSelectedAppointmentId(a.id)}
-                    className="group cursor-pointer transition-colors hover:bg-slate-50 border-b border-slate-50 last:border-0"
+                    className="group cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0"
+                    style={{ transformOrigin: 'center' }}
                   >
                     <td className="px-4 py-3 text-sm text-slate-900">{a.slot_date}</td>
                     <td className="px-4 py-3 text-sm text-slate-500">{formatTime(a.start_time)} – {formatTime(a.end_time)}</td>
@@ -182,7 +191,7 @@ export function AdminDashboard() {
                         <span className="text-sm text-slate-900">{a.doctor_name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} /></td>
+                    <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} has_conflict={a.has_conflict} /></td>
                     <td className="px-4 py-3 text-sm text-slate-400 max-w-[160px] truncate">{a.notes || '—'}</td>
                     <td className="px-4 py-3">
                       <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" />

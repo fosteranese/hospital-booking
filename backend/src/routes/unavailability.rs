@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::error::{AppError, validate_length};
 use crate::middleware::auth::{AuthUser, require_role};
-use crate::models::DoctorUnavailability;
+use crate::models::{AppointmentHistoryItem, DoctorUnavailability, DoctorUnavailabilityWithConflicts};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -24,7 +24,7 @@ pub async fn list_unavailability(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(doctor_id): Path<Uuid>,
-) -> Result<Json<Vec<DoctorUnavailability>>, AppError> {
+) -> Result<Json<Vec<DoctorUnavailabilityWithConflicts>>, AppError> {
     if auth.role != "admin" && auth.role != "scheduler" {
         if auth.role == "doctor" {
             let did = sqlx::query_scalar::<_, Uuid>(
@@ -42,8 +42,20 @@ pub async fn list_unavailability(
             require_role(&auth, &["admin", "scheduler", "doctor"])?;
         }
     }
-    let rows = sqlx::query_as::<_, DoctorUnavailability>(
-        "SELECT * FROM doctor_unavailability WHERE doctor_id = $1 ORDER BY slot_date, start_time"
+    let rows = sqlx::query_as::<_, DoctorUnavailabilityWithConflicts>(
+        "SELECT du.*, \
+         (SELECT COUNT(*) FROM appointments a \
+          JOIN availability_slots s ON s.id = a.slot_id \
+          WHERE a.doctor_id = du.doctor_id \
+            AND s.slot_date = du.slot_date \
+            AND a.attended IS NULL \
+            AND a.status != 'cancelled' \
+            AND ((du.start_time IS NULL AND du.end_time IS NULL) \
+                 OR (s.start_time < du.end_time AND s.end_time > du.start_time)) \
+         ) AS conflict_count \
+         FROM doctor_unavailability du \
+         WHERE du.doctor_id = $1 \
+         ORDER BY du.slot_date, du.start_time"
     )
     .bind(doctor_id)
     .fetch_all(&state.pool)
@@ -58,7 +70,7 @@ pub async fn create_unavailability(
     auth: AuthUser,
     Path(doctor_id): Path<Uuid>,
     Json(body): Json<CreateUnavailabilityRequest>,
-) -> Result<Json<DoctorUnavailability>, AppError> {
+) -> Result<Json<DoctorUnavailabilityWithConflicts>, AppError> {
     state.check_mutation_rate_limit(&format!("create_unavailability:{}", auth.sub))?;
 
     if auth.role != "admin" && auth.role != "scheduler" {
@@ -134,7 +146,101 @@ pub async fn create_unavailability(
     .await
     .map_err(|e| AppError::Database(e))?;
 
-    Ok(Json(record))
+    let conflict_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM appointments a \
+         JOIN availability_slots s ON s.id = a.slot_id \
+         WHERE a.doctor_id = $1 \
+           AND s.slot_date = $2 \
+           AND a.attended IS NULL \
+           AND a.status != 'cancelled' \
+           AND (($3 IS NULL AND $4 IS NULL) \
+                OR (s.start_time < $4 AND s.end_time > $3))"
+    )
+    .bind(doctor_id)
+    .bind(slot_date)
+    .bind(start_time)
+    .bind(end_time)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    let resp = DoctorUnavailabilityWithConflicts {
+        id: record.id,
+        doctor_id: record.doctor_id,
+        slot_date: record.slot_date,
+        start_time: record.start_time,
+        end_time: record.end_time,
+        reason: record.reason,
+        created_at: record.created_at,
+        conflict_count,
+    };
+
+    Ok(Json(resp))
+}
+
+pub async fn list_unavailability_conflicts(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((doctor_id, unavail_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<Vec<AppointmentHistoryItem>>, AppError> {
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("You can only view your own unavailability".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
+
+    let unavail = sqlx::query_as::<_, DoctorUnavailability>(
+        "SELECT * FROM doctor_unavailability WHERE id = $1 AND doctor_id = $2"
+    )
+    .bind(unavail_id)
+    .bind(doctor_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?
+    .ok_or_else(|| AppError::NotFound("Unavailability record not found".to_string()))?;
+
+    let appointments = sqlx::query_as::<_, AppointmentHistoryItem>(
+        "SELECT a.id, a.patient_id, \
+                p.first_name || ' ' || p.last_name AS patient_name, \
+                p.email AS patient_email, p.phone AS patient_phone, \
+                a.doctor_id, \
+                d.first_name || ' ' || d.last_name AS doctor_name, \
+                d.specialization, \
+                s.slot_date, s.start_time, s.end_time, \
+                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason, \
+                TRUE AS has_conflict \
+         FROM appointments a \
+         JOIN patients p ON p.id = a.patient_id \
+         JOIN doctors d ON d.id = a.doctor_id \
+         JOIN availability_slots s ON s.id = a.slot_id \
+         WHERE a.doctor_id = $1 \
+           AND s.slot_date = $2 \
+           AND a.attended IS NULL \
+           AND a.status != 'cancelled' \
+           AND (($3 IS NULL AND $4 IS NULL) \
+                OR (s.start_time < $4 AND s.end_time > $3))"
+    )
+    .bind(doctor_id)
+    .bind(unavail.slot_date)
+    .bind(unavail.start_time)
+    .bind(unavail.end_time)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(appointments))
 }
 
 pub async fn delete_unavailability(
@@ -183,4 +289,5 @@ pub fn unavailability_routes() -> Router<AppState> {
         .route("/api/doctors/:id/unavailability", get(list_unavailability))
         .route("/api/doctors/:id/unavailability", post(create_unavailability))
         .route("/api/doctors/:id/unavailability/:unavail_id", delete(delete_unavailability))
+        .route("/api/doctors/:id/unavailability/:unavail_id/conflicts", get(list_unavailability_conflicts))
 }

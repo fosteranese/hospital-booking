@@ -165,7 +165,7 @@ export function DashboardUnavailability() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {unavail.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={u.id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                         <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{u.slot_date}</td>
                         <td className="px-5 py-3.5 text-sm text-slate-600">
                           {u.start_time && u.end_time

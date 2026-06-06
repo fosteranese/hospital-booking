@@ -105,6 +105,7 @@ export interface AppointmentHistoryItem {
   attended: boolean | null;
   minutes_late: number | null;
   cancellation_reason: string;
+  has_conflict: boolean;
 }
 
 export interface AppointmentResponse {
@@ -140,6 +141,7 @@ export interface DoctorUnavailability {
   end_time: string | null;
   reason: string;
   created_at: string;
+  conflict_count: number;
 }
 
 export interface DoctorSchedule {
@@ -423,7 +425,7 @@ export const api = {
     }),
 
   rescheduleAppointmentToTime: (id: string, data: { slot_date: string; start_time: string; end_time: string; doctor_id?: string; reason?: string }, token: string) =>
-    request<{ id: string; message: string }>(`/appointments/${id}/reschedule-time`, {
+    request<AppointmentDetail>(`/appointments/${id}/reschedule-time`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: { Authorization: `Bearer ${token}` },
@@ -475,6 +477,11 @@ export const api = {
   deleteDoctorUnavailability: (doctorId: string, unavailId: string, token: string) =>
     request<void>(`/doctors/${doctorId}/unavailability/${unavailId}`, {
       method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getUnavailabilityConflicts: (doctorId: string, unavailId: string, token: string) =>
+    request<AppointmentHistoryItem[]>(`/doctors/${doctorId}/unavailability/${unavailId}/conflicts`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 

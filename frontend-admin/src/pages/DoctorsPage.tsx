@@ -209,7 +209,7 @@ export function DoctorsPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {doctors.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={d.id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="size-9 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-700">

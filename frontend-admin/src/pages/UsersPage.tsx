@@ -94,7 +94,7 @@ export function UsersPage() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {users.map((u) => (
-                  <tr key={u.identifier} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={u.identifier} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">

@@ -137,7 +137,16 @@ pub async fn list_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason
+                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                EXISTS(
+                  SELECT 1 FROM doctor_unavailability du
+                  WHERE du.doctor_id = a.doctor_id
+                    AND du.slot_date = s.slot_date
+                    AND a.attended IS NULL
+                    AND a.status != 'cancelled'
+                    AND ((du.start_time IS NULL AND du.end_time IS NULL)
+                         OR (s.start_time < du.end_time AND s.end_time > du.start_time))
+                ) AS has_conflict
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
@@ -169,6 +178,8 @@ pub async fn list_appointments(
     }
     if let Some(_) = &query.status {
         sql.push_str(&format!(" AND a.status = ${}", param_idx));
+    } else {
+        sql.push_str(" AND a.status != 'cancelled'");
     }
 
     sql.push_str(" ORDER BY s.slot_date DESC, s.start_time DESC LIMIT 100");
@@ -202,7 +213,16 @@ pub async fn export_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason
+                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                EXISTS(
+                  SELECT 1 FROM doctor_unavailability du
+                  WHERE du.doctor_id = a.doctor_id
+                    AND du.slot_date = s.slot_date
+                    AND a.attended IS NULL
+                    AND a.status != 'cancelled'
+                    AND ((du.start_time IS NULL AND du.end_time IS NULL)
+                         OR (s.start_time < du.end_time AND s.end_time > du.start_time))
+                ) AS has_conflict
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
@@ -230,6 +250,8 @@ pub async fn export_appointments(
     }
     if let Some(_) = &query.status {
         sql.push_str(&format!(" AND a.status = ${}", param_idx));
+    } else {
+        sql.push_str(" AND a.status != 'cancelled'");
     }
 
     sql.push_str(" ORDER BY s.slot_date ASC, s.start_time ASC");

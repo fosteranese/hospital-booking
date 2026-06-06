@@ -63,7 +63,7 @@ export function PatientSearchPage() {
         api.getPatientUpcoming(p.id, token),
         api.getPatientHistory(p.id, token),
       ]);
-      setHistory([...upcoming.map(a => ({ ...a, patient_id: '', patient_name: '', patient_email: '', patient_phone: null, attended: null, minutes_late: null, cancellation_reason: '' })), ...past]);
+      setHistory([...upcoming.map(a => ({ ...a, patient_id: '', patient_name: '', patient_email: '', patient_phone: null, attended: null, minutes_late: null, cancellation_reason: '', has_conflict: false })), ...past]);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -187,7 +187,7 @@ export function PatientSearchPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {history.map((a) => (
-                      <tr key={a.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={a.id} className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                         <td className="px-5 py-3 text-sm text-slate-900">{a.slot_date}</td>
                         <td className="px-5 py-3 text-sm text-slate-600">{formatTime(a.start_time)} – {formatTime(a.end_time)}</td>
                         <td className="px-5 py-3 text-sm font-medium text-slate-900">{a.doctor_name}</td>
