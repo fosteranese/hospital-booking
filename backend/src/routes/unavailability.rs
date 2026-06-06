@@ -1,6 +1,6 @@
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{delete, get, post},
 };
 use chrono::NaiveDate;
@@ -18,6 +18,13 @@ pub struct CreateUnavailabilityRequest {
     pub start_time: Option<String>,
     pub end_time: Option<String>,
     pub reason: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct CheckUnavailabilityConflictsQuery {
+    pub slot_date: String,
+    pub start_time: Option<String>,
+    pub end_time: Option<String>,
 }
 
 pub async fn list_unavailability(
@@ -284,10 +291,75 @@ pub async fn delete_unavailability(
     Ok(Json("deleted"))
 }
 
+pub async fn check_unavailability_conflicts(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(doctor_id): Path<Uuid>,
+    Query(query): Query<CheckUnavailabilityConflictsQuery>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("You can only check your own unavailability".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
+
+    let slot_date = NaiveDate::parse_from_str(&query.slot_date, "%Y-%m-%d")
+        .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
+
+    let start_time = match query.start_time {
+        Some(ref t) => Some(
+            chrono::NaiveTime::parse_from_str(t, "%H:%M")
+                .map_err(|_| AppError::Validation("Invalid start_time format, use HH:MM".to_string()))?
+        ),
+        None => None,
+    };
+
+    let end_time = match query.end_time {
+        Some(ref t) => Some(
+            chrono::NaiveTime::parse_from_str(t, "%H:%M")
+                .map_err(|_| AppError::Validation("Invalid end_time format, use HH:MM".to_string()))?
+        ),
+        None => None,
+    };
+
+    let conflict_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM appointments a \
+         JOIN availability_slots s ON s.id = a.slot_id \
+         WHERE a.doctor_id = $1 \
+           AND s.slot_date = $2 \
+           AND a.attended IS NULL \
+           AND a.status != 'cancelled' \
+           AND (($3 IS NULL AND $4 IS NULL) \
+                OR (s.start_time < $4 AND s.end_time > $3))"
+    )
+    .bind(doctor_id)
+    .bind(slot_date)
+    .bind(start_time)
+    .bind(end_time)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(serde_json::json!({ "conflict_count": conflict_count })))
+}
+
 pub fn unavailability_routes() -> Router<AppState> {
     Router::new()
         .route("/api/doctors/:id/unavailability", get(list_unavailability))
         .route("/api/doctors/:id/unavailability", post(create_unavailability))
         .route("/api/doctors/:id/unavailability/:unavail_id", delete(delete_unavailability))
         .route("/api/doctors/:id/unavailability/:unavail_id/conflicts", get(list_unavailability_conflicts))
+        .route("/api/doctors/:id/unavailability/check-conflicts", get(check_unavailability_conflicts))
 }

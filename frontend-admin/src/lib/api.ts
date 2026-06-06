@@ -485,6 +485,15 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
+  checkUnavailabilityConflicts: (doctorId: string, params: { slot_date: string; start_time?: string; end_time?: string }, token: string) => {
+    const qs = new URLSearchParams({ slot_date: params.slot_date });
+    if (params.start_time) qs.set('start_time', params.start_time);
+    if (params.end_time) qs.set('end_time', params.end_time);
+    return request<{ conflict_count: number }>(`/doctors/${doctorId}/unavailability/check-conflicts?${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
   // --- Settings ---
   getSettingsGroup: (group: string) =>
     request<Array<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string; value_type: string }>>(`/settings/${group}`),

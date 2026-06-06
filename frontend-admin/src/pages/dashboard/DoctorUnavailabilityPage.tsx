@@ -24,6 +24,20 @@ function formatTime(timeStr: string) {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function PatientAvatar({ name, bg }: { name: string; bg?: string }) {
+  const initials = name.split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('');
+  return (
+    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold ${bg || 'bg-slate-100 text-slate-600'}`}>
+      {initials}
+    </div>
+  );
+}
+
 const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
 
 interface UnavailRecord {
@@ -43,7 +57,7 @@ export function DoctorUnavailabilityPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Modal state
+  // Add modal state
   const [showModal, setShowModal] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [isFullDay, setIsFullDay] = useState(true);
@@ -51,6 +65,12 @@ export function DoctorUnavailabilityPage() {
   const [newEnd, setNewEnd] = useState('');
   const [newReason, setNewReason] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Conflict warning modal (separate overlay)
+  const [conflictWarning, setConflictWarning] = useState<{ count: number } | null>(null);
+
+  // Delete confirmation modal
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Resolve prompt
   const [resolvePrompt, setResolvePrompt] = useState<{ id: string; count: number } | null>(null);
@@ -121,6 +141,29 @@ export function DoctorUnavailabilityPage() {
     if (!isFullDay && (!newStart || !newEnd)) { setError('Please enter both start and end times for a time range.'); return; }
     setSaving(true);
     setError('');
+    setConflictWarning(null);
+    try {
+      const { conflict_count } = await api.checkUnavailabilityConflicts(doctorId, {
+        slot_date: newDate,
+        start_time: isFullDay ? undefined : newStart,
+        end_time: isFullDay ? undefined : newEnd,
+      }, token);
+      if (conflict_count > 0) {
+        setConflictWarning({ count: conflict_count });
+        setSaving(false);
+        return;
+      }
+    } catch (e: any) {
+      setError(e.message);
+      setSaving(false);
+      return;
+    }
+    await handleCreateConfirmed();
+  };
+
+  const handleCreateConfirmed = async () => {
+    if (!newDate || !doctorId) return;
+    setSaving(true);
     try {
       const record = await api.createDoctorUnavailability(doctorId, {
         slot_date: newDate,
@@ -131,6 +174,7 @@ export function DoctorUnavailabilityPage() {
       setNewDate(''); setNewStart(''); setNewEnd(''); setNewReason('');
       fetchUnavailability();
       setShowModal(false);
+      setConflictWarning(null);
       if (record.conflict_count > 0) {
         setResolvePrompt({ id: record.id, count: record.conflict_count });
       }
@@ -147,8 +191,10 @@ export function DoctorUnavailabilityPage() {
       await api.deleteDoctorUnavailability(doctorId, id, token);
       setUnavail(prev => prev.filter(u => u.id !== id));
       if (expandedId === id) setExpandedId(null);
+      setDeleteConfirm(null);
     } catch (e: any) {
       setError(e.message);
+      setDeleteConfirm(null);
     }
   };
 
@@ -164,7 +210,6 @@ export function DoctorUnavailabilityPage() {
         end_time: `${endH}:${m}`,
         doctor_id: doctorId,
       }, token);
-      // Remove from conflicts list + decrement count
       const currentUnavailId = expandedId;
       if (currentUnavailId) {
         setConflicts(prev => ({
@@ -253,7 +298,7 @@ export function DoctorUnavailabilityPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table styled like appointment list */}
       <Card padding="none">
         <div className="px-5 py-4 border-b border-slate-100">
           <CardHeader title={`Unavailability Records (${unavail.length})`} />
@@ -274,113 +319,124 @@ export function DoctorUnavailabilityPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Date</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Time</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Reason</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Conflicts</th>
-                  <th className="w-16 px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {unavail.map((u) => (
-                  <Fragment key={u.id}>
-                    <tr
-                      className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md"
-                      onClick={() => handleToggleExpand(u.id)}
-                      style={{ transformOrigin: 'center' }}
-                    >
-                      <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{u.slot_date}</td>
-                      <td className="px-5 py-3.5 text-sm text-slate-500">
-                        {u.start_time && u.end_time
-                          ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
-                          : <span className="italic text-slate-400">All day</span>}
-                      </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-500">{u.reason || '—'}</td>
-                      <td className="px-5 py-3.5">
-                        {u.conflict_count > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                            <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
-                            {u.conflict_count}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3" />
-                            None
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(u.id); }}
-                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                          <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-500" />
-                        </button>
-                      </td>
-                    </tr>
-                    {/* Expanded conflict rows */}
-                    {expandedId === u.id && (
-                      <tr>
-                        <td colSpan={5} className="px-0 py-0">
-                          <div className="bg-slate-50/80 border-t border-slate-100">
-                            {conflictsLoading === u.id ? (
-                              <div className="px-8 py-4 space-y-2">
-                                {[1, 2].map(i => <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />)}
-                              </div>
-                            ) : conflicts[u.id]?.length > 0 ? (
-                              <div>
-                                <div className="px-8 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                  Conflicting Appointments ({conflicts[u.id].length})
-                                </div>
-                                {conflicts[u.id].map(a => {
-                                  const isRescheduling = rescheduling === a.id;
-                                  return (
-                                    <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-slate-100 last:border-b-0">
-                                      <div className="size-7 rounded-full bg-amber-50 flex items-center justify-center text-[10px] font-semibold text-amber-600 shrink-0">
-                                        {(a.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name}</div>
-                                        <div className="text-xs text-slate-400">
-                                          {new Date(a.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                          {' · '}{formatTime(a.start_time)} — {formatTime(a.end_time)}
-                                        </div>
-                                      </div>
-                                      <div className="shrink-0">
-                                        {isRescheduling ? (
-                                          <div className="flex items-center gap-1.5">
-                                            <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${inputClass} w-[130px]`} />
-                                            <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-[100px]`} />
-                                            <Button size="sm" onClick={() => handleReschedule(a.id)} loading={false} disabled={!rescheduleDate || !rescheduleTime}>Save</Button>
-                                            <button onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                                              <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 rotate-180" />
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <button
-                                            onClick={() => setRescheduling(a.id)}
-                                            className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                                          >
-                                            Reschedule
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="px-8 py-4 text-xs text-slate-400">No conflicting appointments found.</div>
-                            )}
+            <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+              <tbody>
+                {unavail.map((u) => {
+                  const hasConflicts = u.conflict_count > 0;
+                  const borderColor = hasConflicts ? '#f59e0b' : '#cbd5e1';
+
+                  return (
+                    <Fragment key={u.id}>
+                      <tr
+                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
+                        onClick={() => handleToggleExpand(u.id)}
+                        style={{ transformOrigin: 'center' }}
+                      >
+                        <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                          <div className="flex flex-col items-start">
+                            <span className="text-base font-semibold text-slate-900">{formatDate(u.slot_date)}</span>
+                            <span className="text-xs text-slate-400">
+                              {u.start_time && u.end_time
+                                ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
+                                : 'All day'}
+                            </span>
                           </div>
                         </td>
+                        <td className="w-10 p-2 border-b border-slate-100 text-center">
+                          <PatientAvatar name={hasConflicts ? '!' : '✓'} bg={hasConflicts ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'} />
+                        </td>
+                        <td className="min-w-0 py-4 border-b border-slate-100 align-top">
+                          <div className="flex items-center gap-1.5">
+                            <div className="text-base font-medium text-slate-900 truncate">
+                              {u.reason || 'No reason given'}
+                            </div>
+                            {hasConflicts && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
+                          </div>
+                        </td>
+                        <td className="w-[100px] py-4 border-b border-slate-100 align-top">
+                          {hasConflicts ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                              <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
+                              {u.conflict_count}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                              <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3" />
+                              Clear
+                            </span>
+                          )}
+                        </td>
+                        <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteConfirm(u.id); }}
+                            className="p-1.5 rounded-md hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Delete"
+                          >
+                            <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-500" />
+                          </button>
+                        </td>
                       </tr>
-                    )}
-                  </Fragment>
-                ))}
+                      {/* Expanded conflict rows */}
+                      {expandedId === u.id && (
+                        <tr>
+                          <td colSpan={5} className="px-0 py-0">
+                            <div className="bg-slate-50/80 border-b border-slate-100">
+                              {conflictsLoading === u.id ? (
+                                <div className="px-8 py-4 space-y-2">
+                                  {[1, 2].map(i => <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />)}
+                                </div>
+                              ) : conflicts[u.id]?.length > 0 ? (
+                                <div>
+                                  <div className="px-8 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                    Conflicting Appointments ({conflicts[u.id].length})
+                                  </div>
+                                  {conflicts[u.id].map(a => {
+                                    const isRescheduling = rescheduling === a.id;
+                                    return (
+                                      <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-slate-100 last:border-b-0">
+                                        <div className="size-7 rounded-full bg-amber-50 flex items-center justify-center text-[10px] font-semibold text-amber-600 shrink-0">
+                                          {(a.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name}</div>
+                                          <div className="text-xs text-slate-400">
+                                            {formatDate(a.slot_date)}
+                                            {' · '}{formatTime(a.start_time)} — {formatTime(a.end_time)}
+                                          </div>
+                                        </div>
+                                        <div className="shrink-0">
+                                          {isRescheduling ? (
+                                            <div className="flex items-center gap-1.5">
+                                              <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${inputClass} w-[130px]`} />
+                                              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-[100px]`} />
+                                              <Button size="sm" onClick={() => handleReschedule(a.id)} loading={false} disabled={!rescheduleDate || !rescheduleTime}>Save</Button>
+                                              <button onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                                                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 rotate-180" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              onClick={() => setRescheduling(a.id)}
+                                              className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                            >
+                                              Reschedule
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="px-8 py-4 text-xs text-slate-400">No conflicting appointments found.</div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -448,6 +504,46 @@ export function DoctorUnavailabilityPage() {
               <Button onClick={handleCreate} loading={saving} disabled={!newDate}>
                 Save
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Warning Modal (separate overlay) */}
+      {conflictWarning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setConflictWarning(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto size-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-amber-600" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-1">Conflicts Detected</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              {conflictWarning.count} appointment{conflictWarning.count !== 1 ? 's' : ''} conflict{conflictWarning.count !== 1 ? '' : 's'} with this unavailability. Do you want to proceed?
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button variant="secondary" onClick={() => setConflictWarning(null)}>Cancel</Button>
+              <Button onClick={handleCreateConfirmed} loading={saving}>Proceed Anyway</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteConfirm(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-1">Delete Unavailability?</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              This action cannot be undone. Any conflicting appointments will remain scheduled.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+              <Button onClick={() => handleDelete(deleteConfirm)}>Delete</Button>
             </div>
           </div>
         </div>
