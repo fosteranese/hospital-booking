@@ -100,10 +100,10 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
             >
               {format(day, 'd')}
               {hasEvent && (
-                <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${
+                <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${
                   selected
                     ? 'bg-white/70'
-                    : isSidebar ? 'bg-emerald-300' : 'bg-emerald-500/60'
+                    : isSidebar ? 'bg-emerald-400' : 'bg-emerald-500/60'
                 }`} />
               )}
             </button>
