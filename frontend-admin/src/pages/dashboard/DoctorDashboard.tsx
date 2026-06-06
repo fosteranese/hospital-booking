@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
-import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -334,6 +334,15 @@ export function DoctorDashboard() {
     ? appointments.find(a => a.id === pendingAttendance.id)
     : null;
 
+  const { setContainerClass } = useContentContainer();
+
+  useEffect(() => {
+    setContainerClass(selectedAppointment
+      ? 'max-w-[2000px] lg:max-w-[calc(80rem+480px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
+      : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+    return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+  }, [selectedAppointment, setContainerClass]);
+
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const weekRange = getWeekRange(new Date());
@@ -371,18 +380,10 @@ export function DoctorDashboard() {
   const thisYearTotal = appointments.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
   const prevYearTotal = appointments.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
   const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
-  const { setContainerClass } = useContentContainer();
-
-  useEffect(() => {
-    setContainerClass(selectedAppointment
-      ? 'max-w-[2000px] lg:max-w-[calc(80rem+440px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
-      : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
-    return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
-  }, [selectedAppointment, setContainerClass]);
 
   return (
-    <div className={`space-y-7 transition-all duration-200 ${
-      selectedAppointment ? 'lg:mr-[520px] px-8' : ''
+    <div className={`space-y-7 transition-[margin-right] duration-200 ${
+      selectedAppointment ? 'lg:mr-[480px]' : ''
     }`}>
       <PageHeader
         title={`Welcome, Dr. ${otpIdentifier ? otpIdentifier.charAt(0).toUpperCase() + otpIdentifier.split('@')[0].slice(1) : 'Doctor'}`}

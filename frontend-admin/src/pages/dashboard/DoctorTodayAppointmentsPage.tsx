@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
+
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
 import { PageHeader } from '@/components/PageHeader';
@@ -132,7 +133,6 @@ export function DoctorTodayAppointmentsPage() {
     id: string;
     attended: boolean;
   } | null>(null);
-  const { setContainerClass } = useContentContainer();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -165,9 +165,11 @@ export function DoctorTodayAppointmentsPage() {
     ? todayAppts.find(a => a.id === pendingAttendance.id)
     : null;
 
+  const { setContainerClass } = useContentContainer();
+
   useEffect(() => {
     setContainerClass(selectedAppointment
-      ? 'max-w-[2000px] lg:max-w-[calc(80rem+440px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
+      ? 'max-w-[2000px] lg:max-w-[calc(80rem+480px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
       : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
     return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
   }, [selectedAppointment, setContainerClass]);
@@ -206,8 +208,8 @@ export function DoctorTodayAppointmentsPage() {
   const currentFilter = filterOptions.find(o => o.value === searchFilter);
 
   return (
-    <div className={`space-y-6 transition-all duration-200 ${
-      selectedAppointment ? 'lg:mr-[520px] px-8' : ''
+    <div className={`space-y-6 transition-[margin-right] duration-200 ${
+      selectedAppointment ? 'lg:mr-[480px]' : ''
     }`}>
       <div className="flex items-start justify-between gap-4">
         <PageHeader
@@ -234,17 +236,35 @@ export function DoctorTodayAppointmentsPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center h-12 max-w-lg rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="relative p-2" ref={filterRef}>
+        <div className="flex items-center h-12 w-full max-w-[502px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="shrink-0 text-slate-400 ml-3">
+            <HugeiconsIcon icon={Search01Icon} className="size-4" />
+          </div>
+          <input
+            type="text"
+            placeholder={placeholderMap[searchFilter]}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="shrink-0 mr-1.5 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+            </button>
+          )}
+          <div className="relative p-1.5" ref={filterRef}>
             <button
               onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1.5 h-full rounded-md py-2 px-3 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
+              className="flex items-center gap-1.5 h-full rounded-md py-1.5 px-2.5 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
             >
               {currentFilter?.label}
               <HugeiconsIcon icon={ChevronDownIcon} className={`size-3 transition-transform duration-150 ${filterOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
             </button>
             {filterOpen && (
-              <div className="absolute left-0 top-full mt-1.5 min-w-[8rem] bg-white border border-slate-200 rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
+              <div className="absolute right-0 top-full mt-1.5 min-w-[8rem] bg-white border border-slate-200 rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
                 {filterOptions.map((opt, i) => (
                   <button
                     key={opt.value}
@@ -261,24 +281,6 @@ export function DoctorTodayAppointmentsPage() {
               </div>
             )}
           </div>
-          <div className="shrink-0 text-slate-400 ml-3">
-            <HugeiconsIcon icon={Search01Icon} className="size-4" />
-          </div>
-          <input
-            type="text"
-            placeholder={placeholderMap[searchFilter]}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="shrink-0 mr-2 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-            </button>
-          )}
         </div>
       </div>
 

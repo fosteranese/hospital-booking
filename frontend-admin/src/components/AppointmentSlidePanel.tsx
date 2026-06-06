@@ -63,7 +63,7 @@ export function AppointmentSlidePanel({
   return (
     <>
       <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
-      <div className={`fixed top-0 right-0 h-full w-full lg:w-[520px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
+      <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
