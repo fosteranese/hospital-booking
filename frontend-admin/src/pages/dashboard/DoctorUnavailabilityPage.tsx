@@ -43,10 +43,11 @@ const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white
 interface UnavailRecord {
   id: string;
   slot_date: string;
+  end_date: string;
   start_time: string | null;
   end_time: string | null;
   reason: string;
-  conflict_count: number;
+  conflict_count?: number;
 }
 
 export function DoctorUnavailabilityPage() {
@@ -59,7 +60,9 @@ export function DoctorUnavailabilityPage() {
 
   // Add modal state
   const [showModal, setShowModal] = useState(false);
+  const [isDateRange, setIsDateRange] = useState(false);
   const [newDate, setNewDate] = useState('');
+  const [newEndDate, setNewEndDate] = useState('');
   const [isFullDay, setIsFullDay] = useState(true);
   const [newStart, setNewStart] = useState('');
   const [newEnd, setNewEnd] = useState('');
@@ -143,9 +146,12 @@ export function DoctorUnavailabilityPage() {
     setSaving(true);
     setError('');
     setConflictWarning(null);
+    const endDate = isDateRange ? newEndDate : undefined;
+    if (isDateRange && !newEndDate) { setError('Please enter an end date for the range.'); setSaving(false); return; }
     try {
       const { conflict_count } = await api.checkUnavailabilityConflicts(doctorId, {
         slot_date: newDate,
+        end_date: endDate,
         start_time: isFullDay ? undefined : newStart,
         end_time: isFullDay ? undefined : newEnd,
       }, token);
@@ -165,19 +171,22 @@ export function DoctorUnavailabilityPage() {
   const handleCreateConfirmed = async () => {
     if (!newDate || !doctorId) return;
     setSaving(true);
+    const endDate = isDateRange ? newEndDate : undefined;
     try {
       const record = await api.createDoctorUnavailability(doctorId, {
         slot_date: newDate,
+        end_date: endDate,
         start_time: newStart || undefined,
         end_time: newEnd || undefined,
         reason: newReason || undefined,
       }, token);
-      setNewDate(''); setNewStart(''); setNewEnd(''); setNewReason('');
+      setNewDate(''); setNewEndDate(''); setNewStart(''); setNewEnd(''); setNewReason('');
       fetchUnavailability();
       setShowModal(false);
       setConflictWarning(null);
-      if (record.conflict_count > 0) {
-        setResolvePrompt({ id: record.id, count: record.conflict_count });
+      const cc = record.conflict_count ?? 0;
+      if (cc > 0) {
+        setResolvePrompt({ id: record.id, count: cc });
       }
     } catch (e: any) {
       setError(e.message);
@@ -221,7 +230,7 @@ export function DoctorUnavailabilityPage() {
           [currentUnavailId]: prev[currentUnavailId].filter(a => a.id !== appointmentId),
         }));
         setUnavail(prev => prev.map(u =>
-          u.id === currentUnavailId ? { ...u, conflict_count: Math.max(0, u.conflict_count - 1) } : u
+          u.id === currentUnavailId ? { ...u, conflict_count: Math.max(0, (u.conflict_count ?? 0) - 1) } : u
         ));
         setResolvePrompt(null);
       }
@@ -272,7 +281,7 @@ export function DoctorUnavailabilityPage() {
           description="Manage your time off and blackout periods"
           icon={Clock01Icon}
         />
-        <Button onClick={() => { setShowModal(true); setIsFullDay(true); setNewStart(''); setNewEnd(''); }} icon={Add01Icon} className="shrink-0 mt-1.5">
+        <Button onClick={() => { setShowModal(true); setIsDateRange(false); setIsFullDay(true); setNewStart(''); setNewEnd(''); setNewEndDate(''); }} icon={Add01Icon} className="shrink-0 mt-1.5">
           Add Unavailability
         </Button>
       </div>
@@ -326,7 +335,7 @@ export function DoctorUnavailabilityPage() {
             <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <tbody>
                 {unavail.map((u) => {
-                  const hasConflicts = u.conflict_count > 0;
+                  const hasConflicts = (u.conflict_count ?? 0) > 0;
                   const borderColor = hasConflicts ? '#f59e0b' : '#cbd5e1';
 
                   return (
@@ -335,9 +344,13 @@ export function DoctorUnavailabilityPage() {
                         className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 group last:[&>td]:border-b-0"
                         onClick={() => handleToggleExpand(u.id)}
                       >
-                        <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                        <td className="py-4 w-[120px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                           <div className="flex flex-col items-start">
-                            <span className="text-base font-semibold text-slate-900">{formatDate(u.slot_date)}</span>
+                            <span className="text-base font-semibold text-slate-900">
+                              {u.end_date !== u.slot_date
+                                ? `${formatDate(u.slot_date)} – ${formatDate(u.end_date)}`
+                                : formatDate(u.slot_date)}
+                            </span>
                             <span className="text-xs text-slate-400">
                               {u.start_time && u.end_time
                                 ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
@@ -360,7 +373,7 @@ export function DoctorUnavailabilityPage() {
                           {hasConflicts ? (
                             <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
                               <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
-                              {u.conflict_count}
+                              {u.conflict_count ?? 0}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
@@ -459,11 +472,42 @@ export function DoctorUnavailabilityPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Date *</label>
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Date</label>
+                <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => { setIsDateRange(false); setNewEndDate(''); }}
+                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
+                      !isDateRange ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Single Day
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDateRange(true)}
+                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
+                      isDateRange ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Date Range
+                  </button>
+                </div>
+              </div>
+              <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
+                  <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
+                </div>
+                {isDateRange && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
+                    <input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} className={`${inputClass} w-full`} />
+                  </div>
+                )}
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Type</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Time</label>
                 <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
                   <button
                     type="button"

@@ -15,6 +15,7 @@ use crate::state::AppState;
 #[derive(Deserialize)]
 pub struct CreateUnavailabilityRequest {
     pub slot_date: String,
+    pub end_date: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
     pub reason: Option<String>,
@@ -23,6 +24,7 @@ pub struct CreateUnavailabilityRequest {
 #[derive(Deserialize)]
 pub struct CheckUnavailabilityConflictsQuery {
     pub slot_date: String,
+    pub end_date: Option<String>,
     pub start_time: Option<String>,
     pub end_time: Option<String>,
 }
@@ -54,7 +56,7 @@ pub async fn list_unavailability(
          (SELECT COUNT(*) FROM appointments a \
           JOIN availability_slots s ON s.id = a.slot_id \
           WHERE a.doctor_id = du.doctor_id \
-            AND s.slot_date = du.slot_date \
+            AND s.slot_date BETWEEN du.slot_date AND du.end_date \
             AND a.attended IS NULL \
             AND a.status != 'cancelled' \
             AND ((du.start_time IS NULL AND du.end_time IS NULL) \
@@ -104,6 +106,19 @@ pub async fn create_unavailability(
     let slot_date = NaiveDate::parse_from_str(&body.slot_date, "%Y-%m-%d")
         .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
 
+    let end_date = match body.end_date {
+        Some(ref d) => Some(
+            NaiveDate::parse_from_str(d, "%Y-%m-%d")
+                .map_err(|_| AppError::Validation("Invalid end_date format, use YYYY-MM-DD".to_string()))?
+        ),
+        None => None,
+    };
+    let end_date = end_date.unwrap_or(slot_date);
+
+    if end_date < slot_date {
+        return Err(AppError::Validation("end_date must be on or after start date".to_string()));
+    }
+
     let start_time = match body.start_time {
         Some(ref t) => Some(
             chrono::NaiveTime::parse_from_str(t, "%H:%M")
@@ -140,12 +155,13 @@ pub async fn create_unavailability(
     let reason = body.reason.unwrap_or_default();
 
     let record = sqlx::query_as::<_, DoctorUnavailability>(
-        "INSERT INTO doctor_unavailability (doctor_id, slot_date, start_time, end_time, reason)
-         VALUES ($1, $2, $3, $4, $5)
+        "INSERT INTO doctor_unavailability (doctor_id, slot_date, end_date, start_time, end_time, reason)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *"
     )
     .bind(doctor_id)
     .bind(slot_date)
+    .bind(end_date)
     .bind(start_time)
     .bind(end_time)
     .bind(&reason)
@@ -157,14 +173,15 @@ pub async fn create_unavailability(
         "SELECT COUNT(*) FROM appointments a \
          JOIN availability_slots s ON s.id = a.slot_id \
          WHERE a.doctor_id = $1 \
-           AND s.slot_date = $2 \
+           AND s.slot_date BETWEEN $2 AND $3 \
            AND a.attended IS NULL \
            AND a.status != 'cancelled' \
-           AND (($3 IS NULL AND $4 IS NULL) \
-                OR (s.start_time < $4 AND s.end_time > $3))"
+           AND (($4 IS NULL AND $5 IS NULL) \
+                OR (s.start_time < $5 AND s.end_time > $4))"
     )
     .bind(doctor_id)
     .bind(slot_date)
+    .bind(end_date)
     .bind(start_time)
     .bind(end_time)
     .fetch_one(&state.pool)
@@ -175,6 +192,7 @@ pub async fn create_unavailability(
         id: record.id,
         doctor_id: record.doctor_id,
         slot_date: record.slot_date,
+        end_date: record.end_date,
         start_time: record.start_time,
         end_time: record.end_time,
         reason: record.reason,
@@ -233,14 +251,15 @@ pub async fn list_unavailability_conflicts(
          JOIN doctors d ON d.id = a.doctor_id \
          JOIN availability_slots s ON s.id = a.slot_id \
          WHERE a.doctor_id = $1 \
-           AND s.slot_date = $2 \
+           AND s.slot_date BETWEEN $2 AND $3 \
            AND a.attended IS NULL \
            AND a.status != 'cancelled' \
-           AND (($3 IS NULL AND $4 IS NULL) \
-                OR (s.start_time < $4 AND s.end_time > $3))"
+           AND (($4 IS NULL AND $5 IS NULL) \
+                OR (s.start_time < $5 AND s.end_time > $4))"
     )
     .bind(doctor_id)
     .bind(unavail.slot_date)
+    .bind(unavail.end_date)
     .bind(unavail.start_time)
     .bind(unavail.end_time)
     .fetch_all(&state.pool)
@@ -318,6 +337,19 @@ pub async fn check_unavailability_conflicts(
     let slot_date = NaiveDate::parse_from_str(&query.slot_date, "%Y-%m-%d")
         .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
 
+    let end_date = match query.end_date {
+        Some(ref d) => Some(
+            NaiveDate::parse_from_str(d, "%Y-%m-%d")
+                .map_err(|_| AppError::Validation("Invalid end_date format, use YYYY-MM-DD".to_string()))?
+        ),
+        None => None,
+    };
+    let end_date = end_date.unwrap_or(slot_date);
+
+    if end_date < slot_date {
+        return Err(AppError::Validation("end_date must be on or after start date".to_string()));
+    }
+
     let start_time = match query.start_time {
         Some(ref t) => Some(
             chrono::NaiveTime::parse_from_str(t, "%H:%M")
@@ -338,14 +370,15 @@ pub async fn check_unavailability_conflicts(
         "SELECT COUNT(*) FROM appointments a \
          JOIN availability_slots s ON s.id = a.slot_id \
          WHERE a.doctor_id = $1 \
-           AND s.slot_date = $2 \
+           AND s.slot_date BETWEEN $2 AND $3 \
            AND a.attended IS NULL \
            AND a.status != 'cancelled' \
-           AND (($3 IS NULL AND $4 IS NULL) \
-                OR (s.start_time < $4 AND s.end_time > $3))"
+           AND (($4 IS NULL AND $5 IS NULL) \
+                OR (s.start_time < $5 AND s.end_time > $4))"
     )
     .bind(doctor_id)
     .bind(slot_date)
+    .bind(end_date)
     .bind(start_time)
     .bind(end_time)
     .fetch_one(&state.pool)

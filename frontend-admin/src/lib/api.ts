@@ -137,11 +137,12 @@ export interface DoctorUnavailability {
   id: string;
   doctor_id: string;
   slot_date: string;
+  end_date: string;
   start_time: string | null;
   end_time: string | null;
   reason: string;
   created_at: string;
-  conflict_count: number;
+  conflict_count?: number;
 }
 
 export interface DoctorSchedule {
@@ -467,7 +468,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  createDoctorUnavailability: (doctorId: string, data: { slot_date: string; start_time?: string; end_time?: string; reason?: string }, token: string) =>
+  createDoctorUnavailability: (doctorId: string, data: { slot_date: string; end_date?: string; start_time?: string; end_time?: string; reason?: string }, token: string) =>
     request<DoctorUnavailability>(`/doctors/${doctorId}/unavailability`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -485,8 +486,9 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  checkUnavailabilityConflicts: (doctorId: string, params: { slot_date: string; start_time?: string; end_time?: string }, token: string) => {
+  checkUnavailabilityConflicts: (doctorId: string, params: { slot_date: string; end_date?: string; start_time?: string; end_time?: string }, token: string) => {
     const qs = new URLSearchParams({ slot_date: params.slot_date });
+    if (params.end_date) qs.set('end_date', params.end_date);
     if (params.start_time) qs.set('start_time', params.start_time);
     if (params.end_time) qs.set('end_time', params.end_time);
     return request<{ conflict_count: number }>(`/doctors/${doctorId}/unavailability/check-conflicts?${qs}`, {
