@@ -60,6 +60,7 @@ export function DoctorUnavailabilityPage() {
 
   // Add modal state
   const [showModal, setShowModal] = useState(false);
+  const [modalStep, setModalStep] = useState(1);
   const [isDateRange, setIsDateRange] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [newEndDate, setNewEndDate] = useState('');
@@ -281,7 +282,7 @@ export function DoctorUnavailabilityPage() {
           description="Manage your time off and blackout periods"
           icon={Clock01Icon}
         />
-        <Button onClick={() => { setShowModal(true); setIsDateRange(false); setIsFullDay(true); setNewStart(''); setNewEnd(''); setNewEndDate(''); }} icon={Add01Icon} className="shrink-0 mt-1.5">
+        <Button onClick={() => { setShowModal(true); setModalStep(1); setIsDateRange(false); setIsFullDay(true); setNewStart(''); setNewEnd(''); setNewEndDate(''); }} icon={Add01Icon} className="shrink-0 mt-1.5">
           Add Unavailability
         </Button>
       </div>
@@ -459,98 +460,132 @@ export function DoctorUnavailabilityPage() {
         )}
       </Card>
 
-      {/* Add Modal */}
+      {/* Add Modal — Two-step wizard */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+            {/* Header */}
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-slate-900">Add Unavailability</h3>
+              <div className="flex items-center gap-3">
+                {modalStep === 2 && (
+                  <button
+                    onClick={() => { setModalStep(1); setNewEndDate(''); setNewStart(''); setNewEnd(''); setIsFullDay(true); }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  >
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 rotate-180" />
+                  </button>
+                )}
+                <h3 className="text-base font-bold text-slate-900">Add Unavailability</h3>
+              </div>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
               </button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Date</label>
-                <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => { setIsDateRange(false); setNewEndDate(''); }}
-                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                      !isDateRange ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Single Day
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsDateRange(true)}
-                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                      isDateRange ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Date Range
-                  </button>
-                </div>
+
+            {/* Step indicator */}
+            <div className="flex items-center gap-1.5 mb-6">
+              <div className={`h-1.5 flex-1 rounded-full transition-colors ${modalStep >= 1 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+              <div className={`h-1.5 flex-1 rounded-full transition-colors ${modalStep >= 2 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+            </div>
+
+            {modalStep === 1 ? (
+              /* Step 1: Choose date type */
+              <div className="grid grid-cols-2 gap-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsDateRange(false); setModalStep(2); }}
+                  className="group relative flex flex-col items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="size-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                    <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-slate-900">Single Day</div>
+                    <div className="text-xs text-slate-500 mt-0.5">One date off</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsDateRange(true); setModalStep(2); }}
+                  className="group relative flex flex-col items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="size-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                    <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 text-emerald-400 -ml-1" />
+                    <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-semibold text-slate-900">Date Range</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Multiple consecutive</div>
+                  </div>
+                </button>
               </div>
-              <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
-                  <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
-                </div>
-                {isDateRange && (
+            ) : (
+              /* Step 2: Details form */
+              <div className="space-y-4">
+                <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
-                    <input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} className={`${inputClass} w-full`} />
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
+                    <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
+                  </div>
+                  {isDateRange && (
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
+                      <input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} className={`${inputClass} w-full`} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Time</label>
+                  <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
+                      className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
+                        isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Full Day
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFullDay(false)}
+                      className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
+                        !isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Time Range
+                    </button>
+                  </div>
+                </div>
+                {!isFullDay && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time *</label>
+                      <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-full`} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">End time *</label>
+                      <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-full`} />
+                    </div>
                   </div>
                 )}
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Time</label>
-                <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
-                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                      isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Full Day
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsFullDay(false)}
-                    className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                      !isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    Time Range
-                  </button>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
+                  <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-full`} />
                 </div>
               </div>
-              {!isFullDay && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time *</label>
-                    <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-full`} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">End time *</label>
-                    <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-full`} />
-                  </div>
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
-                <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-full`} />
-              </div>
-            </div>
+            )}
+
+            {/* Footer buttons */}
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-              <Button onClick={handleCreate} loading={saving} disabled={!newDate}>
-                Save
-              </Button>
+              {modalStep === 2 && (
+                <Button onClick={handleCreate} loading={saving} disabled={!newDate}>
+                  Save
+                </Button>
+              )}
             </div>
           </div>
         </div>
