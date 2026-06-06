@@ -71,6 +71,7 @@ export function DoctorUnavailabilityPage() {
 
   // Delete confirmation modal
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Resolve prompt
   const [resolvePrompt, setResolvePrompt] = useState<{ id: string; count: number } | null>(null);
@@ -187,6 +188,7 @@ export function DoctorUnavailabilityPage() {
 
   const handleDelete = async (id: string) => {
     if (!doctorId) return;
+    setDeleting(true);
     try {
       await api.deleteDoctorUnavailability(doctorId, id, token);
       setUnavail(prev => prev.filter(u => u.id !== id));
@@ -195,6 +197,8 @@ export function DoctorUnavailabilityPage() {
     } catch (e: any) {
       setError(e.message);
       setDeleteConfirm(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -328,9 +332,8 @@ export function DoctorUnavailabilityPage() {
                   return (
                     <Fragment key={u.id}>
                       <tr
-                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
+                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 group last:[&>td]:border-b-0"
                         onClick={() => handleToggleExpand(u.id)}
-                        style={{ transformOrigin: 'center' }}
                       >
                         <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                           <div className="flex flex-col items-start">
@@ -542,8 +545,8 @@ export function DoctorUnavailabilityPage() {
               This action cannot be undone. Any conflicting appointments will remain scheduled.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-              <Button onClick={() => handleDelete(deleteConfirm)}>Delete</Button>
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)} disabled={deleting}>Cancel</Button>
+              <Button onClick={() => handleDelete(deleteConfirm)} loading={deleting}>Delete</Button>
             </div>
           </div>
         </div>
