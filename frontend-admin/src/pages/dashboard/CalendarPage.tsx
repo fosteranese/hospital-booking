@@ -17,19 +17,29 @@ import {
 } from '@hugeicons/core-free-icons';
 
 const STATUS_COLORS: Record<string, string> = {
-  confirmed: '#059669',
-  pending: '#d97706',
-  completed: '#2563eb',
+  attended: '#10b981',
+  missed: '#9333ea',
+  confirmed: '#f59e0b',
   cancelled: '#94a3b8',
 };
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
   { value: 'confirmed', label: 'Confirmed' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
+
+function isBeforeToday(dateStr: string): boolean {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return new Date(dateStr + 'T00:00:00') < today;
+}
+
+function appointmentStatusColor(appt: AppointmentHistoryItem): string {
+  if (appt.status === 'cancelled') return STATUS_COLORS.cancelled;
+  if (appt.attended === true) return STATUS_COLORS.attended;
+  if (appt.attended === false || isBeforeToday(appt.slot_date)) return STATUS_COLORS.missed;
+  return STATUS_COLORS.confirmed;
+}
 
 function parseDateTime(dateStr: string, timeStr: string): Date {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -38,7 +48,7 @@ function parseDateTime(dateStr: string, timeStr: string): Date {
 }
 
 function toCKEvent(appt: AppointmentHistoryItem): CKEvent {
-  const color = STATUS_COLORS[appt.status] || STATUS_COLORS.confirmed;
+  const color = appointmentStatusColor(appt);
   return {
     id: appt.id,
     title: appt.patient_name,

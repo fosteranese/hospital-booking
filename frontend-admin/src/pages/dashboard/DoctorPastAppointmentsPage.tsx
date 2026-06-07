@@ -35,7 +35,7 @@ function StatusDot({ status, attended }: { status: string; attended: boolean | n
   if (attended === true) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-emerald-500 shrink-0" /><span className="text-xs text-emerald-600 font-medium">Attended</span></div>);
   if (attended === false) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-purple-500 shrink-0" /><span className="text-xs text-purple-600 font-medium">Missed</span></div>);
   if (status === 'cancelled') return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-slate-300 shrink-0" /><span className="text-xs text-slate-400 font-medium">Cancelled</span></div>);
-  return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-amber-400 shrink-0" /><span className="text-xs text-amber-600 font-medium">Confirmed</span></div>);
+  return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-purple-500 shrink-0" /><span className="text-xs text-purple-600 font-medium">Missed</span></div>);
 }
 
 const filterOptions = [
@@ -322,7 +322,7 @@ export function DoctorPastAppointmentsPage() {
                           const isMissed = a.attended === false;
                           const isCancelled = a.status === 'cancelled';
                           const isPending = !isAttended && !isMissed && !isCancelled;
-                          const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#f59e0b';
+                          const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#9333ea';
                           const canAttend = isPending;
                           return (
                             <tr key={a.id}

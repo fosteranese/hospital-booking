@@ -67,24 +67,30 @@ export function AppointmentSlidePanel({
   const isAttended = appointment.attended === true;
   const isMissed = appointment.attended === false;
   const isCancelled = appointment.status === 'cancelled';
-  const isPending = !isAttended && !isMissed && !isCancelled;
+  const isBeforeToday = (() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return new Date(appointment.slot_date + 'T00:00:00') < today;
+  })();
+  const isPending = !isAttended && !isMissed && !isCancelled && !isBeforeToday;
+  const effectivelyMissed = isMissed || (isBeforeToday && !isAttended && !isCancelled);
 
   const apptDate = new Date(appointment.slot_date + 'T00:00:00');
   const today = new Date();
   const daysSince = Math.floor((today.getTime() - apptDate.getTime()) / 86400000);
 
   const attendedDays = forcedScheduleType === 'referral' ? attendedReferralDays : attendedFollowUpDays;
-  const canReschedule = isPending || (isMissed && daysSince <= missedRescheduleDays);
+  const canReschedule = isPending || (effectivelyMissed && daysSince <= missedRescheduleDays);
   const canScheduleNew = canSchedule && (
     isPending
     || (isAttended && daysSince <= attendedDays)
-    || (isMissed && daysSince <= missedReferralDays)
+    || (effectivelyMissed && daysSince <= missedReferralDays)
   );
 
   function statusInfo() {
     if (isAttended) return { label: `Attended${appointment.minutes_late ? ` · ${appointment.minutes_late}m late` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
     if (isMissed) return { label: 'Missed', dot: 'bg-purple-500', bar: 'bg-purple-500' };
     if (isCancelled) return { label: 'Cancelled', dot: 'bg-slate-300', bar: 'bg-slate-300' };
+    if (isBeforeToday) return { label: 'Missed', dot: 'bg-purple-500', bar: 'bg-purple-500' };
     return { label: 'Pending', dot: 'bg-amber-400', bar: 'bg-amber-400' };
   }
 

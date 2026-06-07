@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, AppointmentHistoryItem } from '@/lib/api';
+import { api, AppointmentHistoryItem, DoctorUnavailability, ReferralItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
@@ -23,6 +23,7 @@ import {
   Calendar03Icon,
   ArrowUp01Icon,
   ArrowDown01Icon,
+  Share08Icon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -36,10 +37,13 @@ function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 
   if (a.status === 'cancelled') return 'cancelled';
   if (a.attended === true) return 'attended';
   if (a.attended === false) return 'missed';
-  const now = new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const apptDate = new Date(a.slot_date + 'T00:00:00');
+  if (apptDate < today) return 'missed';
   const [h, m] = a.end_time.split(':').map(Number);
-  const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-  if (now >= slotEnd) return 'missed';
+  const slotEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
+  if (new Date() >= slotEnd) return 'missed';
   return 'confirmed';
 }
 
@@ -254,7 +258,7 @@ function FutureStatCard({
 }) {
   return (
     <div className={`relative bg-white overflow-hidden rounded-xl border ${borderClass}`}>
-      <div className="py-4 px-4">
+      <div className="py-4.5 px-4">
         <div className="flex items-center gap-4">
           <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${accentClass}`}>
             <HugeiconsIcon icon={icon} className="size-5 text-white" />
@@ -266,6 +270,45 @@ function FutureStatCard({
               <TrendBadge value={trend} label="vs prev" />
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Row 2 secondary card with left border ── */
+
+function InfoCard({
+  label,
+  value,
+  subtext,
+  icon,
+  borderColor,
+  className,
+  children,
+}: {
+  label: string;
+  value?: string | number;
+  subtext?: string;
+  icon: any;
+  borderColor: string;
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className={`bg-white rounded-xl border border-slate-200 py-4 px-4 ${className || ''}`} style={{ borderLeft: `4px solid ${borderColor}` }}>
+      <div className="flex items-start gap-4">
+        <div className="size-11 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+          <HugeiconsIcon icon={icon} className="size-5 text-slate-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-slate-500 font-medium">{label}</div>
+          {children ?? (
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-xl font-bold text-slate-900">{value}</span>
+              {subtext && <span className="text-xs text-slate-400">{subtext}</span>}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -294,6 +337,10 @@ export function DoctorDashboard() {
   } | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [unavailability, setUnavailability] = useState<DoctorUnavailability[]>([]);
+  const [totalConflicts, setTotalConflicts] = useState(0);
+  const [referrals, setReferrals] = useState<ReferralItem[]>([]);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -309,6 +356,18 @@ export function DoctorDashboard() {
   }, [token]);
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  useEffect(() => {
+    if (!token) return;
+    api.getProfile(token).then(profile => {
+      if (profile.doctor_id) {
+        setDoctorId(profile.doctor_id);
+        api.getDoctorUnavailability(profile.doctor_id, token).then(setUnavailability);
+        api.getUnavailabilityConflictSummary(profile.doctor_id, token).then(s => setTotalConflicts(s.total_conflicts));
+      }
+    });
+    api.getReferrals(token).then(setReferrals);
+  }, [token]);
 
   const handleConfirmAttend = useCallback(async (id: string, attended: boolean, minutes_late?: number | null) => {
     try {
@@ -389,6 +448,20 @@ export function DoctorDashboard() {
   const thisYearTotal = appointments.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
   const prevYearTotal = appointments.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
   const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
+
+  const unavailabilityCount = unavailability.length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const futureUnavailability = [...unavailability]
+    .filter(u => u.slot_date >= todayStr)
+    .sort((a, b) => a.slot_date.localeCompare(b.slot_date));
+  const nextUnavailability = futureUnavailability.length > 0 ? futureUnavailability[0] : null;
+  const nextTime = nextUnavailability && nextUnavailability.start_time && nextUnavailability.end_time
+    ? `${nextUnavailability.start_time.slice(0, 5)} - ${nextUnavailability.end_time.slice(0, 5)}`
+    : 'All day';
+  const nextDateFormatted = nextUnavailability
+    ? new Date(nextUnavailability.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
+    : '';
+  const myReferrals = referrals.filter(r => r.referring_doctor_id === doctorId && r.attended === null && r.status !== 'cancelled').length;
 
   return (
     <div className={`space-y-7 transition-[margin-right] duration-200 ${
@@ -473,27 +546,70 @@ export function DoctorDashboard() {
         </div>
       </div>
 
-      {/* Row 2: Future appointments with trends */}
+      {/* Row 2: Future appointments with trends + info cards */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-slate-500" />
           <h3 className="text-sm font-semibold text-slate-900">Future Appointments</h3>
         </div>
-        <div className="grid grid-cols-4 gap-4">
-          {loading ? (
-            <>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
-              ))}
-            </>
-          ) : (
-            <>
-              <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={tomorrowTrend} icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
-              <FutureStatCard label="This Week" value={thisWeekTotal} trend={weekTrend} icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
-              <FutureStatCard label="This Month" value={thisMonthTotal} trend={monthTrend} icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
-              <FutureStatCard label="This Year" value={thisYearTotal} trend={yearTrend} icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
-            </>
-          )}
+        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 items-start">
+            {loading ? (
+              <>
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
+                ))}
+              </>
+            ) : (
+              <>
+                <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={tomorrowTrend} icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
+                <FutureStatCard label="This Week" value={thisWeekTotal} trend={weekTrend} icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
+                <FutureStatCard label="This Month" value={thisMonthTotal} trend={monthTrend} icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
+                <FutureStatCard label="This Year" value={thisYearTotal} trend={yearTrend} icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
+              </>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl border border-slate-200 py-3 px-5 flex flex-col">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Unavailability</span>
+                <div className="flex-1 flex items-center justify-start">
+                  <span className="text-4xl font-bold text-slate-900">{unavailabilityCount}</span>
+                  <span className="text-base font-medium text-slate-400 ml-2 mt-2 self-center">day{unavailabilityCount !== 1 ? 's' : ''}</span>
+                </div>
+                {nextUnavailability && (
+                  <div className="mt-auto pt-3 border-t border-slate-50">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <HugeiconsIcon icon={TimeScheduleIcon} className="size-3.5 text-orange-400 shrink-0" />
+                      <span className="font-medium">Next:</span>
+                      <span>{nextDateFormatted}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 ml-5">{nextTime}</div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-4">
+                <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
+                  <div className="flex justify-between items-center">
+                    <div className="text-xs font-medium text-slate-500">Pending Referrals</div>
+                    <HugeiconsIcon icon={Share08Icon} className="size-4 text-blue-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-bold text-slate-900">{myReferrals}</span>
+                    <span className="text-xs text-slate-400">patient{myReferrals !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
+                  <div className="flex justify-between items-center">
+                    <div className="text-xs font-medium text-slate-500">Conflicts</div>
+                    <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-bold text-slate-900">{totalConflicts}</span>
+                    <span className="text-xs text-slate-400">appointment{totalConflicts !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
         </div>
       </div>
 

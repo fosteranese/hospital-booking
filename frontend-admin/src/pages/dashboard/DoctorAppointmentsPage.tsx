@@ -49,7 +49,17 @@ function PatientAvatar({ name }: { name: string }) {
   );
 }
 
-function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+function toDateOnly(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function isBeforeToday(dateStr: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(dateStr + 'T00:00:00') < today;
+}
+
+function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; slot_date?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <div className="flex items-center gap-1.5">
@@ -81,6 +91,14 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
       <div className="flex items-center gap-1.5">
         <div className="size-2 rounded-full bg-slate-300 shrink-0" />
         <span className="text-xs text-slate-400 font-medium">Cancelled</span>
+      </div>
+    );
+  }
+  if (slot_date && isBeforeToday(slot_date)) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
+        <span className="text-xs text-purple-600 font-medium">Missed</span>
       </div>
     );
   }
@@ -444,7 +462,8 @@ export function DoctorAppointmentsPage() {
                         const isAttended = a.attended === true;
                         const isMissed = a.attended === false;
                         const isPending = !isAttended && !isMissed;
-                        const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : a.has_conflict ? '#ef4444' : '#f59e0b';
+                        const isPast = isPending && isBeforeToday(a.slot_date);
+                        const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : a.has_conflict ? '#ef4444' : isPast ? '#9333ea' : '#f59e0b';
                         const canAttend = isToday(a.slot_date) && isPending;
 
                         return (
@@ -471,7 +490,7 @@ export function DoctorAppointmentsPage() {
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>
                             <td className="w-[100px] py-4 border-b border-slate-100 align-top">
-                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} />
+                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} slot_date={a.slot_date} has_conflict={a.has_conflict} />
                             </td>
                             <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                               {canAttend ? (

@@ -26,10 +26,13 @@ function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 
   if (a.status === 'cancelled') return 'cancelled';
   if (a.attended === true) return 'attended';
   if (a.attended === false) return 'missed';
-  const now = new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const apptDate = new Date(a.slot_date + 'T00:00:00');
+  if (apptDate < today) return 'missed';
   const [h, m] = a.end_time.split(':').map(Number);
-  const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-  if (now >= slotEnd) return 'missed';
+  const slotEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
+  if (new Date() >= slotEnd) return 'missed';
   return 'confirmed';
 }
 

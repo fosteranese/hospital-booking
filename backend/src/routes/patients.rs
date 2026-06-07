@@ -290,7 +290,7 @@ pub async fn get_appointment_history(
         "SELECT a.id, a.patient_id, p.first_name || ' ' || p.last_name AS patient_name,
                 p.email AS patient_email, p.phone AS patient_phone,
                 d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
-                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, a.attended,
+                d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended,
                 a.minutes_late, a.cancellation_reason
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id

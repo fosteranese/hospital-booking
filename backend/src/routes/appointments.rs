@@ -138,7 +138,7 @@ pub async fn list_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 EXISTS(
@@ -217,7 +217,7 @@ pub async fn export_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 EXISTS(
@@ -627,7 +627,7 @@ pub async fn get_appointment(
 ) -> Result<Json<AppointmentResponse>, AppError> {
     let appointment = if auth.role == "admin" || auth.role == "scheduler" {
         sqlx::query_as::<_, Appointment>(
-            "SELECT * FROM appointments WHERE id = $1"
+            "SELECT a.* FROM appointments a WHERE a.id = $1"
         )
         .bind(id)
         .fetch_optional(&state.pool)
@@ -637,7 +637,7 @@ pub async fn get_appointment(
     } else {
         let patient = get_patient_from_auth(&state, &auth).await?;
         sqlx::query_as::<_, Appointment>(
-            "SELECT * FROM appointments WHERE id = $1 AND patient_id = $2"
+            "SELECT a.* FROM appointments a WHERE a.id = $1 AND a.patient_id = $2"
         )
         .bind(id)
         .bind(patient.id)
@@ -647,6 +647,26 @@ pub async fn get_appointment(
         .ok_or_else(|| AppError::NotFound("Appointment not found".to_string()))?
     };
 
+    let slot_date: Option<NaiveDate> = sqlx::query_scalar(
+        "SELECT s.slot_date FROM availability_slots s
+         JOIN appointments a ON a.slot_id = s.id
+         WHERE a.id = $1"
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?
+    .flatten();
+
+    let attended = if appointment.attended.is_none()
+        && appointment.status != "cancelled"
+        && slot_date.map_or(false, |d| d < chrono::Utc::now().date_naive())
+    {
+        Some(false)
+    } else {
+        appointment.attended
+    };
+
     Ok(Json(AppointmentResponse {
         id: appointment.id,
         patient_id: appointment.patient_id,
@@ -654,7 +674,7 @@ pub async fn get_appointment(
         slot_id: appointment.slot_id,
         status: appointment.status,
         notes: appointment.notes,
-        attended: appointment.attended,
+        attended,
         minutes_late: None,
         cancellation_reason: appointment.cancellation_reason,
         referring_doctor_id: appointment.referring_doctor_id,

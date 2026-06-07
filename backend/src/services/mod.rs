@@ -6,6 +6,7 @@ mod settings;
 mod slots;
 mod password;
 mod totp;
+mod missed;
 
 pub use otp::*;
 pub use jwt::*;
@@ -15,3 +16,4 @@ pub use settings::*;
 pub use slots::*;
 pub use password::*;
 pub use totp::*;
+pub use missed::*;

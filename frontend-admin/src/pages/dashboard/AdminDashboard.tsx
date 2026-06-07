@@ -22,7 +22,7 @@ function formatTime(timeStr: string) {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-function StatusDot({ status, attended, has_conflict }: { status: string; attended: boolean | null; has_conflict?: boolean }) {
+function StatusDot({ status, attended, slot_date, has_conflict }: { status: string; attended: boolean | null; slot_date?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium">
@@ -37,7 +37,8 @@ function StatusDot({ status, attended, has_conflict }: { status: string; attende
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
-  const key = attended === true ? 'attended' : attended === false ? 'missed' : status === 'cancelled' ? 'cancelled' : 'confirmed';
+  const isPast = slot_date && (() => { const t = new Date(); t.setHours(0,0,0,0); return new Date(slot_date + 'T00:00:00') < t; })();
+  const key = attended === true ? 'attended' : attended === false ? 'missed' : status === 'cancelled' ? 'cancelled' : isPast ? 'missed' : 'confirmed';
   const s = map[key];
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
@@ -191,7 +192,7 @@ export function AdminDashboard() {
                         <span className="text-sm text-slate-900">{a.doctor_name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} has_conflict={a.has_conflict} /></td>
+                    <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /></td>
                     <td className="px-4 py-3 text-sm text-slate-400 max-w-[160px] truncate">{a.notes || '—'}</td>
                     <td className="px-4 py-3">
                       <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" />

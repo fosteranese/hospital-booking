@@ -19,7 +19,7 @@ mod state;
 
 use crate::state::AppState;
 use crate::ratelimit::RateLimiter;
-use crate::services::{EmailService, SettingsService, SmsService, generate_slots};
+use crate::services::{EmailService, SettingsService, SmsService, generate_slots, mark_missed_appointments};
 
 async fn health() -> &'static str {
     "OK"
@@ -92,6 +92,22 @@ async fn main() {
                 .await;
             if let Err(e) = generate_slots(&bg_pool, &bg_settings).await {
                 tracing::error!("Background slot generation failed: {:?}", e);
+            }
+        }
+    });
+
+    // Background task: auto-mark past appointments as missed every 5 minutes
+    let missed_pool = pool.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(300)).await;
+            match mark_missed_appointments(&missed_pool).await {
+                Ok(count) => {
+                    if count > 0 {
+                        tracing::info!("Marked {} past appointments as missed", count);
+                    }
+                }
+                Err(e) => tracing::error!("Failed to mark missed appointments: {:?}", e),
             }
         }
     });
