@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, SlotResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/Button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Calendar01Icon, Clock01Icon, AlertCircleIcon, Cancel01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, Clock01Icon, AlertCircleIcon, Cancel01Icon, CheckmarkCircle01Icon, ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { cn } from '@/lib/utils';
 
 function formatTime(timeStr: string) {
@@ -53,6 +53,7 @@ interface RescheduleModalProps {
 
 export function RescheduleModal({ open, appointment, onClose, onResolved }: RescheduleModalProps) {
   const { token } = useAuth();
+  const stripRef = useRef<HTMLDivElement>(null);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [datesLoading, setDatesLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
@@ -61,6 +62,23 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    const el = stripRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  };
+
+  const scrollStrip = (dir: 'left' | 'right') => {
+    const el = stripRef.current;
+    if (!el) return;
+    const amount = 200;
+    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    setTimeout(checkScroll, 100);
+  };
 
   useEffect(() => {
     if (!open || !appointment) return;
@@ -76,8 +94,12 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
         }
       })
       .catch(() => setError('Failed to load available dates'))
-      .finally(() => setDatesLoading(false));
+      .finally(() => { setDatesLoading(false); setTimeout(checkScroll, 50); });
   }, [open, appointment, token]);
+
+  useEffect(() => {
+    checkScroll();
+  }, [availableDates]);
 
   useEffect(() => {
     if (!selectedDate || !appointment) return;
@@ -120,7 +142,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-slate-900">Reschedule Appointment</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
@@ -154,29 +176,63 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
           </div>
         )}
 
-        {/* Date selection */}
+        {/* Date selection — horizontal scroll strip */}
         <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-600 mb-2">Select new date</label>
+          <label className="block text-xs font-medium text-slate-600 mb-2">Select date</label>
           {datesLoading ? (
-            <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-[68px] bg-slate-100 rounded-xl animate-pulse" />
           ) : availableDates.length === 0 ? (
             <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available dates found.</div>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {availableDates.map(d => (
-                <button
-                  key={d}
-                  onClick={() => setSelectedDate(d)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
-                    selectedDate === d
-                      ? 'bg-primary text-white border-primary shadow-xs'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40 hover:text-slate-800'
-                  )}
-                >
-                  {formatDate(d)}
-                </button>
-              ))}
+            <div className="relative">
+              <div
+                ref={stripRef}
+                onScroll={checkScroll}
+                className="flex gap-2 overflow-x-auto scroll-smooth no-scrollbar pb-1 overscroll-x-contain"
+              >
+                {availableDates.map(d => {
+                  const dt = new Date(d + 'T12:00:00');
+                  const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
+                  const dayNum = dt.getDate();
+                  const month = dt.toLocaleDateString('en-US', { month: 'short' });
+                  const isSelected = d === selectedDate;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setSelectedDate(d)}
+                      className={cn(
+                        'flex flex-col items-center gap-0.5 min-w-[56px] sm:min-w-[68px] py-2.5 sm:py-3 px-2 sm:px-2.5 rounded-xl border transition-all shrink-0',
+                        isSelected
+                          ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-primary/40 hover:text-primary',
+                      )}
+                    >
+                      <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">{dayName}</span>
+                      <span className="text-lg sm:text-xl font-semibold leading-tight">{dayNum}</span>
+                      <span className="text-[10px] font-medium opacity-70">{month}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollStrip('left')}
+                disabled={!canScrollLeft}
+                className="absolute left-0 top-0 bottom-1 w-8 flex items-center justify-center bg-gradient-to-r from-white via-white/90 to-transparent rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer"
+                aria-label="Previous dates"
+              >
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4 text-slate-500" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollStrip('right')}
+                disabled={!canScrollRight}
+                className="absolute right-0 top-0 bottom-1 w-8 flex items-center justify-center bg-gradient-to-l from-white via-white/90 to-transparent rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer"
+                aria-label="Next dates"
+              >
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-slate-500" />
+              </button>
             </div>
           )}
         </div>
