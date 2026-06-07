@@ -250,31 +250,30 @@ export function DoctorAppointmentsPage() {
             ? `${filtered.length} appointment${filtered.length !== 1 ? 's' : ''} with conflicts`
             : `${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
           icon={Calendar01Icon}
-          actions={
-            <div className="flex items-center gap-2 ml-auto">
-              <button
-                onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
-                className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-                  filterDate || calendarOpen
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                    : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-              </button>
-              <button
-                onClick={() => setCalendarDropdownOpen(v => !v)}
-                className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-                  filterDate || calendarDropdownOpen
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                    : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-              </button>
-            </div>
-          }
         />
+
+        <div className="flex items-center gap-2 shrink-0 self-start pt-1">
+          <button
+            onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
+            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+              filterDate || calendarOpen
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+          </button>
+          <button
+            onClick={() => setCalendarDropdownOpen(v => !v)}
+            className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+              filterDate || calendarDropdownOpen
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+          </button>
+        </div>
 
         {/* Error */}
         {error && (
@@ -287,7 +286,7 @@ export function DoctorAppointmentsPage() {
 
       <UnavailabilityConflictBanner />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center h-12 w-full max-w-[502px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
@@ -333,6 +332,25 @@ export function DoctorAppointmentsPage() {
               </div>
             )}
           </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {[
+            { key: 'all', label: 'All', color: '' },
+            { key: 'conflicts', label: 'Conflicts', color: 'bg-red-500' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setConflictFilter(f.key === 'conflicts')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                (f.key === 'conflicts' && conflictFilter) || (f.key === 'all' && !conflictFilter)
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {f.color && <div className={`size-1.5 rounded-full ${f.color}`} />}
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
       {calendarDropdownOpen && (
