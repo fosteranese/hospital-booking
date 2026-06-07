@@ -251,7 +251,7 @@ export function DoctorAppointmentsPage() {
             : `${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
           icon={Calendar01Icon}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
               <button
                 onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
                 className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
