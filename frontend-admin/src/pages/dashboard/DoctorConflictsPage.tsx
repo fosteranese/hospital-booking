@@ -60,8 +60,8 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   if (attended === false) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-red-500 shrink-0" />
-        <span className="text-xs text-red-600 font-medium">Missed</span>
+        <div className="size-2 rounded-full bg-rose-500 shrink-0" />
+        <span className="text-xs text-rose-600 font-medium">Missed</span>
       </div>
     );
   }
@@ -208,7 +208,7 @@ export function DoctorConflictsPage() {
                         const isAttended = a.attended === true;
                         const isMissed = a.attended === false;
                         const isPending = !isAttended && !isMissed;
-                        const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : '#f59e0b';
+                        const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : '#ef4444';
                         const isRescheduling = rescheduling === a.id;
 
                         return (
@@ -230,7 +230,7 @@ export function DoctorConflictsPage() {
                             <td className="min-w-0 py-4 border-b border-slate-100 align-top">
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
-                                <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />
+                                <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
                               </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>

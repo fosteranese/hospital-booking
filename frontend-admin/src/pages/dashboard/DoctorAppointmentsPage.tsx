@@ -68,8 +68,8 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   if (attended === false) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-red-500 shrink-0" />
-        <span className="text-xs text-red-600 font-medium">Missed</span>
+        <div className="size-2 rounded-full bg-rose-500 shrink-0" />
+        <span className="text-xs text-rose-600 font-medium">Missed</span>
       </div>
     );
   }
@@ -287,7 +287,7 @@ export function DoctorAppointmentsPage() {
       <UnavailabilityConflictBanner />
 
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center h-12 w-full max-w-[502px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
@@ -335,8 +335,8 @@ export function DoctorAppointmentsPage() {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {[
-            { key: 'all', label: 'All', color: '' },
-            { key: 'conflicts', label: 'Conflicts', color: 'bg-red-500' },
+            { key: 'all', label: 'All', count: filtered.length, color: '' },
+            { key: 'conflicts', label: 'Conflicts', count: conflictCount, color: 'bg-red-500' },
           ].map(f => (
             <button
               key={f.key}
@@ -349,6 +349,13 @@ export function DoctorAppointmentsPage() {
             >
               {f.color && <div className={`size-1.5 rounded-full ${f.color}`} />}
               {f.label}
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                (f.key === 'conflicts' && conflictFilter) || (f.key === 'all' && !conflictFilter)
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-100 text-slate-500'
+              }`}>
+                {f.count}
+              </span>
             </button>
           ))}
         </div>
@@ -417,13 +424,13 @@ export function DoctorAppointmentsPage() {
                         const isAttended = a.attended === true;
                         const isMissed = a.attended === false;
                         const isPending = !isAttended && !isMissed;
-                        const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : '#f59e0b';
+                        const borderColor = isAttended ? '#10b981' : isMissed ? '#e11d48' : a.has_conflict ? '#ef4444' : '#f59e0b';
                         const canAttend = isToday(a.slot_date) && isPending;
 
                         return (
                           <tr
                             key={a.id}
-                            className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-amber-50/30' : ''}`}
+                            className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30' : ''}`}
                             onClick={() => selectAppointment(a)}
                             style={{ transformOrigin: 'center' }}
                           >
@@ -439,7 +446,7 @@ export function DoctorAppointmentsPage() {
                             <td className="min-w-0 py-4 border-b border-slate-100 align-top">
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
-                                {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
+                                {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
                               </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>

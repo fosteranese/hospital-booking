@@ -158,7 +158,7 @@ export function AnalyticsPage() {
                     <td className="px-5 py-3.5 text-sm text-slate-500">{d.specialization}</td>
                     <td className="px-5 py-3.5 text-sm text-slate-900 text-right font-medium">{d.total_appointments}</td>
                     <td className="px-5 py-3.5 text-sm text-emerald-600 text-right font-medium">{d.attended}</td>
-                    <td className="px-5 py-3.5 text-sm text-red-600 text-right font-medium">{d.missed}</td>
+                    <td className="px-5 py-3.5 text-sm text-rose-600 text-right font-medium">{d.missed}</td>
                     <td className="px-5 py-3.5 text-sm text-slate-500 text-right">{d.cancelled}</td>
                     <td className="px-5 py-3.5 text-sm text-slate-900 text-right font-medium">{d.upcoming}</td>
                   </tr>

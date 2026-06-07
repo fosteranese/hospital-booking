@@ -83,7 +83,7 @@ export function AppointmentSlidePanel({
 
   function statusInfo() {
     if (isAttended) return { label: `Attended${appointment.minutes_late ? ` · ${appointment.minutes_late}m late` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
-    if (isMissed) return { label: 'Missed', dot: 'bg-red-500', bar: 'bg-red-500' };
+    if (isMissed) return { label: 'Missed', dot: 'bg-rose-500', bar: 'bg-rose-500' };
     if (isCancelled) return { label: 'Cancelled', dot: 'bg-slate-300', bar: 'bg-slate-300' };
     return { label: 'Pending', dot: 'bg-amber-400', bar: 'bg-amber-400' };
   }
@@ -100,9 +100,9 @@ export function AppointmentSlidePanel({
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
         {appointment.has_conflict && (
-          <div className="flex items-center gap-1.5 px-7 py-2.5 bg-amber-50 border-b border-amber-100">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />
-            <span className="text-xs text-amber-700">This appointment conflicts with your unavailability</span>
+          <div className="flex items-center gap-1.5 px-7 py-2.5 bg-red-50 border-b border-red-100">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
+            <span className="text-xs text-red-700">This appointment conflicts with your unavailability</span>
           </div>
         )}
 
@@ -210,7 +210,7 @@ export function AppointmentSlidePanel({
                     <button
                       onClick={handleReschedule}
                       disabled={!rescheduleDate || !rescheduleTime || rescheduling}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-amber-700 bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 rounded-xl border border-red-200 hover:bg-red-100 transition-colors disabled:opacity-50"
                     >
                       {rescheduling ? 'Rescheduling...' : 'Confirm Reschedule'}
                     </button>

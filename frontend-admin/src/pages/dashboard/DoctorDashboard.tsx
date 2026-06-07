@@ -53,7 +53,7 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   const effective = getEffectiveStatus({ status, attended, end_time: '', minutes_late } as AppointmentHistoryItem);
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
-    missed:    { label: 'Missed',    color: 'bg-red-500' },
+    missed:    { label: 'Missed',    color: 'bg-rose-500' },
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
@@ -527,7 +527,7 @@ export function DoctorDashboard() {
                       const isMissed = effective === 'missed';
                       const isCancelled = effective === 'cancelled';
                       const isPending = effective === 'confirmed';
-                      const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : isCancelled ? '#cbd5e1' : '#f59e0b';
+                      const borderColor = isAttended ? '#10b981' : isMissed ? '#e11d48' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
                       const isEditingLatness = latenessInput?.id === a.id;
 
                       const autoLatness = (() => {
@@ -539,7 +539,7 @@ export function DoctorDashboard() {
                       return (
                         <tr
                           key={a.id}
-                          className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-amber-50/30' : ''}`}
+                          className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30' : ''}`}
                           onClick={() => setSelectedAppointment(a)}
                           style={{ transformOrigin: 'center' }}
                         >
@@ -555,7 +555,7 @@ export function DoctorDashboard() {
                           <td className="min-w-0 py-4 border-b border-slate-100 align-top">
                             <div className="flex items-center gap-1.5">
                               <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
-                              {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
+                              {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
                             </div>
                             {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                           </td>
