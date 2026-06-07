@@ -67,6 +67,7 @@ impl SettingsService {
             ("appointment", "sunday_end", "", false, "Sunday last slot end (HH:MM)", "time"),
             ("appointment", "slot_days_ahead", "14", false, "Number of days ahead to generate slots", "integer"),
             ("appointment", "min_advance_days", "7", false, "Minimum number of days in advance required when booking an appointment", "integer"),
+            ("appointment", "reschedule_days_ahead", "30", false, "Number of days ahead to generate reserve slots for rescheduling", "integer"),
             ("clinic", "clinic_name", "MEDIPORT FERTILITY SERVICES", false, "Clinic name displayed in emails and UI", "text"),
             ("clinic", "clinic_address", "Bissau Avenue, East-Legon, Accra, Ghana", false, "Clinic address line displayed in UI", "address"),
             ("clinic", "clinic_location_url", "", false, "Google Maps location URL for the clinic", "url"),

@@ -88,6 +88,21 @@ export interface DoctorFull extends Doctor {
   created_at: string;
 }
 
+export interface SlotResponse {
+  id: string;
+  doctor_id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  is_booked: boolean;
+  is_blocked: boolean;
+  is_reserve: boolean;
+}
+
+export interface AvailableDatesResponse {
+  dates: string[];
+}
+
 export interface AppointmentHistoryItem {
   id: string;
   patient_id: string;
@@ -429,6 +444,16 @@ export const api = {
     request<AppointmentDetail>(`/appointments/${id}/reschedule-time`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getDoctorAvailability: (doctorId: string, date: string, token: string, includeReserve?: boolean) =>
+    request<SlotResponse[]>(`/doctors/${doctorId}/availability?date=${date}${includeReserve ? '&include_reserve=true' : ''}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getAvailableDoctorDates: (doctorId: string, token: string, includeReserve?: boolean) =>
+    request<AvailableDatesResponse>(`/availability/dates?doctor_id=${doctorId}${includeReserve ? '&include_reserve=true' : ''}`, {
       headers: { Authorization: `Bearer ${token}` },
     }),
 

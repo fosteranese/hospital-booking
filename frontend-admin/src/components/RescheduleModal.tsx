@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { api } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { api, SlotResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/Button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Calendar01Icon, Clock01Icon, AlertCircleIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, Clock01Icon, AlertCircleIcon, Cancel01Icon, CheckmarkCircle01Icon } from '@hugeicons/core-free-icons';
+import { cn } from '@/lib/utils';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -17,36 +18,95 @@ function formatDate(dateStr: string) {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+type Period = 'morning' | 'afternoon' | 'evening';
+
+const periodConfig: Record<Period, { label: string; range: string }> = {
+  morning:   { label: 'Morning',   range: 'Before noon' },
+  afternoon: { label: 'Afternoon',  range: '12:00 — 16:59' },
+  evening:   { label: 'Evening',   range: '17:00 onwards' },
+};
+
+function getPeriod(time: string): Period {
+  const h = parseInt(time.split(':')[0], 10);
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
+}
+
+function groupSlotsByPeriod(slots: SlotResponse[]): { period: Period; slots: SlotResponse[] }[] {
+  const groups: Record<Period, SlotResponse[]> = { morning: [], afternoon: [], evening: [] };
+  for (const slot of slots) {
+    groups[getPeriod(slot.start_time)].push(slot);
+  }
+  return Object.entries(periodConfig).map(([key]) => ({
+    period: key as Period,
+    slots: groups[key as Period],
+  })).filter(g => g.slots.length > 0);
+}
+
 interface RescheduleModalProps {
   open: boolean;
-  appointment: { id: string; patient_name: string; slot_date: string; start_time: string; end_time: string } | null;
+  appointment: { id: string; patient_name: string; slot_date: string; start_time: string; end_time: string; doctor_id: string; patient_id: string } | null;
   onClose: () => void;
   onResolved: () => void;
 }
 
-const inputClass = "h-10 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
-
 export function RescheduleModal({ open, appointment, onClose, onResolved }: RescheduleModalProps) {
   const { token } = useAuth();
-  const today = new Date().toISOString().slice(0, 10);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [datesLoading, setDatesLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [slots, setSlots] = useState<SlotResponse[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!open || !appointment) return;
+    setDatesLoading(true);
+    setSelectedDate('');
+    setSelectedSlot(null);
+    setError('');
+    api.getAvailableDoctorDates(appointment.doctor_id, token, true)
+      .then(res => {
+        setAvailableDates(res.dates);
+        if (res.dates.length > 0) {
+          setSelectedDate(res.dates[0]);
+        }
+      })
+      .catch(() => setError('Failed to load available dates'))
+      .finally(() => setDatesLoading(false));
+  }, [open, appointment, token]);
+
+  useEffect(() => {
+    if (!selectedDate || !appointment) return;
+    setSlotsLoading(true);
+    setSelectedSlot(null);
+    setError('');
+    api.getDoctorAvailability(appointment.doctor_id, selectedDate, token, true)
+      .then(data => {
+        setSlots(data.filter(s => !s.is_booked && !s.is_blocked));
+      })
+      .catch(() => setError('Failed to load available slots'))
+      .finally(() => setSlotsLoading(false));
+  }, [selectedDate, appointment, token]);
+
   if (!open || !appointment) return null;
 
+  const groupedSlots = groupSlotsByPeriod(slots);
+  const selectedSlotData = slots.find(s => s.id === selectedSlot);
+
   const handleSave = async () => {
-    if (!rescheduleDate || !rescheduleTime) return;
+    if (!selectedSlotData) return;
     setSaving(true);
     setError('');
     try {
-      const [h, m] = rescheduleTime.split(':');
-      const endH = String(parseInt(h) + 1).padStart(2, '0');
       await api.rescheduleAppointmentToTime(appointment.id, {
-        slot_date: rescheduleDate,
-        start_time: rescheduleTime,
-        end_time: `${endH}:${m}`,
+        slot_date: selectedSlotData.slot_date,
+        start_time: selectedSlotData.start_time,
+        end_time: selectedSlotData.end_time,
+        doctor_id: appointment.doctor_id,
       }, token);
       onResolved();
       onClose();
@@ -60,7 +120,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-slate-900">Reschedule Appointment</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
@@ -94,20 +154,91 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
           </div>
         )}
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">New date *</label>
-            <input type="date" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1.5">New time *</label>
-            <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-full`} />
-          </div>
+        {/* Date selection */}
+        <div className="mb-5">
+          <label className="block text-xs font-medium text-slate-600 mb-2">Select new date</label>
+          {datesLoading ? (
+            <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+          ) : availableDates.length === 0 ? (
+            <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available dates found.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {availableDates.map(d => (
+                <button
+                  key={d}
+                  onClick={() => setSelectedDate(d)}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
+                    selectedDate === d
+                      ? 'bg-primary text-white border-primary shadow-xs'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40 hover:text-slate-800'
+                  )}
+                >
+                  {formatDate(d)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
+        {/* Slot grid */}
+        {selectedDate && (
+          <div className="mb-5">
+            <label className="block text-xs font-medium text-slate-600 mb-2">Select time</label>
+            {slotsLoading ? (
+              <div className="space-y-2">
+                <div className="h-8 bg-slate-100 rounded-lg animate-pulse w-24" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
+                </div>
+              </div>
+            ) : groupedSlots.length === 0 ? (
+              <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available slots for this date.</div>
+            ) : (
+              <div className="space-y-4">
+                {groupedSlots.map(({ period, slots: periodSlots }) => (
+                  <div key={period} className="space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-medium text-slate-800">{periodConfig[period].label}</span>
+                      <span className="text-[11px] text-slate-400">{periodConfig[period].range}</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {periodSlots.map(slot => {
+                        const isSelected = selectedSlot === slot.id;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot.id)}
+                            className={cn(
+                              'relative flex items-center justify-center w-full text-center rounded-xl border px-2 py-2.5 transition-all overflow-hidden',
+                              isSelected
+                                ? 'bg-primary text-white border-primary shadow-xs'
+                                : 'bg-white text-slate-800 border-slate-200 hover:border-primary/40 active:scale-[0.98]'
+                            )}
+                          >
+                            <span className={cn('text-xs font-medium', isSelected && 'text-white')}>
+                              {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                            </span>
+                            {isSelected && (
+                              <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white flex items-center justify-center shadow-xs">
+                                <HugeiconsIcon icon={CheckmarkCircle01Icon} strokeWidth={2} className="size-2.5 text-primary" />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} loading={saving} disabled={!rescheduleDate || !rescheduleTime}>
+          <Button onClick={handleSave} loading={saving} disabled={!selectedSlot}>
             Save
           </Button>
         </div>

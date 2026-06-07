@@ -22,6 +22,7 @@ pub struct AvailabilitySlot {
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
     pub is_booked: bool,
+    pub is_reserve: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 

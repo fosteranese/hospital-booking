@@ -78,6 +78,10 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
         .and_then(|v| v.parse().ok())
         .unwrap_or(7);
 
+    let reschedule_days_ahead: i64 = map.get("reschedule_days_ahead")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(30);
+
     let default_day_hours = get_day_hours_from_map(&map);
 
     // Load per-doctor schedules
@@ -98,14 +102,16 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
 
     let today = chrono::Utc::now().date_naive();
     let start_date = today + Duration::days(min_advance_days);
-    let end_date = today + Duration::days(days_ahead);
+    let normal_end_date = today + Duration::days(days_ahead);
+    let reserve_end_date = today + Duration::days(reschedule_days_ahead);
+    let generate_until = normal_end_date.max(reserve_end_date);
 
-    // Batch-load all unavailability for the slot window
+    // Batch-load all unavailability for the full generation window
     let all_unavailability: Vec<DoctorUnavailability> = sqlx::query_as::<_, DoctorUnavailability>(
         "SELECT * FROM doctor_unavailability WHERE slot_date >= $1 AND slot_date <= $2"
     )
     .bind(start_date)
-    .bind(end_date)
+    .bind(generate_until)
     .fetch_all(pool)
     .await
     .map_err(|e| AppError::Database(e))?;
@@ -116,12 +122,12 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
         unavail_index.entry((u.doctor_id, u.slot_date)).or_default().push(u);
     }
 
-    // Trim unbooked slots beyond the window
+    // Trim unbooked slots beyond the full generation window
     sqlx::query(
         "DELETE FROM availability_slots WHERE (slot_date > $1 OR slot_date < $2) AND is_booked = FALSE
          AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
     )
-    .bind(end_date)
+    .bind(generate_until)
     .bind(start_date)
     .execute(pool)
     .await
@@ -130,22 +136,25 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     let dur_min = duration_minutes;
     let mut current = start_date;
 
-    while current <= end_date {
+    while current <= generate_until {
         let day_idx = current.weekday().num_days_from_monday() as i16;
+        let is_reserve_range = current > normal_end_date;
         current += Duration::days(1);
 
-        // Clean up old unbooked slots for this date
+        let slot_date = current - Duration::days(1);
+
+        // Clean up old unbooked regular slots for this date
         sqlx::query(
-            "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE
+            "DELETE FROM availability_slots WHERE slot_date = $1 AND is_booked = FALSE AND is_reserve = FALSE
              AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
         )
-        .bind(current - Duration::days(1))
+        .bind(slot_date)
         .execute(pool)
         .await
         .map_err(|e| AppError::Database(e))?;
 
         for (doctor_id,) in &doctors {
-            let unavail_for_doc = unavail_index.get(&(*doctor_id, current - Duration::days(1))).map(|v| v.as_slice()).unwrap_or(&[]);
+            let unavail_for_doc = unavail_index.get(&(*doctor_id, slot_date)).map(|v| v.as_slice()).unwrap_or(&[]);
 
             // If full-day off, skip this doctor entirely for this date
             if unavail_for_doc.iter().any(|u| u.start_time.is_none() && u.end_time.is_none()) {
@@ -154,7 +163,7 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
                      AND NOT EXISTS (SELECT 1 FROM appointments WHERE slot_id = availability_slots.id)"
                 )
                 .bind(doctor_id)
-                .bind(current - Duration::days(1))
+                .bind(slot_date)
                 .execute(pool)
                 .await
                 .map_err(|e| AppError::Database(e))?;
@@ -184,14 +193,28 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
                 continue;
             }
 
+            // Demote any existing reserve slots within the non-reserve range
+            if !is_reserve_range {
+                sqlx::query(
+                    "UPDATE availability_slots SET is_reserve = FALSE
+                     WHERE doctor_id = $1 AND slot_date = $2 AND is_reserve = TRUE"
+                )
+                .bind(doctor_id)
+                .bind(slot_date)
+                .execute(pool)
+                .await
+                .map_err(|e| AppError::Database(e))?;
+            }
+
             let mut qb = QueryBuilder::new(
-                "INSERT INTO availability_slots (doctor_id, slot_date, start_time, end_time) "
+                "INSERT INTO availability_slots (doctor_id, slot_date, start_time, end_time, is_reserve) "
             );
             qb.push_values(filtered_times.iter(), |mut b, (st, et)| {
                 b.push_bind(doctor_id)
-                    .push_bind(current - Duration::days(1))
+                    .push_bind(slot_date)
                     .push_bind(st)
-                    .push_bind(et);
+                    .push_bind(et)
+                    .push_bind(is_reserve_range);
             });
             qb.push(" ON CONFLICT (doctor_id, slot_date, start_time) DO NOTHING");
             qb.build().execute(pool).await.map_err(|e| AppError::Database(e))?;
@@ -199,8 +222,8 @@ pub async fn generate_slots(pool: &PgPool, settings: &SettingsService) -> Result
     }
 
     info!(
-        "Slots generated: {} days ({} ahead, {} min advance), {} min slots, {} doctors",
-        days_ahead, days_ahead, min_advance_days, duration_minutes, doctors.len()
+        "Slots generated: normal {} days, reserve {} days ({} ahead, {} min advance), {} min slots, {} doctors",
+        days_ahead, reschedule_days_ahead, days_ahead, min_advance_days, duration_minutes, doctors.len()
     );
 
     Ok(())

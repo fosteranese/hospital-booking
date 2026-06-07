@@ -1,0 +1,1 @@
+ALTER TABLE availability_slots ADD COLUMN is_reserve BOOLEAN NOT NULL DEFAULT FALSE;

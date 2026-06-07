@@ -13,6 +13,7 @@ use crate::state::AppState;
 pub struct AvailabilityQuery {
     pub date: String,
     pub patient_id: Option<Uuid>,
+    pub include_reserve: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -24,6 +25,7 @@ pub struct SlotResponse {
     pub end_time: String,
     pub is_booked: bool,
     pub is_blocked: bool,
+    pub is_reserve: bool,
 }
 
 #[derive(Serialize)]
@@ -37,6 +39,7 @@ pub struct SlotWithDoctor {
     pub specialization: String,
     pub is_booked: bool,
     pub is_blocked: bool,
+    pub is_reserve: bool,
 }
 
 async fn load_blocked_times(
@@ -116,14 +119,27 @@ pub async fn get_availability(
     let date = chrono::NaiveDate::parse_from_str(&query.date, "%Y-%m-%d")
         .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
 
-    let slots = sqlx::query_as::<_, AvailabilitySlot>(
-        "SELECT * FROM availability_slots WHERE doctor_id = $1 AND slot_date = $2 ORDER BY start_time"
-    )
-    .bind(doctor_id)
-    .bind(date)
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|e| AppError::Database(e))?;
+    let include_reserve = query.include_reserve.unwrap_or(false);
+
+    let slots = if include_reserve {
+        sqlx::query_as::<_, AvailabilitySlot>(
+            "SELECT * FROM availability_slots WHERE doctor_id = $1 AND slot_date = $2 ORDER BY start_time"
+        )
+        .bind(doctor_id)
+        .bind(date)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    } else {
+        sqlx::query_as::<_, AvailabilitySlot>(
+            "SELECT * FROM availability_slots WHERE doctor_id = $1 AND slot_date = $2 AND is_reserve = FALSE ORDER BY start_time"
+        )
+        .bind(doctor_id)
+        .bind(date)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    };
 
     let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
     let unavailability = load_unavailability(&state, doctor_id, date).await?;
@@ -142,6 +158,7 @@ pub async fn get_availability(
                 end_time: s.end_time.format("%H:%M").to_string(),
                 is_booked: s.is_booked,
                 is_blocked: blocked,
+                is_reserve: s.is_reserve,
             }
         })
         .collect();
@@ -156,17 +173,33 @@ pub async fn get_all_availability(
     let date = chrono::NaiveDate::parse_from_str(&query.date, "%Y-%m-%d")
         .map_err(|_| AppError::Validation("Invalid date format, use YYYY-MM-DD".to_string()))?;
 
-    let rows = sqlx::query_as::<_, (Uuid, Uuid, chrono::NaiveDate, chrono::NaiveTime, chrono::NaiveTime, String, String, bool)>(
-        "SELECT s.id, s.doctor_id, s.slot_date, s.start_time, s.end_time, d.first_name || ' ' || d.last_name, d.specialization, s.is_booked
-         FROM availability_slots s
-         JOIN doctors d ON d.id = s.doctor_id
-         WHERE s.slot_date = $1
-         ORDER BY s.doctor_id, s.start_time"
-    )
-    .bind(date)
-    .fetch_all(&state.pool)
-    .await
-    .map_err(|e| AppError::Database(e))?;
+    let include_reserve = query.include_reserve.unwrap_or(false);
+
+    let rows = if include_reserve {
+        sqlx::query_as::<_, (Uuid, Uuid, chrono::NaiveDate, chrono::NaiveTime, chrono::NaiveTime, String, String, bool, bool)>(
+            "SELECT s.id, s.doctor_id, s.slot_date, s.start_time, s.end_time, d.first_name || ' ' || d.last_name, d.specialization, s.is_booked, s.is_reserve
+             FROM availability_slots s
+             JOIN doctors d ON d.id = s.doctor_id
+             WHERE s.slot_date = $1
+             ORDER BY s.doctor_id, s.start_time"
+        )
+        .bind(date)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    } else {
+        sqlx::query_as::<_, (Uuid, Uuid, chrono::NaiveDate, chrono::NaiveTime, chrono::NaiveTime, String, String, bool, bool)>(
+            "SELECT s.id, s.doctor_id, s.slot_date, s.start_time, s.end_time, d.first_name || ' ' || d.last_name, d.specialization, s.is_booked, s.is_reserve
+             FROM availability_slots s
+             JOIN doctors d ON d.id = s.doctor_id
+             WHERE s.slot_date = $1 AND s.is_reserve = FALSE
+             ORDER BY s.doctor_id, s.start_time"
+        )
+        .bind(date)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+    };
 
     let blocked_times = load_blocked_times(&state, query.patient_id, date).await?;
 
@@ -187,7 +220,7 @@ pub async fn get_all_availability(
 
     let slots = rows
         .into_iter()
-        .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked)| {
+        .map(|(id, doctor_id, slot_date, start_time, end_time, doctor_name, specialization, is_booked, is_reserve)| {
             let unavail = unavail_by_doctor.get(&doctor_id).map(|v| v.as_slice()).unwrap_or(&[]);
             let blocked = is_booked
                 || is_blocked(start_time, &blocked_times, state.min_gap_minutes())
@@ -202,6 +235,7 @@ pub async fn get_all_availability(
                 specialization,
                 is_booked,
                 is_blocked: blocked,
+                is_reserve,
             }
         })
         .collect();
@@ -257,6 +291,7 @@ pub async fn get_max_availability_date(
 #[derive(Deserialize)]
 pub struct AvailableDatesQuery {
     pub doctor_id: Option<Uuid>,
+    pub include_reserve: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -270,10 +305,12 @@ pub async fn get_available_dates(
 ) -> Result<Json<AvailableDatesResponse>, AppError> {
     let min_advance = state.min_advance_days();
     let cutoff = chrono::Utc::now().date_naive() + chrono::Duration::days(min_advance);
+    let include_reserve = query.include_reserve.unwrap_or(false);
     let rows = if let Some(did) = query.doctor_id {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(
             "SELECT DISTINCT s.slot_date FROM availability_slots s
              WHERE s.doctor_id = $1 AND s.slot_date >= $2 AND NOT s.is_booked
+             AND ($3 OR s.is_reserve = FALSE)
              AND NOT EXISTS (
                  SELECT 1 FROM doctor_unavailability u
                  WHERE u.doctor_id = $1 AND u.slot_date = s.slot_date AND u.start_time IS NULL
@@ -282,14 +319,19 @@ pub async fn get_available_dates(
         )
         .bind(did)
         .bind(cutoff)
+        .bind(include_reserve)
         .fetch_all(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
     } else {
         sqlx::query_as::<_, (chrono::NaiveDate,)>(
-            "SELECT DISTINCT slot_date FROM availability_slots WHERE slot_date >= $1 AND NOT is_booked ORDER BY slot_date"
+            "SELECT DISTINCT slot_date FROM availability_slots
+             WHERE slot_date >= $1 AND NOT is_booked
+             AND ($2 OR is_reserve = FALSE)
+             ORDER BY slot_date"
         )
         .bind(cutoff)
+        .bind(include_reserve)
         .fetch_all(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
