@@ -130,24 +130,25 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            {step > 1 && (
-              <button onClick={() => { setStep(s => s - 1); setSelectedSlot(null); setError(''); }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-              >
-                <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
-              </button>
-            )}
-            <h3 className="text-base font-bold text-slate-900">Create Appointment</h3>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-          </button>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white">
+      <div className="flex items-center justify-between px-6 lg:px-10 pt-5 pb-3 shrink-0 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          {step > 1 && (
+            <button onClick={() => { setStep(s => s - 1); setSelectedSlot(null); setError(''); }}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <HugeiconsIcon icon={ArrowRight03Icon} className="size-5 rotate-180" />
+            </button>
+          )}
+          <h3 className="text-lg font-bold text-slate-900">Create Appointment</h3>
         </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
+        <div className="max-w-2xl mx-auto space-y-6">
 
         {/* Step indicator */}
         <div className="flex items-center justify-between mb-6">
@@ -348,14 +349,15 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
 
         {/* Footer buttons */}
         {step === 3 && (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSave} loading={saving} disabled={!selectedSlot || (scheduleType === 'referral' && !selectedDoctorId)}>
               {scheduleType === 'referral' ? 'Create Referral' : 'Schedule Follow-up'}
             </Button>
           </div>
         )}
-      </div>
+        </div>{/* end max-w-2xl */}
+      </div>{/* end scroll */}
     </div>
   );
 }

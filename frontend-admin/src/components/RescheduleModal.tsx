@@ -140,15 +140,16 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-slate-900">Reschedule Appointment</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60] flex flex-col bg-white">
+      <div className="flex items-center justify-between px-6 lg:px-10 pt-5 pb-3 shrink-0 border-b border-slate-100">
+        <h3 className="text-lg font-bold text-slate-900">Reschedule Appointment</h3>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-6">
+        <div className="max-w-2xl mx-auto space-y-6">
 
         {/* Current appointment info */}
         <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50' : 'bg-slate-50'}`}>
@@ -292,13 +293,14 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} loading={saving} disabled={!selectedSlot}>
             Save
           </Button>
         </div>
-      </div>
+        </div>{/* end max-w-2xl */}
+      </div>{/* end scroll */}
     </div>
   );
 }
