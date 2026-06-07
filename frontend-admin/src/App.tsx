@@ -154,6 +154,16 @@ function AppRoutes() {
           </DashboardGuard>
         }
       />
+      <Route
+        path="/dashboard/app-settings"
+        element={
+          <DashboardGuard>
+            <DashboardLayout>
+              <ApplicationSettingsPage />
+            </DashboardLayout>
+          </DashboardGuard>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </ContentContainerProvider>
