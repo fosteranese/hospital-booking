@@ -8,6 +8,8 @@ import {
   CallIcon,
   AlertCircleIcon,
   ArrowRight01Icon,
+  Calendar01Icon,
+  TimeScheduleIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -72,6 +74,7 @@ export function AppointmentSlidePanel({
       <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
+        {/* Conflict banner */}
         {appointment.has_conflict && (
           <div className="flex items-center gap-1.5 px-7 py-2.5 bg-red-50 border-b border-red-100">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
@@ -79,6 +82,7 @@ export function AppointmentSlidePanel({
           </div>
         )}
 
+        {/* Header */}
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Appointment Details</div>
           <button onClick={handleClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
@@ -86,7 +90,9 @@ export function AppointmentSlidePanel({
           </button>
         </div>
 
+        {/* Scrollable content */}
         <div className={`flex-1 overflow-y-auto px-7 pb-6 transition-opacity duration-200 ${switching ? 'opacity-60' : ''}`}>
+          {/* Patient header */}
           <div className="flex items-center gap-5 pt-4 pb-7 border-b border-slate-100">
             <div className="size-14 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-600 shrink-0 shadow-sm">
               {(appointment.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
@@ -97,19 +103,22 @@ export function AppointmentSlidePanel({
                 <span className={`size-1.5 rounded-full ${status.dot}`} />
                 <span className="text-sm text-slate-500">{status.label}</span>
               </div>
-              <a href={`mailto:${appointment.patient_email}`} className="flex items-center gap-1.5 mt-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
-                <HugeiconsIcon icon={Mail01Icon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                <span className="truncate">{appointment.patient_email}</span>
-              </a>
-              <a href={`tel:${appointment.patient_phone}`} className="flex items-center gap-1.5 mt-0.5 text-sm text-slate-500 hover:text-amber-600 transition-colors group">
-                <HugeiconsIcon icon={CallIcon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-amber-500 transition-colors" />
-                <span>{appointment.patient_phone || '—'}</span>
-              </a>
+              <div className="flex items-center gap-3 mt-2">
+                <a href={`mailto:${appointment.patient_email}`} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
+                  <HugeiconsIcon icon={Mail01Icon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                  <span className="truncate text-xs">{appointment.patient_email}</span>
+                </a>
+                <a href={`tel:${appointment.patient_phone}`} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-amber-600 transition-colors group">
+                  <HugeiconsIcon icon={CallIcon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-amber-500 transition-colors" />
+                  <span className="text-xs">{appointment.patient_phone || '—'}</span>
+                </a>
+              </div>
             </div>
           </div>
 
+          {/* Appointment details */}
           <div className="py-6 border-b border-slate-100">
-            <div className="grid grid-cols-2 gap-y-5 gap-x-8">
+            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
               <div>
                 <div className="text-xs font-medium text-slate-400 mb-1">Date</div>
                 <div className="text-sm font-semibold text-slate-900">
@@ -131,17 +140,19 @@ export function AppointmentSlidePanel({
             </div>
           </div>
 
+          {/* Notes */}
           {appointment.notes && (
-            <div className="py-6">
+            <div className="py-6 border-b border-slate-100">
               <div className="text-xs font-medium text-slate-400 mb-3">Notes</div>
-              <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 whitespace-pre-wrap border border-slate-100">
+              <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
                 {appointment.notes}
               </div>
             </div>
           )}
 
+          {/* Cancellation reason */}
           {appointment.cancellation_reason && (
-            <div className="py-6 border-b border-slate-100">
+            <div className="py-6">
               <div className="text-xs font-medium text-slate-400 mb-3">Cancellation Reason</div>
               <div className="text-sm text-red-600 leading-relaxed bg-red-50 rounded-xl p-4 border border-red-100">
                 {appointment.cancellation_reason}
@@ -150,9 +161,10 @@ export function AppointmentSlidePanel({
           )}
         </div>
 
+        {/* Action buttons — sticky footer */}
         {isPending && (
-          <div className="shrink-0 border-t border-slate-100 bg-white px-7 py-5 space-y-3">
-            <p className="text-xs font-medium text-slate-400 mb-3 text-center">Mark this appointment as:</p>
+          <div className="shrink-0 border-t border-slate-200 bg-white px-7 py-5 space-y-3">
+            {/* Attendance row */}
             <div className="flex gap-3">
               <button
                 onClick={() => onRequestAttendance(appointment.id, true)}
@@ -169,22 +181,24 @@ export function AppointmentSlidePanel({
                 Missed
               </button>
             </div>
-            <div className="border-t border-slate-100 pt-3 space-y-2">
+
+            {/* Secondary actions */}
+            <div className="flex gap-2">
               {isPending && (
                 <button
                   onClick={() => onReschedule?.(appointment)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                 >
-                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                  <HugeiconsIcon icon={TimeScheduleIcon} className="size-4" />
                   Reschedule
                 </button>
               )}
               <button
                 onClick={() => onScheduleNew?.(appointment)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
               >
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-                Create new appointment
+                <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
+                New Appointment
               </button>
             </div>
           </div>
