@@ -141,7 +141,7 @@ pub async fn list_appointments(
                 EXISTS(
                   SELECT 1 FROM doctor_unavailability du
                   WHERE du.doctor_id = a.doctor_id
-                    AND du.slot_date = s.slot_date
+                    AND s.slot_date BETWEEN du.slot_date AND du.end_date
                     AND a.attended IS NULL
                     AND a.status != 'cancelled'
                     AND ((du.start_time IS NULL AND du.end_time IS NULL)
@@ -217,7 +217,7 @@ pub async fn export_appointments(
                 EXISTS(
                   SELECT 1 FROM doctor_unavailability du
                   WHERE du.doctor_id = a.doctor_id
-                    AND du.slot_date = s.slot_date
+                    AND s.slot_date BETWEEN du.slot_date AND du.end_date
                     AND a.attended IS NULL
                     AND a.status != 'cancelled'
                     AND ((du.start_time IS NULL AND du.end_time IS NULL)
