@@ -37,9 +37,10 @@ interface ScheduleModalProps {
   currentDoctorName: string;
   onClose: () => void;
   onScheduled: () => void;
+  forcedType?: 'follow-up' | 'referral';
 }
 
-export function ScheduleModal({ open, patientId, patientName, currentDoctorId, currentDoctorName, onClose, onScheduled }: ScheduleModalProps) {
+export function ScheduleModal({ open, patientId, patientName, currentDoctorId, currentDoctorName, onClose, onScheduled, forcedType }: ScheduleModalProps) {
   const { token } = useAuth();
   const stripRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(1);
@@ -73,15 +74,16 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
 
   useEffect(() => {
     if (!open) return;
-    setStep(1);
-    setScheduleType('follow-up');
+    const forced = forcedType;
+    setScheduleType(forced || 'follow-up');
+    setStep(forced === 'referral' ? 2 : forced === 'follow-up' ? 3 : 1);
     setSelectedDoctorId('');
     setSelectedDate('');
     setSelectedSlot(null);
     setNotes('');
     setError('');
     api.getPatientDoctors(patientId, token).then(setKnownDoctors).catch(() => {});
-  }, [open, patientId, token]);
+  }, [open, patientId, token, forcedType]);
 
   useEffect(() => {
     if (!open || !targetDoctorId) return;
@@ -138,7 +140,11 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
             {step > 1 && (
               <button onClick={() => {
                 if (step === 4) { setStep(3); return; }
-                if (step === 3 && scheduleType === 'follow-up') { setStep(1); return; }
+                if (step === 3 && scheduleType === 'follow-up') { 
+                  if (forcedType) { onClose(); return; }
+                  setStep(1); return;
+                }
+                if (step === 2 && forcedType === 'referral') { onClose(); return; }
                 setStep(s => s - 1);
                 setSelectedSlot(null); setError('');
               }}
@@ -147,7 +153,9 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
               </button>
             )}
-            <h3 className="text-base font-bold text-slate-900">Create Appointment</h3>
+            <h3 className="text-lg font-bold text-slate-900">
+            {forcedType === 'referral' ? 'Refer Patient' : forcedType === 'follow-up' ? 'Schedule Follow-up' : 'Create Appointment'}
+          </h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />

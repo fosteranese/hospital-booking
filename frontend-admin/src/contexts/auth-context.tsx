@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { tokenStore } from '@/lib/api';
+import { tokenStore, api } from '@/lib/api';
 
 interface AuthState {
   token: string;
@@ -10,6 +10,8 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   setAll: (token: string, role: string, identifier: string) => void;
   clearAuth: () => void;
+  doctorCanCreateAppointments: boolean;
+  doctorCanRefer: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -38,8 +40,26 @@ function saveToStorage(state: AuthState) {
   } catch {}
 }
 
+function parseSetting(settings: Array<{ name: string; value: string | null }>, name: string, defaultVal: boolean): boolean {
+  const s = settings.find(s => s.name === name);
+  return s ? s.value === 'true' : defaultVal;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(loadFromStorage);
+  const [doctorCanCreateAppointments, setCanCreate] = useState(true);
+  const [doctorCanRefer, setCanRefer] = useState(true);
+
+  // Fetch doctor permissions when token changes
+  useEffect(() => {
+    if (!state.token) return;
+    api.getSettingsGroup('appointment')
+      .then(settings => {
+        setCanCreate(parseSetting(settings, 'doctor_can_create_appointments', true));
+        setCanRefer(parseSetting(settings, 'doctor_can_refer', true));
+      })
+      .catch(() => {});
+  }, [state.token]);
 
   useEffect(() => {
     saveToStorage(state);
@@ -56,10 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearAuth = useCallback(() => {
     setState({ token: '', userRole: '', otpIdentifier: '' });
+    setCanCreate(true);
+    setCanRefer(true);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, setAll, clearAuth }}>
+    <AuthContext.Provider value={{ ...state, setAll, clearAuth, doctorCanCreateAppointments, doctorCanRefer }}>
       {children}
     </AuthContext.Provider>
   );

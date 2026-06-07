@@ -108,7 +108,14 @@ const placeholderMap: Record<string, string> = {
 };
 
 export function DoctorAppointmentsPage() {
-  const { token } = useAuth();
+  const { token, doctorCanCreateAppointments, doctorCanRefer } = useAuth();
+  const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
+  const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
+    : doctorCanCreateAppointments && !doctorCanRefer ? 'Book a Follow Up'
+    : 'New Appointment';
+  const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
+    : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
+    : undefined;
   const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -515,7 +522,9 @@ export function DoctorAppointmentsPage() {
           onClose={() => setSelectedAppointment(null)}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
-          onScheduleNew={setScheduleTarget}
+          onScheduleNew={canSchedule ? setScheduleTarget : undefined}
+          canSchedule={canSchedule}
+          scheduleLabel={scheduleLabel}
         />
       )}
 
@@ -554,6 +563,7 @@ export function DoctorAppointmentsPage() {
         currentDoctorName={scheduleTarget?.doctor_name || ''}
         onClose={() => setScheduleTarget(null)}
         onScheduled={fetchAppointments}
+        forcedType={forcedScheduleType}
       />
     </div>
   );
