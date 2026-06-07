@@ -24,6 +24,8 @@ import {
   ArrowUp01Icon,
   ArrowDown01Icon,
   Share08Icon,
+  InformationCircleIcon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -461,7 +463,8 @@ export function DoctorDashboard() {
   const nextDateFormatted = nextUnavailability
     ? new Date(nextUnavailability.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
     : '';
-  const myReferrals = referrals.filter(r => r.referring_doctor_id === doctorId && r.attended === null && r.status !== 'cancelled').length;
+  const outgoingReferrals = referrals.filter(r => r.referring_doctor_id === doctorId && r.attended === null && r.status !== 'cancelled').length;
+  const incomingReferrals = referrals.filter(r => r.doctor_id === doctorId && r.referring_doctor_id !== null && r.referring_doctor_id !== doctorId && r.attended === null && r.status !== 'cancelled').length;
 
   return (
     <div className={`space-y-7 transition-[margin-right] duration-200 ${
@@ -548,12 +551,13 @@ export function DoctorDashboard() {
 
       {/* Row 2: Future appointments with trends + info cards */}
       <div>
-        <div className="flex items-center gap-2 mb-4">
-          <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">Future Appointments</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
         <div className="grid grid-cols-2 gap-4 items-start">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-900">Future Appointments</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
             {loading ? (
               <>
                 {[1, 2, 3, 4].map(i => (
@@ -569,7 +573,20 @@ export function DoctorDashboard() {
               </>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-900">Other Info</h3>
+            </div>
+              <div className="grid grid-cols-2 gap-3">
+              {loading ? (
+                <>
+                  <div className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
+                  <div className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
+                </>
+              ) : (
+              <>
               <div className="bg-white rounded-xl border border-slate-200 py-3 px-5 flex flex-col">
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Unavailability</span>
                 <div className="flex-1 flex items-center justify-start">
@@ -590,25 +607,28 @@ export function DoctorDashboard() {
               <div className="space-y-4">
                 <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
                   <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Pending Referrals</div>
-                    <HugeiconsIcon icon={Share08Icon} className="size-4 text-blue-400" />
+                    <div className="text-xs font-medium text-slate-500">Referred to Me</div>
+                    <HugeiconsIcon icon={UserGroupIcon} className="size-4 text-violet-400" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-bold text-slate-900">{myReferrals}</span>
-                    <span className="text-xs text-slate-400">patient{myReferrals !== 1 ? 's' : ''}</span>
+                    <span className="text-3xl font-bold text-slate-900">{incomingReferrals}</span>
+                    <span className="text-xs text-slate-400">patient{incomingReferrals !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
                   <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Conflicts</div>
-                    <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-400" />
+                    <div className="text-xs font-medium text-slate-500">Referrals to Others</div>
+                    <HugeiconsIcon icon={Share08Icon} className="size-4 text-blue-400" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-bold text-slate-900">{totalConflicts}</span>
-                    <span className="text-xs text-slate-400">appointment{totalConflicts !== 1 ? 's' : ''}</span>
+                    <span className="text-3xl font-bold text-slate-900">{outgoingReferrals}</span>
+                    <span className="text-xs text-slate-400">patient{outgoingReferrals !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>
+              </>
+              )}
+            </div>
             </div>
         </div>
       </div>
