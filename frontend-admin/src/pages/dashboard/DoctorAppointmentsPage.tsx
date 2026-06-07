@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
 import { MiniCalendar } from '@/components/MiniCalendar';
+import { CalendarSlidePanel } from '@/components/CalendarSlidePanel';
 import {
   Calendar01Icon,
   AlertCircleIcon,
@@ -540,9 +541,7 @@ export function DoctorAppointmentsPage() {
         onFilterDate={setFilterDate}
         eventDates={eventDates}
         onClose={() => setCalendarOpen(false)}
-      />
-
-      {selectedForModal && (
+      />      {selectedForModal && (
         <ConfirmAttendanceModal
           open={!!pendingAttendance}
           patientName={selectedForModal.patient_name}
@@ -571,74 +570,6 @@ export function DoctorAppointmentsPage() {
         onScheduled={fetchAppointments}
         forcedType={forcedScheduleType}
       />
-    </div>
-  );
-}
-
-function CalendarSlidePanel({
-  open,
-  filterDate,
-  onFilterDate,
-  eventDates,
-  onClose,
-}: {
-  open: boolean;
-  filterDate: string | null;
-  onFilterDate: (d: string | null) => void;
-  eventDates: Set<string>;
-  onClose: () => void;
-}) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      const frame = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(frame);
-    } else {
-      setVisible(false);
-    }
-  }, [open]);
-
-  const handleClose = () => {
-    setVisible(false);
-    setTimeout(() => onClose(), 200);
-  };
-
-  const slideClass = visible ? 'translate-x-0' : 'translate-x-full';
-
-  return (
-    <div className={`hidden lg:block fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
-      <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Calendar</span>
-        <button onClick={handleClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-          <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto px-7 pb-6">
-        <div className="pt-6">
-          <MiniCalendar
-            variant="sidebar"
-            date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
-            selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
-            onDateChange={(d) => {
-              const dateStr = format(d, 'yyyy-MM-dd');
-              onFilterDate(filterDate === dateStr ? null : dateStr);
-            }}
-            eventDates={eventDates}
-          />
-        </div>
-        {filterDate && (
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-xs text-slate-400 mb-3">
-              Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
-            </p>
-            <button onClick={() => onFilterDate(null)}
-              className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
-              Clear filter
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
