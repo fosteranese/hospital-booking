@@ -219,19 +219,19 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
                 type="button"
                 onClick={() => scrollStrip('left')}
                 disabled={!canScrollLeft}
-                className="absolute left-0 top-0 bottom-1 w-8 flex items-center justify-center bg-gradient-to-r from-white via-white/90 to-transparent rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer"
+                className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
                 aria-label="Previous dates"
               >
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4 text-slate-500" />
+                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" strokeWidth={2} />
               </button>
               <button
                 type="button"
                 onClick={() => scrollStrip('right')}
                 disabled={!canScrollRight}
-                className="absolute right-0 top-0 bottom-1 w-8 flex items-center justify-center bg-gradient-to-l from-white via-white/90 to-transparent rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer"
+                className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
                 aria-label="Next dates"
               >
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-slate-500" />
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" strokeWidth={2} />
               </button>
             </div>
           )}
