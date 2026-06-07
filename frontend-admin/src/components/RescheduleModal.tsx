@@ -46,7 +46,7 @@ function groupSlotsByPeriod(slots: SlotResponse[]): { period: Period; slots: Slo
 
 interface RescheduleModalProps {
   open: boolean;
-  appointment: { id: string; patient_name: string; slot_date: string; start_time: string; end_time: string; doctor_id: string; patient_id: string } | null;
+  appointment: { id: string; patient_name: string; slot_date: string; start_time: string; end_time: string; doctor_id: string; patient_id: string; has_conflict?: boolean } | null;
   onClose: () => void;
   onResolved: () => void;
 }
@@ -151,10 +151,10 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
         </div>
 
         {/* Current appointment info */}
-        <div className="bg-red-50 rounded-xl p-4 mb-5 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-red-600 uppercase tracking-wider">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5" />
-            Conflicting Appointment
+        <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50' : 'bg-slate-50'}`}>
+          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${appointment.has_conflict ? 'text-red-600' : 'text-slate-500'}`}>
+            <HugeiconsIcon icon={appointment.has_conflict ? AlertCircleIcon : Calendar01Icon} className="size-3.5" />
+            {appointment.has_conflict ? 'Conflicting Appointment' : 'Reschedule Appointment'}
           </div>
           <div className="text-sm font-medium text-slate-900">{appointment.patient_name}</div>
           <div className="flex items-center gap-4 text-xs text-slate-500">

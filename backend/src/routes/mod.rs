@@ -6,3 +6,4 @@ pub mod appointments;
 pub mod settings;
 pub mod unavailability;
 pub mod users;
+pub mod referrals;

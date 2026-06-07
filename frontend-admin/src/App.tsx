@@ -10,6 +10,7 @@ import { TodayPage } from '@/pages/dashboard/TodayPage';
 import { DoctorAppointmentsPage } from '@/pages/dashboard/DoctorAppointmentsPage';
 import { DoctorUnavailabilityPage } from '@/pages/dashboard/DoctorUnavailabilityPage';
 import { DoctorConflictsPage } from '@/pages/dashboard/DoctorConflictsPage';
+import { DoctorReferralsPage } from '@/pages/dashboard/DoctorReferralsPage';
 import { CalendarPage } from '@/pages/dashboard/CalendarPage';
 import { SchedulerDashboard } from '@/pages/dashboard/SchedulerDashboard';
 import { DashboardUnavailability } from '@/pages/dashboard/DashboardUnavailability';
@@ -114,71 +115,11 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/dashboard/calendar"
+        path="/dashboard/referrals"
         element={
           <DashboardGuard>
             <DashboardLayout>
-              <CalendarPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/unavailability"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DashboardUnavailability />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/settings"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <AdminSettings />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/app-settings"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <ApplicationSettingsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/profile"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorProfilePage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/analytics"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <AnalyticsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/doctors"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorsPage />
+              <DoctorReferralsPage />
             </DashboardLayout>
           </DashboardGuard>
         }

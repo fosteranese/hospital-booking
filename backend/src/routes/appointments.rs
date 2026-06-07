@@ -96,6 +96,7 @@ pub struct AppointmentResponse {
     pub attended: Option<bool>,
     pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
+    pub referring_doctor_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -340,6 +341,48 @@ pub async fn create_appointment(
         }
     };
 
+    // Role check: only admin, scheduler, and (if configured) doctors can create appointments
+    let mut referring_doctor_id: Option<Uuid> = None;
+    if auth.role == "doctor" {
+        let appt_settings = state.settings.get_group("appointment").await?;
+        let mut settings_map: HashMap<String, String> = HashMap::new();
+        for s in appt_settings {
+            if let Some(v) = s.value {
+                settings_map.insert(s.name, v);
+            }
+        }
+        let can_create = settings_map.get("doctor_can_create_appointments")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+        if !can_create {
+            return Err(AppError::Unauthorized("Doctors are not permitted to create appointments. Please contact a scheduler or admin.".to_string()));
+        }
+
+        // Resolve the doctor's own ID from their email
+        let creator_doctor_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM doctors WHERE email = $1"
+        )
+        .bind(&auth.sub)
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(|e| AppError::Database(e))?
+        .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+
+        let can_refer = settings_map.get("doctor_can_refer")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(true);
+
+        // If creating for a different doctor, track as referral
+        if let Some(target_doctor_id) = body.doctor_id {
+            if target_doctor_id != creator_doctor_id {
+                if !can_refer {
+                    return Err(AppError::Unauthorized("Doctors can only create appointments for themselves. Referrals are not enabled.".to_string()));
+                }
+                referring_doctor_id = Some(creator_doctor_id);
+            }
+        }
+    }
+
     let upcoming_count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM appointments a
          JOIN availability_slots s ON s.id = a.slot_id
@@ -501,14 +544,15 @@ pub async fn create_appointment(
         "WITH booked_slot AS (
             UPDATE availability_slots SET is_booked = TRUE WHERE id = $1 RETURNING *
         )
-        INSERT INTO appointments (patient_id, doctor_id, slot_id, notes)
-        VALUES ($2, $3, $1, $4)
+        INSERT INTO appointments (patient_id, doctor_id, slot_id, notes, referring_doctor_id)
+        VALUES ($2, $3, $1, $4, $5)
         RETURNING *"
     )
     .bind(slot.id)
     .bind(patient.id)
     .bind(doctor_id)
     .bind(&notes)
+    .bind(referring_doctor_id)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| AppError::Database(e))?;
@@ -564,6 +608,7 @@ pub async fn create_appointment(
         attended: appointment.attended,
         minutes_late: None,
         cancellation_reason: appointment.cancellation_reason,
+        referring_doctor_id: appointment.referring_doctor_id,
         created_at: appointment.created_at,
     }))
 }
@@ -605,6 +650,7 @@ pub async fn get_appointment(
         attended: appointment.attended,
         minutes_late: None,
         cancellation_reason: appointment.cancellation_reason,
+        referring_doctor_id: appointment.referring_doctor_id,
         created_at: appointment.created_at,
     }))
 }
@@ -716,6 +762,7 @@ pub async fn cancel_appointment(
         attended: updated.attended,
         minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }
@@ -816,6 +863,7 @@ pub async fn reschedule_appointment(
         attended: updated.attended,
         minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }
@@ -859,6 +907,7 @@ pub async fn change_doctor(
         attended: updated.attended,
         minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }
@@ -943,6 +992,7 @@ pub async fn mark_attendance(
         attended: updated.attended,
         minutes_late: updated.minutes_late,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }
@@ -1015,6 +1065,7 @@ pub async fn update_appointment(
         attended: updated.attended,
         minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }
@@ -1265,6 +1316,7 @@ pub async fn reschedule_appointment_by_time(
         attended: updated.attended,
         minutes_late: None,
         cancellation_reason: updated.cancellation_reason,
+        referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
     }))
 }

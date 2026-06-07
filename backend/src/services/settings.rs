@@ -72,6 +72,8 @@ impl SettingsService {
             ("clinic", "clinic_address", "Bissau Avenue, East-Legon, Accra, Ghana", false, "Clinic address line displayed in UI", "address"),
             ("clinic", "clinic_location_url", "", false, "Google Maps location URL for the clinic", "url"),
             ("appointment", "max_upcoming_appointments", "3", false, "Maximum number of upcoming appointments a patient can have at a time", "integer"),
+            ("appointment", "doctor_can_create_appointments", "false", false, "Allow doctors to create appointments for patients", "boolean"),
+            ("appointment", "doctor_can_refer", "true", false, "Allow doctors to create appointments for other doctors (referrals)", "boolean"),
             ("otp", "length", "6", false, "OTP code length (number of digits)", "integer"),
         ];
 

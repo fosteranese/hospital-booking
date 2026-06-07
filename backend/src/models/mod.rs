@@ -37,6 +37,7 @@ pub struct Appointment {
     pub attended: Option<bool>,
     pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
+    pub referring_doctor_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -60,6 +61,8 @@ pub struct AppointmentHistoryItem {
     pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
     pub has_conflict: bool,
+    pub referring_doctor_id: Option<Uuid>,
+    pub referring_doctor_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

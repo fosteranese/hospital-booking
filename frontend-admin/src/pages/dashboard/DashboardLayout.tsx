@@ -21,6 +21,7 @@ import {
   UserSettingsIcon,
   Calendar02Icon,
   AlertCircleIcon,
+  ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
@@ -74,6 +75,7 @@ const roleNav: Record<string, NavGroup[]> = {
         { label: 'Schedules', href: '/dashboard/schedules', icon: TimeScheduleIcon },
         { label: 'Patients', href: '/dashboard/patients', icon: UserMultiple02Icon },
         { label: 'Unavailability', href: '/dashboard/unavailability', icon: Clock01Icon },
+        { label: 'Referrals', href: '/dashboard/referrals', icon: ArrowRight01Icon },
       ],
     },
     {
@@ -98,6 +100,7 @@ const roleNav: Record<string, NavGroup[]> = {
       items: [
         { label: 'Patients', href: '/dashboard/patients', icon: UserMultiple02Icon },
         { label: 'Unavailability', href: '/dashboard/unavailability', icon: Clock01Icon },
+        { label: 'Referrals', href: '/dashboard/referrals', icon: ArrowRight01Icon },
       ],
     },
   ],
@@ -114,6 +117,7 @@ const roleNav: Record<string, NavGroup[]> = {
         { label: "Today's", href: '/dashboard/today-appointments', icon: Calendar01Icon },
         { label: 'Upcoming', href: '/dashboard/my-appointments', icon: Calendar02Icon },
         { label: 'Calendar', href: '/dashboard/calendar', icon: Calendar01Icon },
+        { label: 'Referrals', href: '/dashboard/referrals', icon: ArrowRight01Icon },
       ],
     },
     {

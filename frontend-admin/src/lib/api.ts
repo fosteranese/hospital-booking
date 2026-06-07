@@ -103,6 +103,23 @@ export interface AvailableDatesResponse {
   dates: string[];
 }
 
+export interface ReferralItem {
+  id: string;
+  patient_name: string;
+  patient_email: string;
+  doctor_id: string;
+  doctor_name: string;
+  referring_doctor_id: string;
+  referring_doctor_name: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes: string;
+  attended: boolean | null;
+  cancellation_reason: string;
+}
+
 export interface AppointmentHistoryItem {
   id: string;
   patient_id: string;
@@ -574,6 +591,11 @@ export const api = {
 
   getDoctorStats: (token: string) =>
     request<DoctorStat[]>('/analytics/doctor-stats', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  getReferrals: (token: string) =>
+    request<ReferralItem[]>('/referrals', {
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

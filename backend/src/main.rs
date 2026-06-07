@@ -189,6 +189,7 @@ async fn main() {
         .merge(routes::unavailability::unavailability_routes())
         .merge(routes::users::users_routes())
         .merge(routes::analytics::analytics_routes())
+        .merge(routes::referrals::referral_routes())
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
         .layer(cors)
         .layer(
