@@ -357,12 +357,6 @@ pub async fn create_appointment(
                 settings_map.insert(s.name, v);
             }
         }
-        let can_create = settings_map.get("doctor_can_create_appointments")
-            .and_then(|v| v.parse::<bool>().ok())
-            .unwrap_or(false);
-        if !can_create {
-            return Err(AppError::Unauthorized("Doctors are not permitted to create appointments. Please contact a scheduler or admin.".to_string()));
-        }
 
         // Resolve the doctor's own ID from their email
         let creator_doctor_id = sqlx::query_scalar::<_, Uuid>(
@@ -374,18 +368,21 @@ pub async fn create_appointment(
         .map_err(|e| AppError::Database(e))?
         .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
 
+        let is_referral = matches!(body.doctor_id, Some(target) if target != creator_doctor_id);
+        let can_create = settings_map.get("doctor_can_create_appointments")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
         let can_refer = settings_map.get("doctor_can_refer")
             .and_then(|v| v.parse::<bool>().ok())
             .unwrap_or(true);
 
-        // If creating for a different doctor, track as referral
-        if let Some(target_doctor_id) = body.doctor_id {
-            if target_doctor_id != creator_doctor_id {
-                if !can_refer {
-                    return Err(AppError::Unauthorized("Doctors can only create appointments for themselves. Referrals are not enabled.".to_string()));
-                }
-                referring_doctor_id = Some(creator_doctor_id);
+        if is_referral {
+            if !can_refer {
+                return Err(AppError::Unauthorized("Referrals are not enabled.".to_string()));
             }
+            referring_doctor_id = Some(creator_doctor_id);
+        } else if !can_create {
+            return Err(AppError::Unauthorized("Doctors are not permitted to create appointments. Please contact a scheduler or admin.".to_string()));
         }
     }
 
