@@ -88,6 +88,7 @@ export function DoctorPastAppointmentsPage() {
   const [dateFrom, setDateFrom] = useState(daysAgo(30));
   const [dateTo, setDateTo] = useState(yesterday);
   const [datePanelOpen, setDatePanelOpen] = useState(true);
+  const [datePanelVisible, setDatePanelVisible] = useState(false);
   const [filterDate, setFilterDate] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -122,6 +123,11 @@ export function DoctorPastAppointmentsPage() {
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
 
+  const handleDatePanelClose = () => {
+    setDatePanelVisible(false);
+    setTimeout(() => setDatePanelOpen(false), 200);
+  };
+
   const handleDateRangeChange = (key: string) => {
     const opt = dateRangeOptions.find(o => o.key === key);
     if (opt) {
@@ -154,6 +160,16 @@ export function DoctorPastAppointmentsPage() {
 
   const { setContainerClass } = useContentContainer();
   const panelOpen = datePanelOpen || !!selectedAppointment;
+  const dateSlideClass = datePanelVisible ? 'translate-x-0' : 'translate-x-full';
+
+  useEffect(() => {
+    if (datePanelOpen) {
+      const frame = requestAnimationFrame(() => setDatePanelVisible(true));
+      return () => cancelAnimationFrame(frame);
+    } else {
+      setDatePanelVisible(false);
+    }
+  }, [datePanelOpen]);
 
   useEffect(() => {
     setContainerClass(panelOpen
@@ -216,7 +232,7 @@ export function DoctorPastAppointmentsPage() {
           icon={TimeScheduleIcon}
         />
         <button
-          onClick={() => { setSelectedAppointment(null); setDatePanelOpen(v => !v); }}
+          onClick={() => { setSelectedAppointment(null); if (datePanelOpen) { handleDatePanelClose(); } else { setDatePanelOpen(true); } }}
           className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all mt-1.5 shrink-0 ${
             datePanelOpen
               ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
@@ -414,16 +430,16 @@ export function DoctorPastAppointmentsPage() {
       />
 
       {/* Date Range Slide Panel */}
-      <div className={`hidden lg:block fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${datePanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`hidden lg:block fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${dateSlideClass}`}>
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Date Range</span>
-          <button onClick={() => setDatePanelOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={() => handleDatePanelClose()} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-7 pb-6">
           <div className="pt-6 space-y-2">
-            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
+            {/* <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p> */}
             {dateRangeOptions.map(opt => (
               <button
                 key={opt.key}
@@ -438,17 +454,6 @@ export function DoctorPastAppointmentsPage() {
               </button>
             ))}
           </div>
-          {filterDate && (
-            <div className="mt-4">
-              <p className="text-xs text-slate-400 mb-3">
-                Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
-              </p>
-              <button onClick={() => setFilterDate(null)}
-                className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
-                Clear filter
-              </button>
-            </div>
-          )}
         </div>
         <div className="shrink-0 border-t border-slate-200 px-7 pt-4 pb-6">
           <MiniCalendar
@@ -469,6 +474,17 @@ export function DoctorPastAppointmentsPage() {
             eventDates={eventDates}
             maxDate={new Date()}
           />
+          {filterDate && (
+            <div className="mt-4">
+              <p className="text-xs text-slate-400 mb-3">
+                Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
+              </p>
+              <button onClick={() => setFilterDate(null)}
+                className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
+                Clear filter
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
