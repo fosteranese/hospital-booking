@@ -7,7 +7,6 @@ import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
 import { RescheduleModal } from '@/components/RescheduleModal';
 import { ScheduleModal } from '@/components/ScheduleModal';
 import { PageHeader } from '@/components/PageHeader';
-import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
@@ -301,8 +300,7 @@ export function DoctorPastAppointmentsPage() {
         </div>
       </div>
 
-      <Card padding="none">
-        {loading ? (
+      {loading ? (
           <div className="p-8"><div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div></div>
         ) : filtered.length === 0 ? (
           <EmptyState icon={Calendar01Icon} title="No past appointments" description={statusFilter !== 'all' ? 'No appointments match the selected filter.' : 'No appointments found for the selected date range.'} />
@@ -381,7 +379,6 @@ export function DoctorPastAppointmentsPage() {
             })}
           </div>
         )}
-      </Card>
 
       {selectedAppointment && (
         <AppointmentSlidePanel
