@@ -9,6 +9,7 @@ import {
   Mail01Icon,
   CallIcon,
   AlertCircleIcon,
+  ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -177,12 +178,12 @@ export function AppointmentSlidePanel({
               </button>
             </div>
             <div className="border-t border-slate-100 pt-3">
-              {appointment.has_conflict && (
+              {isPending && (
                 <button
                   onClick={() => setShowReschedule(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 rounded-xl border border-red-200 hover:bg-red-100 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                 >
-                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
                   Reschedule
                 </button>
               )}
