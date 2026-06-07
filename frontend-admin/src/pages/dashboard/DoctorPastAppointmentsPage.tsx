@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
 import { RescheduleModal } from '@/components/RescheduleModal';
@@ -9,7 +10,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, Search01Icon, ChevronDownIcon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -24,68 +25,51 @@ function formatDate(dateStr: string) {
 }
 
 function PatientAvatar({ name }: { name: string }) {
-  const initials = (name || 'P')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w.charAt(0).toUpperCase())
-    .join('');
-  return (
-    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">
-      {initials}
-    </div>
-  );
+  const initials = (name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('');
+  return <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">{initials}</div>;
 }
 
 function StatusDot({ status, attended }: { status: string; attended: boolean | null }) {
-  if (attended === true) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
-        <span className="text-xs text-emerald-600 font-medium">Attended</span>
-      </div>
-    );
-  }
-  if (attended === false) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
-        <span className="text-xs text-purple-600 font-medium">Missed</span>
-      </div>
-    );
-  }
-  if (status === 'cancelled') {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-slate-300 shrink-0" />
-        <span className="text-xs text-slate-400 font-medium">Cancelled</span>
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="size-2 rounded-full bg-amber-400 shrink-0" />
-      <span className="text-xs text-amber-600 font-medium">Confirmed</span>
-    </div>
-  );
+  if (attended === true) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-emerald-500 shrink-0" /><span className="text-xs text-emerald-600 font-medium">Attended</span></div>);
+  if (attended === false) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-purple-500 shrink-0" /><span className="text-xs text-purple-600 font-medium">Missed</span></div>);
+  if (status === 'cancelled') return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-slate-300 shrink-0" /><span className="text-xs text-slate-400 font-medium">Cancelled</span></div>);
+  return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-amber-400 shrink-0" /><span className="text-xs text-amber-600 font-medium">Confirmed</span></div>);
 }
 
 const filterOptions = [
   { value: 'all', label: 'All' },
   { value: 'name', label: 'Name' },
-  { value: 'notes', label: 'Notes' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'time', label: 'Time' },
 ];
 
 const placeholderMap: Record<string, string> = {
-  all: 'Search patients or notes...',
+  all: 'Search patients...',
   name: 'Search by patient name...',
-  notes: 'Search by notes...',
+  email: 'Search by email...',
+  phone: 'Search by phone...',
+  time: 'Search by time...',
 };
 
+function daysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+const dateRangeOptions = [
+  { key: 'yesterday', label: 'Yesterday', from: () => daysAgo(1), to: () => daysAgo(1) },
+  { key: 'week', label: 'Last 7 Days', from: () => daysAgo(7), to: () => daysAgo(1) },
+  { key: 'month', label: 'Last 30 Days', from: () => daysAgo(30), to: () => daysAgo(1) },
+  { key: 'year', label: 'Last 365 Days', from: () => daysAgo(365), to: () => daysAgo(1) },
+] as const;
+
 export function DoctorPastAppointmentsPage() {
-  const { token } = useAuth();
+  const { token, doctorCanCreateAppointments, doctorCanRefer,
+    attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterday = daysAgo(1);
 
   const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,16 +82,11 @@ export function DoctorPastAppointmentsPage() {
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [pendingAttendance, setPendingAttendance] = useState<{ id: string; attended: boolean } | null>(null);
-  const { doctorCanCreateAppointments, doctorCanRefer,
-    attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
-
-  const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
-  const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
-    : doctorCanCreateAppointments && !doctorCanRefer ? 'Book a Follow Up'
-    : 'New Appointment';
-  const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
-    : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
-    : undefined;
+  const [dateRange, setDateRange] = useState('month');
+  const [dateFrom, setDateFrom] = useState(daysAgo(30));
+  const [dateTo, setDateTo] = useState(yesterday);
+  const [datePanelOpen, setDatePanelOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -121,25 +100,37 @@ export function DoctorPastAppointmentsPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.listAppointments({ to: yesterday }, token);
+      const data = await api.listAppointments({ from: dateFrom, to: dateTo }, token);
       setAppointments(data);
     } catch (e: any) {
       setError(e.message || 'Failed to load appointments');
     } finally {
       setLoading(false);
     }
-  }, [token, yesterday]);
+  }, [token, dateFrom, dateTo]);
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  const requestAttendance = useCallback(async (id: string, attended: boolean) => {
-    try {
-      await api.markAttendance(id, { attended }, token);
-      fetchAppointments();
-    } catch (e: any) {
-      setError(e.message);
+  const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
+  const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
+    : doctorCanCreateAppointments && !doctorCanRefer ? 'Book a Follow Up'
+    : 'New Appointment';
+  const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
+    : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
+    : undefined;
+
+  const handleDateRangeChange = (key: string) => {
+    const opt = dateRangeOptions.find(o => o.key === key);
+    if (opt) {
+      setDateRange(key);
+      setDateFrom(opt.from());
+      setDateTo(opt.to());
     }
-  }, [token, fetchAppointments]);
+  };
+
+  const requestAttendance = useCallback((id: string, attended: boolean) => {
+    setPendingAttendance({ id, attended });
+  }, []);
 
   const confirmAttendance = useCallback(async (minutesLate?: number) => {
     if (!pendingAttendance) return;
@@ -147,56 +138,97 @@ export function DoctorPastAppointmentsPage() {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
       fetchAppointments();
       setPendingAttendance(null);
+      setSelectedAppointment(null);
     } catch (e: any) {
       setError(e.message);
       setPendingAttendance(null);
     }
   }, [pendingAttendance, token, fetchAppointments]);
 
-  const filtered = useMemo(() => {
-    return appointments.filter(a => {
-      if (searchFilter === 'all') return true;
-      if (searchFilter === 'name') return a.patient_name?.toLowerCase().includes(searchQuery.toLowerCase());
-      if (searchFilter === 'notes') return a.notes?.toLowerCase().includes(searchQuery.toLowerCase());
-      return (
-        (a.patient_name && a.patient_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (a.notes && a.notes.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    });
-  }, [appointments, searchQuery, searchFilter]);
+  const selectedForModal = pendingAttendance
+    ? appointments.find(a => a.id === pendingAttendance.id)
+    : null;
 
-  // Group by month
-  const groupedByMonth = useMemo(() => {
-    const groups: Record<string, AppointmentHistoryItem[]> = {};
-    for (const a of filtered) {
-      const monthKey = a.slot_date.slice(0, 7); // "2026-06"
-      if (!groups[monthKey]) groups[monthKey] = [];
-      groups[monthKey].push(a);
-    }
-    return Object.entries(groups)
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([month, rows]) => ({ month, rows: rows.sort((a, b) => b.slot_date.localeCompare(a.slot_date) || b.start_time.localeCompare(a.start_time)) }));
-  }, [filtered]);
+  const { setContainerClass } = useContentContainer();
+  const panelOpen = datePanelOpen || !!selectedAppointment;
+
+  useEffect(() => {
+    setContainerClass(panelOpen
+      ? 'max-w-[2000px] lg:max-w-[calc(80rem+480px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
+      : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+    return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+  }, [panelOpen, setContainerClass]);
+
+  const statuses = [
+    { key: 'all', label: `All (${appointments.length})`, color: '' },
+    { key: 'attended', label: 'Attended', color: 'bg-emerald-500' },
+    { key: 'missed', label: 'Missed', color: 'bg-purple-500' },
+    { key: 'cancelled', label: 'Cancelled', color: 'bg-slate-300' },
+  ];
+
+  const filtered = appointments.filter(a => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'attended') return a.attended === true;
+    if (statusFilter === 'missed') return a.attended === false;
+    if (statusFilter === 'cancelled') return a.status === 'cancelled';
+    return true;
+  }).filter(a => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);
+    if (searchFilter === 'email') return a.patient_email && a.patient_email.toLowerCase().includes(q);
+    if (searchFilter === 'phone') return a.patient_phone && a.patient_phone.toLowerCase().includes(q);
+    if (searchFilter === 'time') return (a.start_time && a.start_time.toLowerCase().includes(q)) || (a.end_time && a.end_time.toLowerCase().includes(q));
+    return (
+      (a.patient_name && a.patient_name.toLowerCase().includes(q)) ||
+      (a.patient_email && a.patient_email.toLowerCase().includes(q)) ||
+      (a.patient_phone && a.patient_phone.toLowerCase().includes(q)) ||
+      (a.start_time && a.start_time.toLowerCase().includes(q)) ||
+      (a.end_time && a.end_time.toLowerCase().includes(q))
+    );
+  });
 
   const currentFilter = filterOptions.find(o => o.value === searchFilter);
-  const selectedForModal = pendingAttendance ? appointments.find(a => a.id === pendingAttendance.id) : null;
+
+  const groupedByDate = filtered.reduce((acc, a) => {
+    if (!acc[a.slot_date]) acc[a.slot_date] = [];
+    acc[a.slot_date].push(a);
+    return acc;
+  }, {} as Record<string, AppointmentHistoryItem[]>);
+
+  const sortedDates = Object.keys(groupedByDate).sort().reverse();
+
+  const currentRange = dateRangeOptions.find(o => o.key === dateRange);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Past Appointments"
-        description="View appointment history"
-        icon={Calendar01Icon}
-      />
+    <div className={`space-y-6 transition-[margin-right] duration-200 ${panelOpen ? 'lg:mr-[480px]' : ''}`}>
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title="Past Appointments"
+          description={currentRange ? `${currentRange.label}` : `${appointments.length} past appointment${appointments.length !== 1 ? 's' : ''}`}
+          icon={TimeScheduleIcon}
+          actions={
+            <button
+              onClick={() => { setSelectedAppointment(null); setDatePanelOpen(v => !v); }}
+              className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+                datePanelOpen
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                  : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+            </button>
+          }
+        />
+        {error && (
+          <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
+            {error}
+          </div>
+        )}
+      </div>
 
-      {error && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
-          <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
@@ -225,34 +257,41 @@ export function DoctorPastAppointmentsPage() {
                 {filterOptions.map(opt => (
                   <button key={opt.value} onMouseDown={e => { e.preventDefault(); setSearchFilter(opt.value); setFilterOpen(false); }}
                     className={`w-full text-left px-4 py-2 text-xs transition-colors ${opt.value === searchFilter ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    {opt.label}
-                  </button>
+                  >{opt.label}</button>
                 ))}
               </div>
             )}
           </div>
         </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {statuses.map(s => (
+            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                statusFilter === s.key
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {s.color && <div className={`size-1.5 rounded-full ${s.color}`} />}
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Card padding="none">
         {loading ? (
-          <div className="p-8">
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}
-            </div>
-          </div>
+          <div className="p-8"><div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div></div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Calendar01Icon} title="No past appointments" description="No past appointments match the selected filter." />
+          <EmptyState icon={Calendar01Icon} title="No past appointments" description={statusFilter !== 'all' ? 'No appointments match the selected filter.' : 'No appointments found for the selected date range.'} />
         ) : (
           <div className="space-y-4">
-            {groupedByMonth.map(({ month, rows }) => {
-              const monthDate = new Date(month + '-01T00:00:00');
-              const monthLabel = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            {sortedDates.map(date => {
+              const rows = groupedByDate[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
               return (
-                <div key={month} className="rounded-lg">
+                <div key={date} className="rounded-lg">
                   <div className="sticky top-0 z-10 bg-background px-5 py-3">
-                    <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">{monthLabel}</span>
+                    <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">{formatDate(date)}</span>
                     <span className="ml-2.5 text-xs text-slate-400 font-medium">{rows.length} appointment{rows.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
@@ -266,8 +305,10 @@ export function DoctorPastAppointmentsPage() {
                           const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#f59e0b';
                           const canAttend = isPending;
                           return (
-                            <tr key={a.id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0" style={{ transformOrigin: 'center' }}
+                            <tr key={a.id}
+                              className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
                               onClick={() => setSelectedAppointment(a)}
+                              style={{ transformOrigin: 'center' }}
                             >
                               <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                                 <div className="flex flex-col items-start">
@@ -280,7 +321,10 @@ export function DoctorPastAppointmentsPage() {
                               </td>
                               <td className="min-w-0 py-4 border-b border-slate-100 align-top">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
-                                <div className="text-xs text-slate-400 mt-0.5">{formatDate(a.slot_date)} · Dr. {a.doctor_name}</div>
+                                <div className="text-xs text-slate-400 mt-0.5">
+                                  {formatDate(a.slot_date)} · Dr. {a.doctor_name}
+                                  {a.notes && <span className="ml-2 text-slate-300">· {a.notes}</span>}
+                                </div>
                               </td>
                               <td className="w-[100px] py-4 border-b border-slate-100 align-top">
                                 <StatusDot status={a.status} attended={a.attended} />
@@ -299,7 +343,7 @@ export function DoctorPastAppointmentsPage() {
                                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                     <button onClick={e => { e.stopPropagation(); setSelectedAppointment(a); }}
                                       className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                                    ><HugeiconsIcon icon={Search01Icon} className="size-4" /></button>
+                                    ><HugeiconsIcon icon={ArrowRight01Icon} className="size-4" /></button>
                                   </div>
                                 )}
                               </td>
@@ -363,6 +407,56 @@ export function DoctorPastAppointmentsPage() {
         onScheduled={fetchAppointments}
         forcedType={forcedScheduleType}
       />
+
+      {/* Date Range Slide Panel */}
+      <div className={`hidden lg:block fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${datePanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Date Range</span>
+          <button onClick={() => setDatePanelOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-7 pb-6">
+          <div className="pt-6 space-y-2">
+            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
+            {dateRangeOptions.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => handleDateRangeChange(opt.key)}
+                className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                  dateRange === opt.key
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Custom Range</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">From</label>
+                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">To</label>
+                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+              <button onClick={() => { setDateRange('custom'); fetchAppointments(); }}
+                className="w-full text-sm font-medium text-white bg-emerald-500 rounded-xl py-2.5 hover:bg-emerald-600 transition-colors shadow-sm"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
