@@ -53,7 +53,7 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   const effective = getEffectiveStatus({ status, attended, end_time: '', minutes_late } as AppointmentHistoryItem);
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
-    missed:    { label: 'Missed',    color: 'bg-rose-500' },
+    missed:    { label: 'Missed',    color: 'bg-purple-500' },
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
@@ -438,8 +438,8 @@ export function DoctorDashboard() {
               value={missedToday}
               total={totalToday}
               icon={Cancel01Icon}
-              cardBg="bg-red-500"
-              borderClass="border-red-700"
+              cardBg="bg-purple-500"
+              borderClass="border-purple-700"
               svgBg={<MissedSvg />}
             />
           )}
@@ -527,7 +527,7 @@ export function DoctorDashboard() {
                       const isMissed = effective === 'missed';
                       const isCancelled = effective === 'cancelled';
                       const isPending = effective === 'confirmed';
-                      const borderColor = isAttended ? '#10b981' : isMissed ? '#e11d48' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
+                      const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
                       const isEditingLatness = latenessInput?.id === a.id;
 
                       const autoLatness = (() => {

@@ -33,7 +33,7 @@ function StatusDot({ status, attended, has_conflict }: { status: string; attende
   }
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
-    missed:    { label: 'Missed',    color: 'bg-rose-500' },
+    missed:    { label: 'Missed',    color: 'bg-purple-500' },
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };

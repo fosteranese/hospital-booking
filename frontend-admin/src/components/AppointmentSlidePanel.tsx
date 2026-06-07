@@ -83,7 +83,7 @@ export function AppointmentSlidePanel({
 
   function statusInfo() {
     if (isAttended) return { label: `Attended${appointment.minutes_late ? ` · ${appointment.minutes_late}m late` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
-    if (isMissed) return { label: 'Missed', dot: 'bg-rose-500', bar: 'bg-rose-500' };
+    if (isMissed) return { label: 'Missed', dot: 'bg-purple-500', bar: 'bg-purple-500' };
     if (isCancelled) return { label: 'Cancelled', dot: 'bg-slate-300', bar: 'bg-slate-300' };
     return { label: 'Pending', dot: 'bg-amber-400', bar: 'bg-amber-400' };
   }

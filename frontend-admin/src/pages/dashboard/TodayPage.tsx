@@ -45,7 +45,7 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   const effective = getEffectiveStatus({ status, attended, end_time: '', minutes_late } as AppointmentHistoryItem);
   const map: Record<string, { label: string; color: string }> = {
     attended:  { label: 'Attended',  color: 'bg-emerald-500' },
-    missed:    { label: 'Missed',    color: 'bg-rose-500' },
+    missed:    { label: 'Missed',    color: 'bg-purple-500' },
     cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
@@ -215,7 +215,7 @@ export function TodayPage() {
           const colors = [
             { value: pendingToday, bg: 'bg-amber-500', border: 'border-amber-700' },
             { value: attendedToday, bg: 'bg-emerald-500', border: 'border-emerald-700' },
-            { value: missedToday, bg: 'bg-rose-500', border: 'border-rose-700' },
+            { value: missedToday, bg: 'bg-purple-500', border: 'border-purple-700' },
             { value: totalToday, bg: 'bg-slate-600', border: 'border-slate-700' },
           ][i];
           if (loading) {
@@ -262,7 +262,7 @@ export function TodayPage() {
                     const isMissed = effective === 'missed';
                     const isCancelled = effective === 'cancelled';
                     const isPending = effective === 'confirmed';
-                    const borderColor = isAttended ? '#10b981' : isMissed ? '#e11d48' : isCancelled ? '#cbd5e1' : '#f59e0b';
+                    const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#f59e0b';
                     const isEditingLatness = latenessInput?.id === a.id;
 
                     const autoLatness = (() => {

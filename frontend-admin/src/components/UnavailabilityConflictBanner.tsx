@@ -28,7 +28,7 @@ export function UnavailabilityConflictBanner() {
   if (loading || dismissed || total === 0) return null;
 
   return (
-    <div className="flex items-center justify-between gap-4 text-sm text-amber-800 bg-amber-50 px-5 py-3.5 rounded-lg ring-1 ring-amber-200/60">
+    <div className="flex items-center justify-between gap-4 text-sm text-red-800 bg-red-50 px-5 py-3.5 rounded-lg ring-1 ring-red-200/60">
       <div className="flex items-center gap-2">
         <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
         <span>There {total === 1 ? 'is' : 'are'} <strong>{total}</strong> appointment{total !== 1 ? 's' : ''} with scheduling conflicts due to unavailability.</span>
@@ -38,7 +38,7 @@ export function UnavailabilityConflictBanner() {
           View Conflicts
           <HugeiconsIcon icon={ArrowRight01Icon} className="size-3" />
         </Button>
-        <button onClick={() => setDismissed(true)} className="p-1.5 rounded-lg text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors">
+        <button onClick={() => setDismissed(true)} className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-100 transition-colors">
           <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
         </button>
       </div>

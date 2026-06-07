@@ -64,8 +64,8 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   if (attended === false) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-rose-500 shrink-0" />
-        <span className="text-xs text-rose-600 font-medium">Missed</span>
+        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
+        <span className="text-xs text-purple-600 font-medium">Missed</span>
       </div>
     );
   }
@@ -186,7 +186,7 @@ export function DoctorTodayAppointmentsPage() {
   const statuses = [
     { key: 'confirmed', label: 'Pending', color: 'bg-amber-400' },
     { key: 'attended', label: 'Attended', color: 'bg-emerald-500' },
-    { key: 'missed', label: 'Missed', color: 'bg-rose-500' },
+    { key: 'missed', label: 'Missed', color: 'bg-purple-500' },
     { key: 'cancelled', label: 'Cancelled', color: 'bg-slate-300' },
     { key: 'all', label: `All (${todayAppts.length})`, color: '' },
   ];
@@ -327,7 +327,7 @@ export function DoctorTodayAppointmentsPage() {
                   const isMissed = a.attended === false;
                   const isCancelled = a.status === 'cancelled';
                   const isPending = !isAttended && !isMissed && !isCancelled;
-                  const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
+                  const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
 
                   return (
                     <tr

@@ -60,8 +60,8 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   if (attended === false) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-rose-500 shrink-0" />
-        <span className="text-xs text-rose-600 font-medium">Missed</span>
+        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
+        <span className="text-xs text-purple-600 font-medium">Missed</span>
       </div>
     );
   }
@@ -208,7 +208,7 @@ export function DoctorConflictsPage() {
                         const isAttended = a.attended === true;
                         const isMissed = a.attended === false;
                         const isPending = !isAttended && !isMissed;
-                        const borderColor = isAttended ? '#10b981' : isMissed ? '#ef4444' : '#ef4444';
+                        const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : '#ef4444';
                         const isRescheduling = rescheduling === a.id;
 
                         return (
@@ -266,7 +266,7 @@ export function DoctorConflictsPage() {
                                     {isPending && (
                                       <button
                                         onClick={() => setRescheduling(a.id)}
-                                        className="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 transition-colors"
+                                        className="p-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
                                         title="Reschedule"
                                       >
                                         <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />

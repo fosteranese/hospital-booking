@@ -292,8 +292,8 @@ export function DoctorUnavailabilityPage() {
 
       {/* Resolve prompt banner */}
       {resolvePrompt && (
-        <div className="flex items-center justify-between gap-4 text-sm text-amber-800 bg-amber-50 px-5 py-3.5 rounded-lg ring-1 ring-amber-200/60">
-      <div className="flex items-center gap-2 justify-between">
+        <div className="flex items-center justify-between gap-4 text-sm text-red-800 bg-red-50 px-5 py-3.5 rounded-lg ring-1 ring-red-200/60">
+          <div className="flex items-center gap-2">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
             <span>There {resolvePrompt.count === 1 ? 'is' : 'are'} <strong>{resolvePrompt.count}</strong> appointment{resolvePrompt.count !== 1 ? 's' : ''} that conflict with this unavailability.</span>
           </div>
@@ -301,7 +301,7 @@ export function DoctorUnavailabilityPage() {
             <Button size="sm" onClick={() => { setExpandedId(resolvePrompt.id); if (!conflicts[resolvePrompt.id]) fetchConflicts(resolvePrompt.id); setResolvePrompt(null); }}>
               Resolve Conflicts
             </Button>
-            <button onClick={() => setResolvePrompt(null)} className="p-1.5 rounded-lg text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors">
+            <button onClick={() => setResolvePrompt(null)} className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-100 transition-colors">
               <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
             </button>
           </div>
@@ -421,7 +421,7 @@ export function DoctorUnavailabilityPage() {
                         </td>
                         <td className="py-4 border-b border-slate-100 align-top px-5">
                           {hasConflicts ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
                               <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
                               {u.conflict_count ?? 0}
                             </span>
@@ -460,7 +460,7 @@ export function DoctorUnavailabilityPage() {
                                     const isRescheduling = rescheduling === a.id;
                                     return (
                                       <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-slate-100 last:border-b-0">
-                                        <div className="size-7 rounded-full bg-amber-50 flex items-center justify-center text-[10px] font-semibold text-amber-600 shrink-0">
+                                        <div className="size-7 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-semibold text-red-600 shrink-0">
                                           {(a.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -483,7 +483,7 @@ export function DoctorUnavailabilityPage() {
                                           ) : (
                                             <button
                                               onClick={() => setRescheduling(a.id)}
-                                              className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                              className="text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
                                             >
                                               Reschedule
                                             </button>
@@ -682,8 +682,8 @@ export function DoctorUnavailabilityPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setConflictWarning(null)}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto size-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-amber-600" />
+            <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
             </div>
             <h3 className="text-base font-bold text-slate-900 mb-1">Conflicts Detected</h3>
             <p className="text-sm text-slate-500 mb-6">
