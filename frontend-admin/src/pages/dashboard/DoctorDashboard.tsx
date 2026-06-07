@@ -631,7 +631,7 @@ export function DoctorDashboard() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => setSelectedAppointment(null)}
+          onClose={() => { setSelectedAppointment(null); fetchAppointments(); }}
           onRequestAttendance={requestAttendance}
         />
       )}

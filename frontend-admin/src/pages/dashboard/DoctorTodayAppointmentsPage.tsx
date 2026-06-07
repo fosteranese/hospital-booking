@@ -403,7 +403,7 @@ export function DoctorTodayAppointmentsPage() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => setSelectedAppointment(null)}
+          onClose={() => { setSelectedAppointment(null); fetchToday(); }}
           onRequestAttendance={requestAttendance}
         />
       )}
