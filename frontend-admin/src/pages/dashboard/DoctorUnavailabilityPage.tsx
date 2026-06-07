@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
-import { Card, CardHeader } from '@/components/Card';
+import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
@@ -30,17 +30,8 @@ function formatDate(dateStr: string) {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function PatientAvatar({ name, bg }: { name: string; bg?: string }) {
-  const initials = name.split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('');
-  return (
-    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold ${bg || 'bg-slate-100 text-slate-600'}`}>
-      {initials}
-    </div>
-  );
-}
-
-const bigInputClass = "h-12 px-4 text-base border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
-const smallInputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+const smallInputClass = inputClass;
 
 interface UnavailRecord {
   id: string;
@@ -59,6 +50,7 @@ export function DoctorUnavailabilityPage() {
   const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'past'>('all');
 
   // Add modal state
   const [showModal, setShowModal] = useState(false);
@@ -314,11 +306,23 @@ export function DoctorUnavailabilityPage() {
         </div>
       )}
 
+      {/* Filter tabs */}
+      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 w-fit">
+        {(['all', 'pending', 'past'] as const).map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3.5 py-1.5 text-sm font-medium rounded-md transition-all capitalize ${
+              filter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+
       {/* Table styled like appointment list */}
       <Card padding="none">
-        <div className="px-5 py-4 border-b border-slate-100">
-          <CardHeader title={`Unavailability Records (${unavail.length})`} />
-        </div>
         {loading ? (
           <div className="p-8">
             <div className="space-y-3">
@@ -327,19 +331,25 @@ export function DoctorUnavailabilityPage() {
               ))}
             </div>
           </div>
-        ) : unavail.length === 0 ? (
+        ) : (() => {
+          const filtered = unavail.filter(u => {
+            if (filter === 'all') return true;
+            if (filter === 'pending') return u.end_date >= today;
+            return u.end_date < today;
+          });
+          return filtered.length === 0 ? (
           <EmptyState
             icon={Calendar02Icon}
             title="No unavailability records"
-            description="You have no blackout periods set."
+            description={filter !== 'all' ? `No ${filter} unavailability records found.` : "You have no blackout periods set."}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <tbody>
-                {unavail.map((u) => {
+                {filtered.map((u) => {
                   const hasConflicts = (u.conflict_count ?? 0) > 0;
-                  const borderColor = hasConflicts ? '#f59e0b' : '#cbd5e1';
+                  const borderColor = hasConflicts ? '#f59e0b' : '#e2e8f0';
 
                   return (
                     <Fragment key={u.id}>
@@ -347,51 +357,45 @@ export function DoctorUnavailabilityPage() {
                         className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 group last:[&>td]:border-b-0"
                         onClick={() => handleToggleExpand(u.id)}
                       >
-                        <td className="py-4 w-[120px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
-                          <div className="flex flex-col items-start">
-                            <span className="text-base font-semibold text-slate-900">
+                        <td className="py-4 border-b border-slate-100 align-top px-5 whitespace-nowrap" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-slate-900">
                               {u.end_date !== u.slot_date
                                 ? `${formatDate(u.slot_date)} – ${formatDate(u.end_date)}`
                                 : formatDate(u.slot_date)}
                             </span>
-                            <span className="text-xs text-slate-400">
-                              {u.start_time && u.end_time
-                                ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
-                                : 'All day'}
-                            </span>
                           </div>
                         </td>
-                        <td className="w-10 p-2 border-b border-slate-100 text-center">
-                          <PatientAvatar name={hasConflicts ? '!' : '✓'} bg={hasConflicts ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'} />
+                        <td className="py-4 border-b border-slate-100 align-top px-5 whitespace-nowrap">
+                          <span className="text-sm text-slate-600">
+                            {u.start_time && u.end_time
+                              ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
+                              : <span className="text-slate-400">All day</span>}
+                          </span>
                         </td>
-                        <td className="min-w-0 py-4 border-b border-slate-100 align-top">
-                          <div className="flex items-center gap-1.5">
-                            <div className="text-base font-medium text-slate-900 truncate">
-                              {u.reason || 'No reason given'}
-                            </div>
-                            {hasConflicts && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-amber-500 shrink-0" />}
-                          </div>
+                        <td className="py-4 border-b border-slate-100 align-top px-5">
+                          <span className="text-sm text-slate-700">{u.reason || <span className="text-slate-400 italic">No reason</span>}</span>
                         </td>
-                        <td className="w-[100px] py-4 border-b border-slate-100 align-top">
+                        <td className="py-4 border-b border-slate-100 align-top px-5">
                           {hasConflicts ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
                               <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
                               {u.conflict_count ?? 0}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
                               <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3" />
-                              Clear
+                              None
                             </span>
                           )}
                         </td>
-                        <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                        <td className="py-4 border-b border-slate-100 align-top">
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(u.id); }}
                             className="p-1.5 rounded-md hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
                             title="Delete"
                           >
-                            <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-500" />
+                            <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-400" />
                           </button>
                         </td>
                       </tr>
@@ -459,7 +463,7 @@ export function DoctorUnavailabilityPage() {
               </tbody>
             </table>
           </div>
-        )}
+          );})()}
       </Card>
 
       {/* Add Modal — Two-step wizard */}
@@ -544,53 +548,75 @@ export function DoctorUnavailabilityPage() {
               </div>
             ) : (
               /* Step 2: Details form */
-              <div className="space-y-5">
-                <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
-                    <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} inputSize="xl" />
-                  </div>
-                  {isDateRange && (
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
-                      <Input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} inputSize="xl" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-600">All day?</span>
-                  <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-                    <button
-                      type="button"
-                      onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
-                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsFullDay(false)}
-                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-                {!isFullDay && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time *</label>
-                      <Input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} inputSize="xl" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">End time *</label>
-                      <Input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} inputSize="xl" />
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-6">
+                {/* Date section */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
-                  <Input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" inputSize="xl" />
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="size-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</span>
+                  </div>
+                  <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
+                      <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} inputSize="xl" />
+                    </div>
+                    {isDateRange && (
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
+                        <Input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} inputSize="xl" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Duration section */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="size-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration</span>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 font-medium">Time</span>
+                      <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                        <button
+                          type="button"
+                          onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          All Day
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsFullDay(false)}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          Specific Time
+                        </button>
+                      </div>
+                    </div>
+                    {!isFullDay && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-500 mb-1">Start time *</label>
+                          <Input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} inputSize="xl" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-slate-500 mb-1">End time *</label>
+                          <Input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} inputSize="xl" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reason section */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="size-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Reason</span>
+                  </div>
+                  <Input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave, conference, sick day" inputSize="xl" />
                 </div>
               </div>
             )}
