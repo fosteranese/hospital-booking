@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { format } from 'date-fns';
+import { MiniCalendar } from '@/components/MiniCalendar';
 import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -86,6 +88,7 @@ export function DoctorPastAppointmentsPage() {
   const [dateFrom, setDateFrom] = useState(daysAgo(30));
   const [dateTo, setDateTo] = useState(yesterday);
   const [datePanelOpen, setDatePanelOpen] = useState(false);
+  const [filterDate, setFilterDate] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
@@ -172,7 +175,7 @@ export function DoctorPastAppointmentsPage() {
     if (statusFilter === 'missed') return a.attended === false;
     if (statusFilter === 'cancelled') return a.status === 'cancelled';
     return true;
-  }).filter(a => {
+  }).filter(a => !filterDate || a.slot_date === filterDate).filter(a => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);
@@ -199,6 +202,10 @@ export function DoctorPastAppointmentsPage() {
   const sortedDates = Object.keys(groupedByDate).sort().reverse();
 
   const currentRange = dateRangeOptions.find(o => o.key === dateRange);
+
+  const eventDates = useMemo(() => {
+    return new Set(appointments.map(a => a.slot_date));
+  }, [appointments]);
 
   return (
     <div className={`space-y-6 transition-[margin-right] duration-200 ${panelOpen ? 'lg:mr-[480px]' : ''}`}>
@@ -417,14 +424,44 @@ export function DoctorPastAppointmentsPage() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-7 pb-6">
-          <div className="pt-6 space-y-2">
+          <div className="pt-6">
+            <MiniCalendar
+              variant="sidebar"
+              date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
+              selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
+              onDateChange={(d) => {
+                const dateStr = format(d, 'yyyy-MM-dd');
+                if (filterDate === dateStr) {
+                  setFilterDate(null);
+                } else {
+                  setFilterDate(dateStr);
+                  setDateFrom(dateStr);
+                  setDateTo(dateStr);
+                  setDateRange('custom');
+                }
+              }}
+              eventDates={eventDates}
+            />
+          </div>
+          {filterDate && (
+            <div className="mt-6 pt-5 border-t border-slate-100">
+              <p className="text-xs text-slate-400 mb-3">
+                Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
+              </p>
+              <button onClick={() => setFilterDate(null)}
+                className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
+                Clear filter
+              </button>
+            </div>
+          )}
+          <div className="mt-6 pt-5 border-t border-slate-100 space-y-2">
             <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
             {dateRangeOptions.map(opt => (
               <button
                 key={opt.key}
-                onClick={() => handleDateRangeChange(opt.key)}
+                onClick={() => { handleDateRangeChange(opt.key); setFilterDate(null); }}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                  dateRange === opt.key
+                  dateRange === opt.key && !filterDate
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                 }`}
@@ -433,18 +470,18 @@ export function DoctorPastAppointmentsPage() {
               </button>
             ))}
           </div>
-          <div className="mt-8 pt-6 border-t border-slate-100">
+          <div className="mt-6 pt-5 border-t border-slate-100">
             <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Custom Range</p>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-slate-400 mb-1">From</label>
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setFilterDate(null); }}
                   className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
               <div>
                 <label className="block text-xs text-slate-400 mb-1">To</label>
-                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setFilterDate(null); }}
                   className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
