@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { RescheduleModal } from '@/components/RescheduleModal';
+import { ScheduleModal } from '@/components/ScheduleModal';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
@@ -123,6 +125,8 @@ export function DoctorAppointmentsPage() {
     id: string;
     attended: boolean;
   } | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [conflictFilter, setConflictFilter] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -510,6 +514,8 @@ export function DoctorAppointmentsPage() {
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
           onRequestAttendance={requestAttendance}
+          onReschedule={setRescheduleTarget}
+          onScheduleNew={setScheduleTarget}
         />
       )}
 
@@ -533,6 +539,22 @@ export function DoctorAppointmentsPage() {
           onCancel={() => setPendingAttendance(null)}
         />
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={fetchAppointments}
+      />
+      <ScheduleModal
+        open={!!scheduleTarget}
+        patientId={scheduleTarget?.patient_id || ''}
+        patientName={scheduleTarget?.patient_name || ''}
+        currentDoctorId={scheduleTarget?.doctor_id || ''}
+        currentDoctorName={scheduleTarget?.doctor_name || ''}
+        onClose={() => setScheduleTarget(null)}
+        onScheduled={fetchAppointments}
+      />
     </div>
   );
 }

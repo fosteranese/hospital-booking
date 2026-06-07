@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { RescheduleModal } from '@/components/RescheduleModal';
+import { ScheduleModal } from '@/components/ScheduleModal';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -282,6 +284,8 @@ export function DoctorDashboard() {
     id: string;
     attended: boolean;
   } | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -633,6 +637,8 @@ export function DoctorDashboard() {
           appointment={selectedAppointment}
           onClose={() => { setSelectedAppointment(null); fetchAppointments(); }}
           onRequestAttendance={requestAttendance}
+          onReschedule={setRescheduleTarget}
+          onScheduleNew={setScheduleTarget}
         />
       )}
 
@@ -648,6 +654,22 @@ export function DoctorDashboard() {
           onCancel={() => setPendingAttendance(null)}
         />
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={fetchAppointments}
+      />
+      <ScheduleModal
+        open={!!scheduleTarget}
+        patientId={scheduleTarget?.patient_id || ''}
+        patientName={scheduleTarget?.patient_name || ''}
+        currentDoctorId={scheduleTarget?.doctor_id || ''}
+        currentDoctorName={scheduleTarget?.doctor_name || ''}
+        onClose={() => setScheduleTarget(null)}
+        onScheduled={fetchAppointments}
+      />
     </div>
   );
 }

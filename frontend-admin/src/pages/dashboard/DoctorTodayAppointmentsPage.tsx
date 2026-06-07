@@ -5,6 +5,8 @@ import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { RescheduleModal } from '@/components/RescheduleModal';
+import { ScheduleModal } from '@/components/ScheduleModal';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -142,6 +144,8 @@ export function DoctorTodayAppointmentsPage() {
     id: string;
     attended: boolean;
   } | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -405,6 +409,8 @@ export function DoctorTodayAppointmentsPage() {
           appointment={selectedAppointment}
           onClose={() => { setSelectedAppointment(null); fetchToday(); }}
           onRequestAttendance={requestAttendance}
+          onReschedule={setRescheduleTarget}
+          onScheduleNew={setScheduleTarget}
         />
       )}
 
@@ -420,6 +426,22 @@ export function DoctorTodayAppointmentsPage() {
           onCancel={() => setPendingAttendance(null)}
         />
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={fetchToday}
+      />
+      <ScheduleModal
+        open={!!scheduleTarget}
+        patientId={scheduleTarget?.patient_id || ''}
+        patientName={scheduleTarget?.patient_name || ''}
+        currentDoctorId={scheduleTarget?.doctor_id || ''}
+        currentDoctorName={scheduleTarget?.doctor_name || ''}
+        onClose={() => setScheduleTarget(null)}
+        onScheduled={fetchToday}
+      />
     </div>
   );
 }

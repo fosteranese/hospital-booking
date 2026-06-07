@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, AppointmentHistoryItem } from '@/lib/api';
-import { useAuth } from '@/contexts/auth-context';
-import { RescheduleModal } from '@/components/RescheduleModal';
-import { ScheduleModal } from '@/components/ScheduleModal';
+import { AppointmentHistoryItem } from '@/lib/api';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
@@ -20,24 +17,21 @@ function formatTime(timeStr: string) {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-const inputClass = "h-8 px-2.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
-
 export function AppointmentSlidePanel({
   appointment,
   onClose,
   onRequestAttendance,
+  onReschedule,
+  onScheduleNew,
 }: {
   appointment: AppointmentHistoryItem;
   onClose: () => void;
   onRequestAttendance: (id: string, attended: boolean) => void;
+  onReschedule?: (appointment: AppointmentHistoryItem) => void;
+  onScheduleNew?: (appointment: AppointmentHistoryItem) => void;
 }) {
-  const { token } = useAuth();
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const [showReschedule, setShowReschedule] = useState(false);
-  const [showSchedule, setShowSchedule] = useState(false);
-
-  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
@@ -53,10 +47,6 @@ export function AppointmentSlidePanel({
   const handleClose = () => {
     setVisible(false);
     setTimeout(() => onClose(), 200);
-  };
-
-  const handleResolved = () => {
-    onClose();
   };
 
   const isAttended = appointment.attended === true;
@@ -182,7 +172,7 @@ export function AppointmentSlidePanel({
             <div className="border-t border-slate-100 pt-3 space-y-2">
               {isPending && (
                 <button
-                  onClick={() => setShowReschedule(true)}
+                  onClick={() => onReschedule?.(appointment)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                 >
                   <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
@@ -190,7 +180,7 @@ export function AppointmentSlidePanel({
                 </button>
               )}
               <button
-                onClick={() => setShowSchedule(true)}
+                onClick={() => onScheduleNew?.(appointment)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
               >
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
@@ -199,22 +189,6 @@ export function AppointmentSlidePanel({
             </div>
           </div>
         )}
-
-        <RescheduleModal
-          open={showReschedule}
-          appointment={showReschedule ? appointment : null}
-          onClose={() => setShowReschedule(false)}
-          onResolved={handleResolved}
-        />
-        <ScheduleModal
-          open={showSchedule}
-          patientId={appointment.patient_id}
-          patientName={appointment.patient_name}
-          currentDoctorId={appointment.doctor_id}
-          currentDoctorName={appointment.doctor_name}
-          onClose={() => setShowSchedule(false)}
-          onScheduled={handleResolved}
-        />
       </div>
     </>
   );
