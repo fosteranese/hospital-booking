@@ -218,7 +218,14 @@ export function DoctorAppointmentsPage() {
 
   const conflictCount = useMemo(() => appointments.filter(a => a.attended === null && a.has_conflict).length, [appointments]);
 
-  const filtered = appointments.filter(a => a.attended === null).filter(a => !filterDate || a.slot_date === filterDate).filter(a => !conflictFilter || a.has_conflict).filter(a => {
+  const filtered = appointments.filter(a => a.attended === null).filter(a => {
+    if (!filterDate) return true;
+    if (filterDate.includes('_')) {
+      const [from, to] = filterDate.split('_');
+      return a.slot_date >= from && a.slot_date <= to;
+    }
+    return a.slot_date === filterDate;
+  }).filter(a => !conflictFilter || a.has_conflict).filter(a => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);

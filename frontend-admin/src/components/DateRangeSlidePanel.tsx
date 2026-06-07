@@ -22,29 +22,32 @@ export function DateRangeSlidePanel({
   if (!open) return null;
 
   return (
-    <div className={`hidden lg:block fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
+    <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
       <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Date Range</span>
         <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
           <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
         </button>
       </div>
-      <div className="shrink-0 px-7 pt-4 pb-2">
-        <MiniCalendar
-          variant="sidebar"
-          date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
-          selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
-          onDateChange={(d) => {
-            const dateStr = format(d, 'yyyy-MM-dd');
-            if (filterDate === dateStr) {
-              onFilterDate(null);
-            } else {
-              onFilterDate(dateStr);
-            }
-          }}
-          eventDates={eventDates}
-          maxDate={new Date()}
-        />
+      <div className="flex-1 overflow-y-auto shrink-0">
+
+        <div className="px-7 py-4">
+          <MiniCalendar
+            variant="sidebar"
+            date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
+            selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
+            onDateChange={(d) => {
+              const dateStr = format(d, 'yyyy-MM-dd');
+              if (filterDate === dateStr) {
+                onFilterDate(null);
+              } else {
+                onFilterDate(dateStr);
+              }
+            }}
+            eventDates={eventDates}
+            maxDate={new Date()}
+          />
+
         {filterDate && (
           <div className="mt-4">
             <p className="text-xs text-slate-400 mb-3">
@@ -56,9 +59,11 @@ export function DateRangeSlidePanel({
             </button>
           </div>
         )}
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-7 pb-6 border-t border-slate-200">
+      <div className="border-t border-slate-200 px-7 pb-6">
         <div className="pt-4 space-y-2">
+          <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Select</p>
           {dateRangeOptions.map(opt => (
             <button
               key={opt.key}
