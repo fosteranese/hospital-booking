@@ -607,7 +607,7 @@ export function DoctorDashboard() {
               <div className="space-y-4">
                 <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
                   <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Referred to Me</div>
+                    <div className="text-xs font-medium text-slate-500">Incoming Referrals</div>
                     <HugeiconsIcon icon={UserGroupIcon} className="size-4 text-violet-400" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-1">
@@ -617,7 +617,7 @@ export function DoctorDashboard() {
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
                   <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Referrals to Others</div>
+                    <div className="text-xs font-medium text-slate-500">Outgoing Referrals</div>
                     <HugeiconsIcon icon={Share08Icon} className="size-4 text-blue-400" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-1">
