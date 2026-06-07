@@ -13,9 +13,10 @@ interface MiniCalendarProps {
   onDateChange: (date: Date) => void;
   eventDates?: Set<string>;
   variant?: 'default' | 'sidebar';
+  maxDate?: Date;
 }
 
-export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, variant = 'default' }: MiniCalendarProps) {
+export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, variant = 'default', maxDate }: MiniCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(date));
 
   const days = useMemo(() => {
@@ -74,6 +75,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
           const today = isToday(day);
           const selected = selectedDate ? isSameDay(day, selectedDate) : false;
           const hasEvent = eventDates?.has(format(day, 'yyyy-MM-dd'));
+          const isFuture = maxDate && day > maxDate;
 
           let cellClass = 'relative flex items-center justify-center transition-all ';
           if (!sameMonth) {
@@ -86,6 +88,8 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
             cellClass += 'w-10 h-10 text-base ' + (isSidebar
               ? 'text-emerald-600 font-medium rounded ring-1 ring-emerald-300'
               : 'font-semibold text-emerald-600 rounded ring-1 ring-emerald-400');
+          } else if (isFuture) {
+            cellClass += 'w-10 h-10 text-base text-slate-200 cursor-default';
           } else {
             cellClass += 'w-10 h-10 text-base ' + (isSidebar
               ? 'text-slate-500 hover:bg-slate-50 rounded'
@@ -95,7 +99,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
           return (
             <button
               key={day.toISOString()}
-              onClick={() => onDateChange(day)}
+              onClick={() => !isFuture && onDateChange(day)}
               className={cellClass}
             >
               {format(day, 'd')}

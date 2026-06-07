@@ -214,19 +214,17 @@ export function DoctorPastAppointmentsPage() {
           title="Past Appointments"
           description={currentRange ? `${currentRange.label}` : `${appointments.length} past appointment${appointments.length !== 1 ? 's' : ''}`}
           icon={TimeScheduleIcon}
-          actions={
-            <button
-              onClick={() => { setSelectedAppointment(null); setDatePanelOpen(v => !v); }}
-              className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-                datePanelOpen
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                  : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-            </button>
-          }
         />
+        <button
+          onClick={() => { setSelectedAppointment(null); setDatePanelOpen(v => !v); }}
+          className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all mt-1.5 shrink-0 ${
+            datePanelOpen
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+              : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+        </button>
         {error && (
           <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
@@ -441,6 +439,7 @@ export function DoctorPastAppointmentsPage() {
                 }
               }}
               eventDates={eventDates}
+              maxDate={new Date()}
             />
           </div>
           {filterDate && (
@@ -469,28 +468,6 @@ export function DoctorPastAppointmentsPage() {
                 {opt.label}
               </button>
             ))}
-          </div>
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Custom Range</p>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">From</label>
-                <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setFilterDate(null); }}
-                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">To</label>
-                <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setFilterDate(null); }}
-                  className="w-full h-10 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                />
-              </div>
-              <button onClick={() => { setDateRange('custom'); fetchAppointments(); }}
-                className="w-full text-sm font-medium text-white bg-emerald-500 rounded-xl py-2.5 hover:bg-emerald-600 transition-colors shadow-sm"
-              >
-                Apply
-              </button>
-            </div>
           </div>
         </div>
       </div>
