@@ -194,7 +194,7 @@ export function AppointmentSlidePanel({
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
               >
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-                Schedule New
+                Create new appointment
               </button>
             </div>
           </div>

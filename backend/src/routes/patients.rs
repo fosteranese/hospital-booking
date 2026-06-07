@@ -1,4 +1,4 @@
-use axum::{Json, extract::{Query, State}, Router, routing::{get, post, put}};
+use axum::{Json, extract::{Path, Query, State}, Router, routing::{get, post, put}};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -423,38 +423,51 @@ pub async fn search_patients(
 pub async fn check_patient_exists(
     State(state): State<AppState>,
     Query(query): Query<CheckPatientQuery>,
-) -> Result<Json<CheckPatientResponse>, AppError> {
-    let email_taken = if let Some(email) = &query.email {
-        let email = email.trim().to_lowercase();
-        if email.is_empty() {
-            false
-        } else {
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM patients WHERE email = $1")
-                .bind(&email)
-                .fetch_one(&state.pool)
-                .await
-                .map_err(|e| AppError::Database(e))? > 0
-        }
-    } else {
-        false
-    };
+) -> Result<Json<bool>, AppError> {
+    if query.email.is_none() && query.phone.is_none() {
+        return Err(AppError::Validation("Either email or phone is required".to_string()));
+    }
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM patients WHERE ($1::text IS NULL OR email = $1) AND ($2::text IS NULL OR phone = $2))"
+    )
+    .bind(&query.email)
+    .bind(&query.phone)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+    Ok(Json(exists))
+}
 
-    let phone_taken = if let Some(phone) = &query.phone {
-        let phone = normalize_phone(phone.trim());
-        if phone.is_empty() {
-            false
-        } else {
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM patients WHERE phone = $1")
-                .bind(&phone)
-                .fetch_one(&state.pool)
-                .await
-                .map_err(|e| AppError::Database(e))? > 0
-        }
-    } else {
-        false
-    };
+#[derive(Serialize, sqlx::FromRow)]
+pub struct PatientDoctorInfo {
+    pub id: Uuid,
+    pub first_name: String,
+    pub last_name: String,
+    pub specialization: String,
+}
 
-    Ok(Json(CheckPatientResponse { email_taken, phone_taken }))
+pub async fn get_patient_doctors(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(patient_id): Path<Uuid>,
+) -> Result<Json<Vec<PatientDoctorInfo>>, AppError> {
+    if auth.role == "patient" {
+        return Err(AppError::Unauthorized("Patients cannot access this endpoint".to_string()));
+    }
+
+    let doctors = sqlx::query_as::<_, PatientDoctorInfo>(
+        "SELECT DISTINCT d.id, d.first_name, d.last_name, d.specialization
+         FROM doctors d
+         JOIN appointments a ON a.doctor_id = d.id
+         WHERE a.patient_id = $1
+         ORDER BY d.first_name"
+    )
+    .bind(patient_id)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(doctors))
 }
 
 pub fn patient_routes() -> Router<AppState> {
@@ -467,4 +480,5 @@ pub fn patient_routes() -> Router<AppState> {
         .route("/api/patients/:id/upcoming-appointments", get(get_upcoming_appointments))
         .route("/api/patients/:id/history", get(get_appointment_history))
         .route("/api/patients/:id", put(update_patient))
+        .route("/api/patients/:id/doctors", get(get_patient_doctors))
 }

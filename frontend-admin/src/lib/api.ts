@@ -583,6 +583,11 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
+  getPatientDoctors: (patientId: string, token: string) =>
+    request<Doctor[]>(`/patients/${patientId}/doctors`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
   // --- Analytics ---
   getAnalyticsOverview: (token: string) =>
     request<AnalyticsOverview>('/analytics/overview', {

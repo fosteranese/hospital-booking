@@ -1,17 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { api, SlotResponse } from '@/lib/api';
+import { api, Doctor, SlotResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/Button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { AlertCircleIcon, Cancel01Icon, CheckmarkCircle01Icon, ArrowLeft01Icon, ArrowRight01Icon, Calendar01Icon } from '@hugeicons/core-free-icons';
+import { AlertCircleIcon, Cancel01Icon, CheckmarkCircle01Icon, ArrowLeft01Icon, ArrowRight01Icon, Calendar01Icon, ArrowRight03Icon } from '@hugeicons/core-free-icons';
 import { cn } from '@/lib/utils';
-
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
 type Period = 'morning' | 'afternoon' | 'evening';
 
@@ -30,12 +23,9 @@ function getPeriod(time: string): Period {
 
 function groupSlotsByPeriod(slots: SlotResponse[]): { period: Period; slots: SlotResponse[] }[] {
   const groups: Record<Period, SlotResponse[]> = { morning: [], afternoon: [], evening: [] };
-  for (const slot of slots) {
-    groups[getPeriod(slot.start_time)].push(slot);
-  }
+  for (const slot of slots) groups[getPeriod(slot.start_time)].push(slot);
   return Object.entries(periodConfig).map(([key]) => ({
-    period: key as Period,
-    slots: groups[key as Period],
+    period: key as Period, slots: groups[key as Period],
   })).filter(g => g.slots.length > 0);
 }
 
@@ -49,17 +39,12 @@ interface ScheduleModalProps {
   onScheduled: () => void;
 }
 
-interface DoctorOption {
-  id: string;
-  name: string;
-  specialization: string;
-}
-
 export function ScheduleModal({ open, patientId, patientName, currentDoctorId, currentDoctorName, onClose, onScheduled }: ScheduleModalProps) {
   const { token } = useAuth();
   const stripRef = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState(1);
   const [scheduleType, setScheduleType] = useState<'follow-up' | 'referral'>('follow-up');
-  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [knownDoctors, setKnownDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [datesLoading, setDatesLoading] = useState(false);
@@ -73,31 +58,31 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  const targetDoctorId = scheduleType === 'follow-up' ? currentDoctorId : selectedDoctorId;
+
   const checkScroll = () => {
-    const el = stripRef.current;
-    if (!el) return;
+    const el = stripRef.current; if (!el) return;
     setCanScrollLeft(el.scrollLeft > 4);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
   };
-
   const scrollStrip = (dir: 'left' | 'right') => {
-    const el = stripRef.current;
-    if (!el) return;
+    const el = stripRef.current; if (!el) return;
     el.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
     setTimeout(checkScroll, 100);
   };
 
-  const targetDoctorId = scheduleType === 'follow-up' ? currentDoctorId : selectedDoctorId;
-
-  // Fetch doctors list
   useEffect(() => {
     if (!open) return;
-    api.getDoctors().then(data => {
-      setDoctors(data.map(d => ({ id: d.id, name: `${d.first_name} ${d.last_name}`, specialization: d.specialization })));
-    }).catch(() => {});
-  }, [open]);
+    setStep(1);
+    setScheduleType('follow-up');
+    setSelectedDoctorId('');
+    setSelectedDate('');
+    setSelectedSlot(null);
+    setNotes('');
+    setError('');
+    api.getPatientDoctors(patientId, token).then(setKnownDoctors).catch(() => {});
+  }, [open, patientId, token]);
 
-  // Fetch available dates when doctor changes
   useEffect(() => {
     if (!open || !targetDoctorId) return;
     setDatesLoading(true);
@@ -106,17 +91,13 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
     setSlots([]);
     setError('');
     api.getAvailableDoctorDates(targetDoctorId, token, false)
-      .then(res => {
-        setAvailableDates(res.dates);
-        if (res.dates.length > 0) setSelectedDate(res.dates[0]);
-      })
+      .then(res => { setAvailableDates(res.dates); if (res.dates.length > 0) setSelectedDate(res.dates[0]); })
       .catch(() => setError('Failed to load available dates'))
       .finally(() => { setDatesLoading(false); setTimeout(checkScroll, 50); });
   }, [open, targetDoctorId, token]);
 
   useEffect(() => { checkScroll(); }, [availableDates]);
 
-  // Fetch slots when date changes
   useEffect(() => {
     if (!selectedDate || !targetDoctorId) return;
     setSlotsLoading(true);
@@ -130,28 +111,22 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
   if (!open) return null;
 
   const groupedSlots = groupSlotsByPeriod(slots);
-  const selectedSlotData = slots.find(s => s.id === selectedSlot);
+  const selectedSlotData = !saving && slots.find(s => s.id === selectedSlot);
+  const eligibleForReferral = knownDoctors.filter(d => d.id !== currentDoctorId);
 
   const handleSave = async () => {
     if (!selectedSlotData || !targetDoctorId) return;
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     try {
       await api.createAppointment({
-        patient_id: patientId,
-        doctor_id: targetDoctorId,
+        patient_id: patientId, doctor_id: targetDoctorId,
         slot_date: selectedSlotData.slot_date,
         start_time: selectedSlotData.start_time,
         end_time: selectedSlotData.end_time,
         notes: notes || undefined,
       }, token);
-      onScheduled();
-      onClose();
-    } catch (e: any) {
-      setError(e.message || 'Failed to create appointment');
-    } finally {
-      setSaving(false);
-    }
+      onScheduled(); onClose();
+    } catch (e: any) { setError(e.message || 'Failed'); } finally { setSaving(false); }
   };
 
   return (
@@ -159,16 +134,45 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-slate-900">Schedule New Appointment</h3>
+          <div className="flex items-center gap-3">
+            {step > 1 && (
+              <button onClick={() => { setStep(s => s - 1); setSelectedSlot(null); setError(''); }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
+              </button>
+            )}
+            <h3 className="text-base font-bold text-slate-900">Create Appointment</h3>
+          </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
 
+        {/* Step indicator */}
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
+            {step === 1 ? 'Type' : step === 2 ? 'Doctor' : 'Schedule'}
+          </span>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3].map((s, i) => (
+              <div key={s} className="flex items-center gap-1">
+                <div className={`rounded-full transition-all duration-300 ${
+                  step === s ? 'size-2 bg-primary' :
+                  i < step - 1 ? 'size-2 bg-primary/30' : 'size-1.5 bg-muted-foreground/15'
+                }`} />
+                {i < 2 && (
+                  <div className={`w-3 h-px transition-colors duration-300 ${step > s ? 'bg-primary/20' : 'bg-muted-foreground/10'}`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Patient info */}
         <div className="bg-slate-50 rounded-xl p-4 mb-5">
           <div className="text-sm font-medium text-slate-900">{patientName}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Current doctor: Dr. {currentDoctorName}</div>
+          <div className="text-xs text-slate-500 mt-0.5">Dr. {currentDoctorName}</div>
         </div>
 
         {error && (
@@ -178,161 +182,179 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
           </div>
         )}
 
-        {/* Type selection */}
-        <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-600 mb-2">Type</label>
-          <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
-            <button
-              type="button"
-              onClick={() => { setScheduleType('follow-up'); setSelectedSlot(null); setError(''); }}
-              className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-md transition-all ${
-                scheduleType === 'follow-up' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
+        {step === 1 && (
+          /* Step 1: Follow-up or Referral */
+          <div className="grid grid-cols-2 gap-4">
+            <button type="button" onClick={() => { setScheduleType('follow-up'); setStep(3); }}
+              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
             >
-              Follow-up
+              <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-6" />
+              </div>
+              <div className="text-center">
+                <div className="text-base font-semibold text-slate-900">Follow-up</div>
+                <div className="text-sm text-slate-500 mt-1">Same doctor</div>
+              </div>
             </button>
-            <button
-              type="button"
-              onClick={() => { setScheduleType('referral'); setSelectedSlot(null); setError(''); }}
-              className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-md transition-all ${
-                scheduleType === 'referral' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
+            <button type="button" onClick={() => { setScheduleType('referral'); setStep(2); }}
+              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
             >
-              Referral
+              <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 gap-0.5 group-hover:bg-emerald-100 transition-colors">
+                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 text-emerald-400 -ml-0.5" />
+                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+              </div>
+              <div className="text-center">
+                <div className="text-base font-semibold text-slate-900">Referral</div>
+                <div className="text-sm text-slate-500 mt-1">Different doctor</div>
+              </div>
             </button>
-          </div>
-        </div>
-
-        {/* Doctor selection (referral only) */}
-        {scheduleType === 'referral' && (
-          <div className="mb-5">
-            <label className="block text-xs font-medium text-slate-600 mb-2">Refer to doctor *</label>
-            <select
-              value={selectedDoctorId}
-              onChange={e => { setSelectedDoctorId(e.target.value); setSelectedSlot(null); setError(''); }}
-              className="h-11 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full"
-            >
-              <option value="">Select a doctor...</option>
-              {doctors.filter(d => d.id !== currentDoctorId).map(d => (
-                <option key={d.id} value={d.id}>{d.name} — {d.specialization}</option>
-              ))}
-            </select>
           </div>
         )}
 
-        {/* Date strip */}
-        <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-600 mb-2">Select date</label>
-          {datesLoading ? (
-            <div className="h-[68px] bg-slate-100 rounded-xl animate-pulse" />
-          ) : availableDates.length === 0 ? (
-            <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">
-              {targetDoctorId ? 'No available dates for this doctor.' : 'Select a doctor first.'}
-            </div>
-          ) : (
-            <div className="relative">
-              <div ref={stripRef} onScroll={checkScroll} className="flex gap-2 overflow-x-auto scroll-smooth no-scrollbar pb-1 overscroll-x-contain">
-                {availableDates.map(d => {
-                  const dt = new Date(d + 'T12:00:00');
-                  const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
-                  const dayNum = dt.getDate();
-                  const month = dt.toLocaleDateString('en-US', { month: 'short' });
-                  const isSelected = d === selectedDate;
-                  return (
-                    <button key={d} type="button" onClick={() => setSelectedDate(d)}
-                      className={cn(
-                        'flex flex-col items-center gap-0.5 min-w-[56px] sm:min-w-[68px] py-2.5 sm:py-3 px-2 sm:px-2.5 rounded-xl border transition-all shrink-0',
-                        isSelected
-                          ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                          : 'bg-white text-slate-700 border-slate-200 hover:border-primary/40 hover:text-primary',
-                      )}
-                    >
-                      <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">{dayName}</span>
-                      <span className="text-lg sm:text-xl font-semibold leading-tight">{dayNum}</span>
-                      <span className="text-[10px] font-medium opacity-70">{month}</span>
-                    </button>
-                  );
-                })}
+        {step === 2 && (
+          /* Step 2: Doctor selection (referral only) */
+          <div>
+            {eligibleForReferral.length === 0 ? (
+              <div className="text-sm text-slate-400 py-8 text-center bg-slate-50 rounded-lg">
+                This patient has no history with other doctors.
               </div>
-              <button type="button" onClick={() => scrollStrip('left')} disabled={!canScrollLeft}
-                className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
-              >
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" />
-              </button>
-              <button type="button" onClick={() => scrollStrip('right')} disabled={!canScrollRight}
-                className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
-              >
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Slot grid */}
-        {selectedDate && targetDoctorId && (
-          <div className="mb-5">
-            <label className="block text-xs font-medium text-slate-600 mb-2">Select time</label>
-            {slotsLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
-              </div>
-            ) : groupedSlots.length === 0 ? (
-              <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available slots for this date.</div>
             ) : (
-              <div className="space-y-4">
-                {groupedSlots.map(({ period, slots: periodSlots }) => (
-                  <div key={period} className="space-y-2">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-sm font-medium text-slate-800">{periodConfig[period].label}</span>
-                      <span className="text-[11px] text-slate-400">{periodConfig[period].range}</span>
+              <div className="space-y-1.5">
+                {eligibleForReferral.map(d => (
+                  <button key={d.id} type="button" onClick={() => { setSelectedDoctorId(d.id); setStep(3); }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                      selectedDoctorId === d.id
+                        ? 'border-emerald-400 bg-emerald-50/50'
+                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 shrink-0">
+                      {d.first_name[0]}{d.last_name[0]}
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {periodSlots.map(slot => {
-                        const isSelected = selectedSlot === slot.id;
-                        return (
-                          <button key={slot.id} type="button" onClick={() => setSelectedSlot(slot.id)}
-                            className={cn(
-                              'relative flex items-center justify-center w-full text-center rounded-xl border px-2 py-2.5 transition-all overflow-hidden',
-                              isSelected
-                                ? 'bg-primary text-white border-primary shadow-xs'
-                                : 'bg-white text-slate-800 border-slate-200 hover:border-primary/40 active:scale-[0.98]',
-                            )}
-                          >
-                            <span className={cn('text-xs font-medium', isSelected && 'text-white')}>
-                              {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
-                            </span>
-                            {isSelected && (
-                              <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white flex items-center justify-center shadow-xs">
-                                <HugeiconsIcon icon={CheckmarkCircle01Icon} strokeWidth={2} className="size-2.5 text-primary" />
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-900">Dr. {d.first_name} {d.last_name}</div>
+                      <div className="text-xs text-slate-500">{d.specialization}</div>
                     </div>
-                  </div>
+                    <div className="ml-auto shrink-0">
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-slate-300" />
+                    </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {/* Notes */}
-        <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-600 mb-1.5">Notes (optional)</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder={scheduleType === 'referral' ? 'Reason for referral...' : 'Follow-up notes...'}
-            rows={2}
-            className="h-11 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
-          />
-        </div>
+        {step === 3 && (
+          /* Step 3: Date + slot selection */
+          <div>
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-600 mb-2">
+                {scheduleType === 'follow-up' ? 'Follow-up with' : 'Refer to'} <span className="font-semibold text-slate-800">
+                  Dr. {scheduleType === 'follow-up' ? currentDoctorName : knownDoctors.find(d => d.id === selectedDoctorId)?.last_name || ''}
+                </span>
+              </label>
+            </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} loading={saving} disabled={!selectedSlot || (scheduleType === 'referral' && !selectedDoctorId)}>
-            {scheduleType === 'referral' ? 'Refer Patient' : 'Schedule'}
-          </Button>
-        </div>
+            <div className="mb-5">
+              <label className="block text-xs font-medium text-slate-600 mb-2">Select date</label>
+              {datesLoading ? <div className="h-[68px] bg-slate-100 rounded-xl animate-pulse" /> : availableDates.length === 0 ? (
+                <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available dates.</div>
+              ) : (
+                <div className="relative">
+                  <div ref={stripRef} onScroll={checkScroll} className="flex gap-2 overflow-x-auto scroll-smooth no-scrollbar pb-1 overscroll-x-contain">
+                    {availableDates.map(d => {
+                      const dt = new Date(d + 'T12:00:00');
+                      return (
+                        <button key={d} type="button" onClick={() => setSelectedDate(d)}
+                          className={cn('flex flex-col items-center gap-0.5 min-w-[56px] sm:min-w-[68px] py-2.5 sm:py-3 px-2 sm:px-2.5 rounded-xl border transition-all shrink-0',
+                            d === selectedDate
+                              ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                              : 'bg-white text-slate-700 border-slate-200 hover:border-primary/40 hover:text-primary'
+                          )}
+                        >
+                          <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">{dt.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                          <span className="text-lg sm:text-xl font-semibold leading-tight">{dt.getDate()}</span>
+                          <span className="text-[10px] font-medium opacity-70">{dt.toLocaleDateString('en-US', { month: 'short' })}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button type="button" onClick={() => scrollStrip('left')} disabled={!canScrollLeft}
+                    className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
+                  ><HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" /></button>
+                  <button type="button" onClick={() => scrollStrip('right')} disabled={!canScrollRight}
+                    className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
+                  ><HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" /></button>
+                </div>
+              )}
+            </div>
+
+            {selectedDate && (
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-slate-600 mb-2">Select time</label>
+                {slotsLoading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : groupedSlots.length === 0 ? (
+                  <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available slots.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {groupedSlots.map(({ period, slots: periodSlots }) => (
+                      <div key={period} className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-medium text-slate-800">{periodConfig[period].label}</span>
+                          <span className="text-[11px] text-slate-400">{periodConfig[period].range}</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {periodSlots.map(slot => (
+                            <button key={slot.id} type="button" onClick={() => setSelectedSlot(slot.id)}
+                              className={cn('relative flex items-center justify-center w-full text-center rounded-xl border px-2 py-2.5 transition-all overflow-hidden',
+                                selectedSlot === slot.id
+                                  ? 'bg-primary text-white border-primary shadow-xs'
+                                  : 'bg-white text-slate-800 border-slate-200 hover:border-primary/40 active:scale-[0.98]'
+                              )}
+                            >
+                              <span className={cn('text-xs font-medium', selectedSlot === slot.id && 'text-white')}>
+                                {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
+                              </span>
+                              {selectedSlot === slot.id && (
+                                <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white flex items-center justify-center shadow-xs">
+                                  <HugeiconsIcon icon={CheckmarkCircle01Icon} strokeWidth={2} className="size-2.5 text-primary" />
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mb-5">
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Notes (optional)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)}
+                placeholder={scheduleType === 'referral' ? 'Reason for referral...' : 'Follow-up notes...'}
+                rows={2}
+                className="h-11 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Footer buttons */}
+        {step === 3 && (
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving} disabled={!selectedSlot || (scheduleType === 'referral' && !selectedDoctorId)}>
+              {scheduleType === 'referral' ? 'Create Referral' : 'Schedule Follow-up'}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
