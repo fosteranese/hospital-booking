@@ -3,11 +3,11 @@ import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { RescheduleModal } from '@/components/RescheduleModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   AlertCircleIcon,
   Calendar01Icon,
-  ArrowRight01Icon,
   CheckmarkCircle01Icon,
   Cancel01Icon,
 } from '@hugeicons/core-free-icons';
@@ -81,7 +81,7 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
   );
 }
 
-const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+
 
 export function DoctorConflictsPage() {
   const { token } = useAuth();
@@ -89,9 +89,7 @@ export function DoctorConflictsPage() {
   const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [rescheduling, setRescheduling] = useState<string | null>(null);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -120,26 +118,8 @@ export function DoctorConflictsPage() {
     if (doctorId) fetchConflicts();
   }, [doctorId, fetchConflicts]);
 
-  const handleReschedule = async (id: string) => {
-    if (!rescheduleDate || !rescheduleTime) return;
-    setRescheduling(id);
-    try {
-      const [h, m] = rescheduleTime.split(':');
-      const endH = String(parseInt(h) + 1).padStart(2, '0');
-      await api.rescheduleAppointmentToTime(id, {
-        slot_date: rescheduleDate,
-        start_time: rescheduleTime,
-        end_time: `${endH}:${m}`,
-        doctor_id: doctorId!,
-      }, token);
-      setAppointments(prev => prev.filter(a => a.id !== id));
-      setRescheduling(null);
-      setRescheduleDate('');
-      setRescheduleTime('');
-    } catch (e: any) {
-      setError(e.message);
-      setRescheduling(null);
-    }
+  const handleResolved = () => {
+    fetchConflicts();
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -209,13 +189,11 @@ export function DoctorConflictsPage() {
                         const isMissed = a.attended === false;
                         const isPending = !isAttended && !isMissed;
                         const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : '#ef4444';
-                        const isRescheduling = rescheduling === a.id;
 
                         return (
                           <tr
                             key={a.id}
                             className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
-                            onClick={() => !isRescheduling && setRescheduling(a.id)}
                             style={{ transformOrigin: 'center' }}
                           >
                             <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
@@ -238,47 +216,17 @@ export function DoctorConflictsPage() {
                               <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} />
                             </td>
                             <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
-                              <div className="flex items-center gap-1 justify-end"
+                              <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={e => e.stopPropagation()}
                               >
-                                {isRescheduling ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${inputClass} w-[130px]`} />
-                                    <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-[100px]`} />
-                                    <button
-                                      onClick={() => handleReschedule(a.id)}
-                                      disabled={!rescheduleDate || !rescheduleTime}
-                                      className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                      title="Save"
-                                    >
-                                      <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }}
-                                      className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                                      title="Cancel"
-                                    >
-                                      <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {isPending && (
-                                      <button
-                                        onClick={() => setRescheduling(a.id)}
-                                        className="p-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
-                                        title="Reschedule"
-                                      >
-                                        <HugeiconsIcon icon={AlertCircleIcon} className="size-4" />
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => setRescheduling(a.id)}
-                                      className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-                                    >
-                                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
-                                    </button>
-                                  </div>
+                                {isPending && (
+                                  <button
+                                    onClick={() => setRescheduleTarget(a)}
+                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                  >
+                                    <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5" />
+                                    Reschedule
+                                  </button>
                                 )}
                               </div>
                             </td>
@@ -293,6 +241,13 @@ export function DoctorConflictsPage() {
           })}
         </div>
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={handleResolved}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
+import { RescheduleModal } from '@/components/RescheduleModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Clock01Icon,
@@ -81,10 +82,8 @@ export function DoctorUnavailabilityPage() {
   const [conflicts, setConflicts] = useState<Record<string, AppointmentHistoryItem[]>>({});
   const [conflictsLoading, setConflictsLoading] = useState<string | null>(null);
 
-  // Inline reschedule
-  const [rescheduling, setRescheduling] = useState<string | null>(null);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
+  // Reschedule modal
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -208,36 +207,15 @@ export function DoctorUnavailabilityPage() {
     }
   };
 
-  const handleReschedule = async (appointmentId: string) => {
-    if (!rescheduleDate || !rescheduleTime || !doctorId) return;
-    setRescheduling(appointmentId);
-    try {
-      const [h, m] = rescheduleTime.split(':');
-      const endH = String(parseInt(h) + 1).padStart(2, '0');
-      await api.rescheduleAppointmentToTime(appointmentId, {
-        slot_date: rescheduleDate,
-        start_time: rescheduleTime,
-        end_time: `${endH}:${m}`,
-        doctor_id: doctorId,
-      }, token);
-      const currentUnavailId = expandedId;
-      if (currentUnavailId) {
-        setConflicts(prev => ({
-          ...prev,
-          [currentUnavailId]: prev[currentUnavailId].filter(a => a.id !== appointmentId),
-        }));
-        setUnavail(prev => prev.map(u =>
-          u.id === currentUnavailId ? { ...u, conflict_count: Math.max(0, (u.conflict_count ?? 0) - 1) } : u
-        ));
-        setResolvePrompt(null);
-      }
-      setRescheduling(null);
-      setRescheduleDate('');
-      setRescheduleTime('');
-    } catch (e: any) {
-      setError(e.message);
-      setRescheduling(null);
+  const handleResolved = () => {
+    if (expandedId) {
+      fetchConflicts(expandedId);
+      setUnavail(prev => prev.map(u =>
+        u.id === expandedId ? { ...u, conflict_count: Math.max(0, (u.conflict_count ?? 0) - 1) } : u
+      ));
+      setResolvePrompt(null);
     }
+    fetchUnavailability();
   };
 
   if (profileLoading) {
@@ -457,7 +435,6 @@ export function DoctorUnavailabilityPage() {
                                     Conflicting Appointments ({conflicts[u.id].length})
                                   </div>
                                   {conflicts[u.id].map(a => {
-                                    const isRescheduling = rescheduling === a.id;
                                     return (
                                       <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-slate-100 last:border-b-0">
                                         <div className="size-7 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-semibold text-red-600 shrink-0">
@@ -471,23 +448,13 @@ export function DoctorUnavailabilityPage() {
                                           </div>
                                         </div>
                                         <div className="shrink-0">
-                                          {isRescheduling ? (
-                                            <div className="flex items-center gap-1.5">
-                                              <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${smallInputClass} w-[130px]`} />
-                                            <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${smallInputClass} w-[100px]`} />
-                                              <Button size="sm" onClick={() => handleReschedule(a.id)} loading={false} disabled={!rescheduleDate || !rescheduleTime}>Save</Button>
-                                              <button onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                                                <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 rotate-180" />
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <button
-                                              onClick={() => setRescheduling(a.id)}
-                                              className="text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                                            >
-                                              Reschedule
-                                            </button>
-                                          )}
+                                          <button
+                                            onClick={() => setRescheduleTarget(a)}
+                                            className="text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                          >
+                                            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 mr-1" />
+                                            Reschedule
+                                          </button>
                                         </div>
                                       </div>
                                     );
@@ -716,6 +683,13 @@ export function DoctorUnavailabilityPage() {
           </div>
         </div>
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={handleResolved}
+      />
     </div>
   );
 }
