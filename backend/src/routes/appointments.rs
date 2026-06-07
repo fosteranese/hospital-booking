@@ -349,7 +349,9 @@ pub async fn create_appointment(
 
     // Role check: only admin, scheduler, and (if configured) doctors can create appointments
     let mut referring_doctor_id: Option<Uuid> = None;
+    let mut is_doctor_creator = false;
     if auth.role == "doctor" {
+        is_doctor_creator = true;
         let appt_settings = state.settings.get_group("appointment").await?;
         let mut settings_map: HashMap<String, String> = HashMap::new();
         for s in appt_settings {
@@ -386,22 +388,24 @@ pub async fn create_appointment(
         }
     }
 
-    let upcoming_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments a
-         JOIN availability_slots s ON s.id = a.slot_id
-         WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE"
-    )
-    .bind(patient.id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| AppError::Database(e))?;
+    if !is_doctor_creator {
+        let upcoming_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM appointments a
+             JOIN availability_slots s ON s.id = a.slot_id
+             WHERE a.patient_id = $1 AND a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE"
+        )
+        .bind(patient.id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError::Database(e))?;
 
-    let max_upcoming = state.max_upcoming_appointments();
-    if upcoming_count >= max_upcoming {
-        tx.rollback().await.map_err(|e| AppError::Database(e))?;
-        return Err(AppError::BadRequest(
-            format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
-        ));
+        let max_upcoming = state.max_upcoming_appointments();
+        if upcoming_count >= max_upcoming {
+            tx.rollback().await.map_err(|e| AppError::Database(e))?;
+            return Err(AppError::BadRequest(
+                format!("You can only have up to {} upcoming appointments at a time. Please cancel or reschedule an existing appointment.", max_upcoming)
+            ));
+        }
     }
 
     let slot = if let Some(slot_id) = body.slot_id {
