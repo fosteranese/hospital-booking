@@ -421,7 +421,7 @@ export function DoctorPastAppointmentsPage() {
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
-        <div className="flex-1 flex flex-col px-7 pb-6 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-7 pb-0 min-h-0">
           <div className="pt-6 space-y-2">
             <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
             {dateRangeOptions.map(opt => (
@@ -449,8 +449,9 @@ export function DoctorPastAppointmentsPage() {
               </button>
             </div>
           )}
-          <div className="mt-auto pt-6">
-            <MiniCalendar
+        </div>
+        <div className="shrink-0 px-7 pb-6">
+          <MiniCalendar
               variant="sidebar"
               date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
               selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
@@ -471,6 +472,5 @@ export function DoctorPastAppointmentsPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
