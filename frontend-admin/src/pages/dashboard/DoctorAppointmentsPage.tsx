@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -250,7 +251,17 @@ export function DoctorAppointmentsPage() {
             : `${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
           icon={Calendar01Icon}
         />
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
+            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
+            {error}
+          </div>
+        )}
       </div>
+
+      <UnavailabilityConflictBanner />
 
       <div className="flex items-center gap-2">
         <div className="flex items-center h-12 w-full max-w-[502px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">

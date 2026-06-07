@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -394,21 +395,7 @@ export function DoctorDashboard() {
         </div>
       )}
 
-      {/* Conflict banner */}
-      {!loading && conflictAppts.length > 0 && (
-        <div className="flex items-center justify-between gap-4 text-sm text-amber-800 bg-amber-50 px-5 py-3.5 rounded-lg ring-1 ring-amber-200/60">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-            <span>You have <strong>{conflictAppts.length}</strong> appointment{conflictAppts.length !== 1 ? 's' : ''} conflicting with your unavailability.</span>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard/conflicts')}
-            className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors shrink-0"
-          >
-            View Conflicts
-          </button>
-        </div>
-      )}
+      <UnavailabilityConflictBanner />
 
       {/* Row 1: Today's stats */}
       <div className="grid grid-cols-4 gap-4">

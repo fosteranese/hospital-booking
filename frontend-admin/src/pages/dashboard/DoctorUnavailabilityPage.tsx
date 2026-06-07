@@ -16,6 +16,7 @@ import {
   ArrowRight01Icon,
   CheckmarkCircle01Icon,
   Cancel01Icon,
+  Search01Icon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -50,7 +51,8 @@ export function DoctorUnavailabilityPage() {
   const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<'all' | 'pending' | 'past'>('all');
+  const [filter, setFilter] = useState<string>('pending');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Add modal state
   const [showModal, setShowModal] = useState(false);
@@ -270,16 +272,16 @@ export function DoctorUnavailabilityPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-          title="My Unavailability"
-          description="Manage your time off and blackout periods"
-          icon={Clock01Icon}
-        />
-        <Button onClick={() => { setShowModal(true); setModalStep(1); setIsDateRange(false); setIsFullDay(true); setNewStart(''); setNewEnd(''); setNewEndDate(''); }} icon={Add01Icon} className="shrink-0 mt-1.5">
-          Add Unavailability
-        </Button>
-      </div>
+      <PageHeader
+        title="My Unavailability"
+        description="Manage your time off and blackout periods"
+        icon={Clock01Icon}
+        actions={
+          <Button onClick={() => { setShowModal(true); setModalStep(1); setIsDateRange(false); setIsFullDay(true); setNewStart(''); setNewEnd(''); setNewEndDate(''); }} icon={Add01Icon}>
+            Add Unavailability
+          </Button>
+        }
+      />
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
@@ -291,7 +293,7 @@ export function DoctorUnavailabilityPage() {
       {/* Resolve prompt banner */}
       {resolvePrompt && (
         <div className="flex items-center justify-between gap-4 text-sm text-amber-800 bg-amber-50 px-5 py-3.5 rounded-lg ring-1 ring-amber-200/60">
-          <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-between">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
             <span>There {resolvePrompt.count === 1 ? 'is' : 'are'} <strong>{resolvePrompt.count}</strong> appointment{resolvePrompt.count !== 1 ? 's' : ''} that conflict with this unavailability.</span>
           </div>
@@ -306,19 +308,49 @@ export function DoctorUnavailabilityPage() {
         </div>
       )}
 
-      {/* Filter tabs */}
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 w-fit">
-        {(['all', 'pending', 'past'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3.5 py-1.5 text-sm font-medium rounded-md transition-all capitalize ${
-              filter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+      {/* Search bar + filter pills */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="shrink-0 text-slate-400 ml-3">
+            <HugeiconsIcon icon={Search01Icon} className="size-4" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by date or reason..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="shrink-0 mr-1.5 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {[
+            { key: 'pending', label: 'Pending', color: 'bg-amber-400' },
+            { key: 'conflicts', label: 'Conflicts', color: 'bg-red-500' },
+            { key: 'past', label: 'Past', color: 'bg-slate-400' },
+            { key: 'all', label: 'All', color: '' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                filter === f.key
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {f.color && <div className={`size-1.5 rounded-full ${f.color}`} />}
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table styled like appointment list */}
@@ -335,7 +367,17 @@ export function DoctorUnavailabilityPage() {
           const filtered = unavail.filter(u => {
             if (filter === 'all') return true;
             if (filter === 'pending') return u.end_date >= today;
-            return u.end_date < today;
+            if (filter === 'past') return u.end_date < today;
+            if (filter === 'conflicts') return (u.conflict_count ?? 0) > 0;
+            return true;
+          }).filter(u => {
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+              u.slot_date.toLowerCase().includes(q) ||
+              (u.end_date !== u.slot_date && u.end_date.toLowerCase().includes(q)) ||
+              (u.reason && u.reason.toLowerCase().includes(q))
+            );
           });
           return filtered.length === 0 ? (
           <EmptyState
@@ -349,7 +391,8 @@ export function DoctorUnavailabilityPage() {
               <tbody>
                 {filtered.map((u) => {
                   const hasConflicts = (u.conflict_count ?? 0) > 0;
-                  const borderColor = hasConflicts ? '#f59e0b' : '#e2e8f0';
+                  const isPast = u.end_date < today;
+                  const borderColor = hasConflicts ? '#ef4444' : isPast ? '#cbd5e1' : '#f59e0b';
 
                   return (
                     <Fragment key={u.id}>

@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
+import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { Card } from '@/components/Card';
 
 import { EventDetailModal } from '@/components/EventDetailModal';
@@ -176,6 +177,8 @@ export function CalendarPage() {
         description="View and manage appointments"
         icon={Calendar01Icon}
       />
+
+      <UnavailabilityConflictBanner />
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">

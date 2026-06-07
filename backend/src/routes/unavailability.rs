@@ -388,6 +388,51 @@ pub async fn check_unavailability_conflicts(
     Ok(Json(serde_json::json!({ "conflict_count": conflict_count })))
 }
 
+pub async fn get_unavailability_conflict_summary(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(doctor_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    if auth.role != "admin" && auth.role != "scheduler" {
+        if auth.role == "doctor" {
+            let did = sqlx::query_scalar::<_, Uuid>(
+                "SELECT id FROM doctors WHERE email = $1"
+            )
+            .bind(&auth.sub)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
+            if did != doctor_id {
+                return Err(AppError::Unauthorized("Unauthorized".to_string()));
+            }
+        } else {
+            require_role(&auth, &["admin", "scheduler", "doctor"])?;
+        }
+    }
+
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM appointments a \
+         JOIN availability_slots s ON s.id = a.slot_id \
+         WHERE a.doctor_id = $1 \
+           AND a.attended IS NULL \
+           AND a.status != 'cancelled' \
+           AND EXISTS ( \
+             SELECT 1 FROM doctor_unavailability du \
+             WHERE du.doctor_id = a.doctor_id \
+               AND s.slot_date BETWEEN du.slot_date AND du.end_date \
+               AND ((du.start_time IS NULL AND du.end_time IS NULL) \
+                    OR (s.start_time < du.end_time AND s.end_time > du.start_time)) \
+           )"
+    )
+    .bind(doctor_id)
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
+
+    Ok(Json(serde_json::json!({ "total_conflicts": total })))
+}
+
 pub fn unavailability_routes() -> Router<AppState> {
     Router::new()
         .route("/api/doctors/:id/unavailability", get(list_unavailability))
@@ -395,4 +440,5 @@ pub fn unavailability_routes() -> Router<AppState> {
         .route("/api/doctors/:id/unavailability/:unavail_id", delete(delete_unavailability))
         .route("/api/doctors/:id/unavailability/:unavail_id/conflicts", get(list_unavailability_conflicts))
         .route("/api/doctors/:id/unavailability/check-conflicts", get(check_unavailability_conflicts))
+        .route("/api/doctors/:id/unavailability/conflict-summary", get(get_unavailability_conflict_summary))
 }

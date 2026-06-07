@@ -496,6 +496,11 @@ export const api = {
     });
   },
 
+  getUnavailabilityConflictSummary: (doctorId: string, token: string) =>
+    request<{ total_conflicts: number }>(`/doctors/${doctorId}/unavailability/conflict-summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
   // --- Settings ---
   getSettingsGroup: (group: string) =>
     request<Array<{ id: string; group_name: string; name: string; value: string; is_sensitive: boolean; description: string; value_type: string }>>(`/settings/${group}`),
