@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { RescheduleModal } from '@/components/RescheduleModal';
+import { ScheduleModal } from '@/components/ScheduleModal';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
@@ -111,6 +113,8 @@ export function DoctorAppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -473,10 +477,18 @@ export function DoctorAppointmentsPage() {
                                     <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                                   </button>
                                   <button
-                                    onClick={e => { e.stopPropagation(); setSelectedAppointment(a); }}
-                                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                    onClick={e => { e.stopPropagation(); setRescheduleTarget(a); }}
+                                    className="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 transition-colors"
+                                    title="Reschedule"
                                   >
                                     <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                                  </button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setScheduleTarget(a); }}
+                                    className="p-1.5 rounded-md text-sky-500 hover:bg-sky-50 transition-colors"
+                                    title="Create new appointment"
+                                  >
+                                    <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
                                   </button>
                                 </div>
                               ) : (
@@ -484,10 +496,18 @@ export function DoctorAppointmentsPage() {
                                   onClick={e => e.stopPropagation()}
                                 >
                                   <button
-                                    onClick={e => { e.stopPropagation(); setSelectedAppointment(a); }}
-                                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                    onClick={e => { e.stopPropagation(); setRescheduleTarget(a); }}
+                                    className="p-1.5 rounded-md text-amber-500 hover:bg-amber-50 transition-colors"
+                                    title="Reschedule"
                                   >
                                     <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                                  </button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setScheduleTarget(a); }}
+                                    className="p-1.5 rounded-md text-sky-500 hover:bg-sky-50 transition-colors"
+                                    title="Create new appointment"
+                                  >
+                                    <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
                                   </button>
                                 </div>
                               )}
@@ -512,6 +532,22 @@ export function DoctorAppointmentsPage() {
           onRequestAttendance={requestAttendance}
         />
       )}
+
+      <RescheduleModal
+        open={!!rescheduleTarget}
+        appointment={rescheduleTarget}
+        onClose={() => setRescheduleTarget(null)}
+        onResolved={fetchAppointments}
+      />
+      <ScheduleModal
+        open={!!scheduleTarget}
+        patientId={scheduleTarget?.patient_id || ''}
+        patientName={scheduleTarget?.patient_name || ''}
+        currentDoctorId={scheduleTarget?.doctor_id || ''}
+        currentDoctorName={scheduleTarget?.doctor_name || ''}
+        onClose={() => setScheduleTarget(null)}
+        onScheduled={fetchAppointments}
+      />
 
       <CalendarSlidePanel
         open={calendarOpen}
