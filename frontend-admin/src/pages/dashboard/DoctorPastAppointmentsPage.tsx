@@ -421,37 +421,38 @@ export function DoctorPastAppointmentsPage() {
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-7 pb-0 min-h-0">
-          <div className="pt-6 space-y-2">
-            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
-            {dateRangeOptions.map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => { handleDateRangeChange(opt.key); setFilterDate(null); }}
-                className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                  dateRange === opt.key && !filterDate
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {filterDate && (
-            <div className="mt-4">
-              <p className="text-xs text-slate-400 mb-3">
-                Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
-              </p>
-              <button onClick={() => setFilterDate(null)}
-                className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
-                Clear filter
-              </button>
+        <div className="flex-1 flex flex-col justify-between min-h-0">
+          <div className="overflow-y-auto px-7 min-h-0">
+            <div className="pt-6 space-y-2">
+              <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Preset Ranges</p>
+              {dateRangeOptions.map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => { handleDateRangeChange(opt.key); setFilterDate(null); }}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                    dateRange === opt.key && !filterDate
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
-        <div className="shrink-0 px-7 pb-6">
-          <MiniCalendar
+            {filterDate && (
+              <div className="mt-4">
+                <p className="text-xs text-slate-400 mb-3">
+                  Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
+                </p>
+                <button onClick={() => setFilterDate(null)}
+                  className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
+                  Clear filter
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 px-7 pb-6">
+            <MiniCalendar
               variant="sidebar"
               date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
               selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
@@ -472,5 +473,6 @@ export function DoctorPastAppointmentsPage() {
           </div>
         </div>
       </div>
+    </div>
   );
 }
