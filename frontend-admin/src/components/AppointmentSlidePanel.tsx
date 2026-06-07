@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { RescheduleModal } from '@/components/RescheduleModal';
+import { ReferralModal } from '@/components/ReferralModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
@@ -34,6 +35,7 @@ export function AppointmentSlidePanel({
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -177,7 +179,7 @@ export function AppointmentSlidePanel({
                 Missed
               </button>
             </div>
-            <div className="border-t border-slate-100 pt-3">
+            <div className="border-t border-slate-100 pt-3 space-y-2">
               {isPending && (
                 <button
                   onClick={() => setShowReschedule(true)}
@@ -187,6 +189,13 @@ export function AppointmentSlidePanel({
                   Reschedule
                 </button>
               )}
+              <button
+                onClick={() => setShowReferral(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
+              >
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                Refer to Doctor
+              </button>
             </div>
           </div>
         )}
@@ -196,6 +205,13 @@ export function AppointmentSlidePanel({
           appointment={showReschedule ? appointment : null}
           onClose={() => setShowReschedule(false)}
           onResolved={handleResolved}
+        />
+        <ReferralModal
+          open={showReferral}
+          patientId={appointment.patient_id}
+          patientName={appointment.patient_name}
+          onClose={() => setShowReferral(false)}
+          onReferred={handleResolved}
         />
       </div>
     </>

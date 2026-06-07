@@ -139,6 +139,8 @@ pub async fn list_appointments(
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
                 a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                a.referring_doctor_id,
+                rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 EXISTS(
                   SELECT 1 FROM doctor_unavailability du
                   WHERE du.doctor_id = a.doctor_id
@@ -152,6 +154,7 @@ pub async fn list_appointments(
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
+         LEFT JOIN doctors rd ON rd.id = a.referring_doctor_id
          WHERE 1=1"
     );
     let mut param_idx = 1u32;
@@ -215,6 +218,8 @@ pub async fn export_appointments(
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
                 a.status, a.notes, a.attended, a.minutes_late, a.cancellation_reason,
+                a.referring_doctor_id,
+                rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 EXISTS(
                   SELECT 1 FROM doctor_unavailability du
                   WHERE du.doctor_id = a.doctor_id
@@ -228,6 +233,7 @@ pub async fn export_appointments(
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
+         LEFT JOIN doctors rd ON rd.id = a.referring_doctor_id
          WHERE 1=1"
     );
     let mut param_idx = 1u32;
