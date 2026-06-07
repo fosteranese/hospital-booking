@@ -7,7 +7,6 @@ import {
   Mail01Icon,
   CallIcon,
   AlertCircleIcon,
-  ArrowRight01Icon,
   Calendar01Icon,
   TimeScheduleIcon,
 } from '@hugeicons/core-free-icons';
@@ -93,79 +92,105 @@ export function AppointmentSlidePanel({
         {/* Scrollable content */}
         <div className={`flex-1 overflow-y-auto px-7 pb-6 transition-opacity duration-200 ${switching ? 'opacity-60' : ''}`}>
           {/* Patient header */}
-          <div className="flex items-center gap-5 pt-4 pb-7 border-b border-slate-100">
-            <div className="size-14 rounded-full bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-600 shrink-0 shadow-sm">
+          <div className="flex items-center gap-4 pt-6">
+            <div className="size-12 rounded-full bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-lg font-bold text-slate-600 shrink-0 shadow-sm">
               {(appointment.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
             </div>
-            <div className="min-w-0">
-              <div className="text-xl font-bold text-slate-900 truncate">{appointment.patient_name || 'Patient'}</div>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className={`size-1.5 rounded-full ${status.dot}`} />
-                <span className="text-sm text-slate-500">{status.label}</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-lg font-bold text-slate-900 truncate">{appointment.patient_name || 'Patient'}</div>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className={`size-2 rounded-full ${status.dot}`} />
+                <span className="text-sm font-medium text-slate-600">{status.label}</span>
               </div>
-              <div className="flex items-center gap-3 mt-2">
-                <a href={`mailto:${appointment.patient_email}`} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors group">
-                  <HugeiconsIcon icon={Mail01Icon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                  <span className="truncate text-xs">{appointment.patient_email}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {((appointment.patient_phone ?? '').length > 0) && (
+                <a href={`tel:${appointment.patient_phone}`} title={appointment.patient_phone || 'No phone'}
+                  className="size-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all"
+                >
+                  <HugeiconsIcon icon={CallIcon} className="size-4" />
                 </a>
-                <a href={`tel:${appointment.patient_phone}`} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-amber-600 transition-colors group">
-                  <HugeiconsIcon icon={CallIcon} className="size-3.5 shrink-0 text-slate-400 group-hover:text-amber-500 transition-colors" />
-                  <span className="text-xs">{appointment.patient_phone || '—'}</span>
+              )}
+              {((appointment.patient_email ?? '').length > 0) && (
+                <a href={`mailto:${appointment.patient_email}`} title={appointment.patient_email}
+                  className="size-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-all"
+                >
+                  <HugeiconsIcon icon={Mail01Icon} className="size-4" />
                 </a>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Appointment details */}
-          <div className="py-6 border-b border-slate-100">
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+          {/* Contain Details */}
+          {((appointment.patient_phone ?? '').length > 0 || (appointment.patient_email ?? '').length > 0) && (<div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+            {(appointment.patient_phone ?? '').length > 0 && (<div className="flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <HugeiconsIcon icon={CallIcon} className="size-4 text-emerald-500" />
+              </div>
               <div>
-                <div className="text-xs font-medium text-slate-400 mb-1">Date</div>
-                <div className="text-sm font-semibold text-slate-900">
+                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Phone</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                  {appointment.patient_phone}
+                </div>
+              </div>
+            </div>)}
+            {(appointment.patient_email ?? '').length > 0 && (<div className="flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <HugeiconsIcon icon={Mail01Icon} className="size-4 text-emerald-500" />
+              </div>
+              <div>
+                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Email</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.patient_email}</div>
+              </div>
+            </div>)}
+          </div>)}
+
+          {/* Appointment details card */}
+          <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-emerald-500" />
+              </div>
+              <div>
+                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Date</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">
                   {new Date(appointment.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
-              <div>
-                <div className="text-xs font-medium text-slate-400 mb-1">Time</div>
-                <div className="text-sm font-semibold text-slate-900">{formatTime(appointment.start_time)} — {formatTime(appointment.end_time)}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-emerald-500" />
               </div>
               <div>
-                <div className="text-xs font-medium text-slate-400 mb-1">Doctor</div>
-                <div className="text-sm font-semibold text-slate-900">Dr. {appointment.doctor_name}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-slate-400 mb-1">Specialization</div>
-                <div className="text-sm font-semibold text-slate-900">{appointment.specialization}</div>
+                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Time</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{formatTime(appointment.start_time)} — {formatTime(appointment.end_time)}</div>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           {appointment.notes && (
-            <div className="py-6 border-b border-slate-100">
-              <div className="text-xs font-medium text-slate-400 mb-3">Notes</div>
-              <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-4 border border-slate-100">
-                {appointment.notes}
-              </div>
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">Notes</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.notes}</div>
             </div>
           )}
 
           {/* Cancellation reason */}
           {appointment.cancellation_reason && (
-            <div className="py-6">
-              <div className="text-xs font-medium text-slate-400 mb-3">Cancellation Reason</div>
-              <div className="text-sm text-red-600 leading-relaxed bg-red-50 rounded-xl p-4 border border-red-100">
-                {appointment.cancellation_reason}
-              </div>
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">Cancellation Reason</div>
+                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.cancellation_reason}</div>
             </div>
           )}
         </div>
 
         {/* Action buttons — sticky footer */}
         {isPending && (
-          <div className="shrink-0 border-t border-slate-200 bg-white px-7 py-5 space-y-3">
+          <div className="shrink-0 bg-white py-5">
             {/* Attendance row */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 px-7">
               <button
                 onClick={() => onRequestAttendance(appointment.id, true)}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-sm"
@@ -182,8 +207,9 @@ export function AppointmentSlidePanel({
               </button>
             </div>
 
+            <div className="border-t border-slate-100 pt-4 mt-4">
             {/* Secondary actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 px-7">
               {isPending && (
                 <button
                   onClick={() => onReschedule?.(appointment)}
@@ -202,7 +228,8 @@ export function AppointmentSlidePanel({
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
       </div>
     </>
   );
