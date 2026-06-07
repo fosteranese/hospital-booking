@@ -136,7 +136,12 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             {step > 1 && (
-              <button onClick={() => { setStep(scheduleType === 'follow-up' ? 1 : s => s - 1); setSelectedSlot(null); setError(''); }}
+              <button onClick={() => {
+                if (step === 4) { setStep(3); return; }
+                if (step === 3 && scheduleType === 'follow-up') { setStep(1); return; }
+                setStep(s => s - 1);
+                setSelectedSlot(null); setError('');
+              }}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
@@ -152,16 +157,16 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {/* Step indicator */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
-            {step === 1 ? 'Type' : step === 2 ? 'Doctor' : 'Schedule'}
+            {step === 1 ? 'Type' : step === 2 ? 'Doctor' : step === 3 ? 'Schedule' : 'Confirm'}
           </span>
           <div className="flex items-center gap-1">
-            {[1, 2, 3].map((s, i) => (
+            {[1, 2, 3, 4].map((s, i) => (
               <div key={s} className="flex items-center gap-1">
                 <div className={`rounded-full transition-all duration-300 ${
                   step === s ? 'size-2 bg-primary' :
                   i < step - 1 ? 'size-2 bg-primary/30' : 'size-1.5 bg-muted-foreground/15'
                 }`} />
-                {i < 2 && (
+                {i < 3 && (
                   <div className={`w-3 h-px transition-colors duration-300 ${step > s ? 'bg-primary/20' : 'bg-muted-foreground/10'}`} />
                 )}
               </div>
@@ -334,13 +339,50 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {step === 4 && (
+          /* Step 4: Confirm + notes */
+          <div>
+            <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-3">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Appointment Summary</div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Patient</span>
+                <span className="font-medium text-slate-900">{patientName}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Doctor</span>
+                <span className="font-medium text-slate-900">
+                  Dr. {scheduleType === 'follow-up' ? currentDoctorName : knownDoctors.find(d => d.id === selectedDoctorId)?.last_name || ''}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Date</span>
+                <span className="font-medium text-slate-900">
+                  {selectedSlotData ? new Date(selectedSlotData.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Time</span>
+                <span className="font-medium text-slate-900">
+                  {selectedSlotData ? `${selectedSlotData.start_time.slice(0, 5)} — ${selectedSlotData.end_time.slice(0, 5)}` : ''}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">Type</span>
+                <span className={`font-medium capitalize ${scheduleType === 'referral' ? 'text-sky-600' : 'text-emerald-600'}`}>
+                  {scheduleType === 'referral' ? 'Referral' : 'Follow-up'}
+                </span>
+              </div>
+            </div>
 
             <div className="mb-5">
               <label className="block text-xs font-medium text-slate-600 mb-1.5">Notes (optional)</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)}
                 placeholder={scheduleType === 'referral' ? 'Reason for referral...' : 'Follow-up notes...'}
-                rows={2}
-                className="h-11 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
+                rows={3}
+                className="h-24 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
               />
             </div>
           </div>
@@ -350,7 +392,15 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 3 && (
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave} loading={saving} disabled={!selectedSlot || (scheduleType === 'referral' && !selectedDoctorId)}>
+            <Button onClick={() => selectedSlot && setStep(4)} disabled={!selectedSlot || (scheduleType === 'referral' && !selectedDoctorId)}>
+              Continue
+            </Button>
+          </div>
+        )}
+        {step === 4 && (
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving}>
               {scheduleType === 'referral' ? 'Create Referral' : 'Schedule Follow-up'}
             </Button>
           </div>
