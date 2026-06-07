@@ -250,6 +250,30 @@ export function DoctorAppointmentsPage() {
             ? `${filtered.length} appointment${filtered.length !== 1 ? 's' : ''} with conflicts`
             : `${filtered.length} pending appointment${filtered.length !== 1 ? 's' : ''}`}
           icon={Calendar01Icon}
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
+                className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+                  filterDate || calendarOpen
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                    : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+              </button>
+              <button
+                onClick={() => setCalendarDropdownOpen(v => !v)}
+                className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+                  filterDate || calendarDropdownOpen
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                    : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+              </button>
+            </div>
+          }
         />
 
         {/* Error */}
@@ -310,47 +334,9 @@ export function DoctorAppointmentsPage() {
             )}
           </div>
         </div>
-        {conflictCount > 0 && (
-          <button
-            onClick={() => setConflictFilter(v => !v)}
-            className={`flex items-center gap-1.5 h-12 px-3.5 rounded-lg border text-xs font-medium transition-all shadow-sm shrink-0 ${
-              conflictFilter
-                ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-amber-100/30'
-                : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <HugeiconsIcon icon={AlertCircleIcon} className={`size-4 ${conflictFilter ? 'text-amber-500' : 'text-slate-400'}`} />
-            Conflicts
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-              conflictFilter ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
-            }`}>
-              {conflictCount}
-            </span>
-          </button>
-        )}
-        <div className="relative ml-auto" ref={calendarDropdownRef}>
-          <button
-            onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
-            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-              filterDate || calendarOpen
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-          </button>
-          <button
-            onClick={() => setCalendarDropdownOpen(v => !v)}
-            className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-              filterDate || calendarDropdownOpen
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-          </button>
-          {calendarDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 min-w-[280px]">
+      </div>
+      {calendarDropdownOpen && (
+          <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 min-w-[280px]">
               <MiniCalendar
                 date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
                 selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
@@ -369,8 +355,6 @@ export function DoctorAppointmentsPage() {
               )}
             </div>
           )}
-        </div>
-      </div>
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
