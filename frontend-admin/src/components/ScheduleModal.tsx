@@ -136,7 +136,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             {step > 1 && (
-              <button onClick={() => { setStep(s => s - 1); setSelectedSlot(null); setError(''); }}
+              <button onClick={() => { setStep(scheduleType === 'follow-up' ? 1 : s => s - 1); setSelectedSlot(null); setError(''); }}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
