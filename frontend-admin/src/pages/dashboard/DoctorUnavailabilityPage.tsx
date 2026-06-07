@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -38,7 +39,8 @@ function PatientAvatar({ name, bg }: { name: string; bg?: string }) {
   );
 }
 
-const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+const bigInputClass = "h-12 px-4 text-base border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+const smallInputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
 
 interface UnavailRecord {
   id: string;
@@ -424,8 +426,8 @@ export function DoctorUnavailabilityPage() {
                                         <div className="shrink-0">
                                           {isRescheduling ? (
                                             <div className="flex items-center gap-1.5">
-                                              <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${inputClass} w-[130px]`} />
-                                              <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${inputClass} w-[100px]`} />
+                                              <input type="date" value={rescheduleDate} min={today} onChange={e => setRescheduleDate(e.target.value)} className={`${smallInputClass} w-[130px]`} />
+                                            <input type="time" value={rescheduleTime} onChange={e => setRescheduleTime(e.target.value)} className={`${smallInputClass} w-[100px]`} />
                                               <Button size="sm" onClick={() => handleReschedule(a.id)} loading={false} disabled={!rescheduleDate || !rescheduleTime}>Save</Button>
                                               <button onClick={() => { setRescheduling(null); setRescheduleDate(''); setRescheduleTime(''); }} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
                                                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 rotate-180" />
@@ -464,7 +466,7 @@ export function DoctorUnavailabilityPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -483,79 +485,94 @@ export function DoctorUnavailabilityPage() {
               </button>
             </div>
 
-            {/* Step indicator */}
-            <div className="flex items-center gap-1.5 mb-6">
-              <div className={`h-1.5 flex-1 rounded-full transition-colors ${modalStep >= 1 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-              <div className={`h-1.5 flex-1 rounded-full transition-colors ${modalStep >= 2 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+            {/* Step indicator (matching login page style) */}
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
+                {modalStep === 1 ? 'Type' : 'Details'}
+              </span>
+              <div className="flex items-center gap-1">
+                {[1, 2].map((s, i) => (
+                  <div key={s} className="flex items-center gap-1">
+                    <div className={`rounded-full transition-all duration-300 ${
+                      modalStep === s
+                        ? 'size-2 bg-primary'
+                        : i < modalStep - 1
+                          ? 'size-2 bg-primary/30'
+                          : 'size-1.5 bg-muted-foreground/15'
+                    }`} />
+                    {i < 1 && (
+                      <div className={`w-3 h-px transition-colors duration-300 ${
+                        modalStep > s ? 'bg-primary/20' : 'bg-muted-foreground/10'
+                      }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {modalStep === 1 ? (
               /* Step 1: Choose date type */
-              <div className="grid grid-cols-2 gap-3 py-2">
+              <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => { setIsDateRange(false); setModalStep(2); }}
-                  className="group relative flex flex-col items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <div className="size-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
-                    <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
+                  <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                    <HugeiconsIcon icon={Calendar02Icon} className="size-6" />
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-semibold text-slate-900">Single Day</div>
-                    <div className="text-xs text-slate-500 mt-0.5">One date off</div>
+                    <div className="text-base font-semibold text-slate-900">Single Day</div>
+                    <div className="text-sm text-slate-500 mt-1">One date off</div>
                   </div>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsDateRange(true); setModalStep(2); }}
-                  className="group relative flex flex-col items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
                 >
-                  <div className="size-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                  <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 gap-0.5 group-hover:bg-emerald-100 transition-colors">
                     <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
-                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 text-emerald-400 -ml-1" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-3 text-emerald-400 -ml-0.5" />
                     <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-semibold text-slate-900">Date Range</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Multiple consecutive</div>
+                    <div className="text-base font-semibold text-slate-900">Date Range</div>
+                    <div className="text-sm text-slate-500 mt-1">Multiple consecutive</div>
                   </div>
                 </button>
               </div>
             ) : (
               /* Step 2: Details form */
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
-                    <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} className={`${inputClass} w-full`} />
+                    <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} inputSize="xl" />
                   </div>
                   {isDateRange && (
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
-                      <input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} className={`${inputClass} w-full`} />
+                      <Input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} inputSize="xl" />
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Time</label>
-                  <div className="flex gap-2 p-0.5 bg-slate-100 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-600">All day?</span>
+                  <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                     <button
                       type="button"
                       onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
-                      className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                        isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
-                      Full Day
+                      Yes
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsFullDay(false)}
-                      className={`flex-1 py-2 px-4 text-xs font-medium rounded-md transition-all ${
-                        !isFullDay ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
-                      Time Range
+                      No
                     </button>
                   </div>
                 </div>
@@ -563,30 +580,30 @@ export function DoctorUnavailabilityPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time *</label>
-                      <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-full`} />
+                      <Input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} inputSize="xl" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-600 mb-1.5">End time *</label>
-                      <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-full`} />
+                      <Input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} inputSize="xl" />
                     </div>
                   </div>
                 )}
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
-                  <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-full`} />
+                  <Input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" inputSize="xl" />
                 </div>
               </div>
             )}
 
             {/* Footer buttons */}
-            <div className="flex justify-end gap-2 mt-6">
-              <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-              {modalStep === 2 && (
+            {modalStep === 2 && (
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
                 <Button onClick={handleCreate} loading={saving} disabled={!newDate}>
                   Save
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
