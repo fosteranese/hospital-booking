@@ -84,6 +84,8 @@ function validateByType(value: string, valueType: string): string | null {
       return value.includes(':') ? null : 'Must be a valid IPv6 address';
     case 'phone':
       return /^[\d\s+\-()]{5,}$/.test(value) ? null : 'Must be a valid phone number';
+    case 'boolean':
+      return ['true', 'false'].includes(value.toLowerCase()) ? null : 'Must be true or false';
     default:
       return null;
   }
@@ -370,21 +372,38 @@ export function ApplicationSettingsPage() {
 
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1">New Value</label>
-                <input
-                  type={inputTypeFor(editSetting.is_sensitive, editSetting.value_type)}
-                  step={editSetting.value_type === 'integer' ? '1' : editSetting.value_type === 'double' ? 'any' : undefined}
-                  value={editValue}
-                  onChange={e => handleModalChange(e.target.value)}
-                  placeholder="Enter new value"
-                  autoFocus
-                  className={[
-                    'w-full h-9 px-3.5 text-sm border rounded-md bg-white transition-all',
-                    'focus:outline-none focus:ring-2 focus:border-emerald-500',
-                    editError
-                      ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
-                      : 'border-slate-200 focus:ring-emerald-500/20',
-                  ].join(' ')}
-                />
+                {editSetting.value_type === 'boolean' ? (
+                  <select
+                    value={editValue}
+                    onChange={e => handleModalChange(e.target.value)}
+                    className={[
+                      'w-full h-9 px-3.5 text-sm border rounded-md bg-white transition-all appearance-none cursor-pointer',
+                      'focus:outline-none focus:ring-2 focus:border-emerald-500',
+                      editError
+                        ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-emerald-500/20',
+                    ].join(' ')}
+                  >
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                  </select>
+                ) : (
+                  <input
+                    type={inputTypeFor(editSetting.is_sensitive, editSetting.value_type)}
+                    step={editSetting.value_type === 'integer' ? '1' : editSetting.value_type === 'double' ? 'any' : undefined}
+                    value={editValue}
+                    onChange={e => handleModalChange(e.target.value)}
+                    placeholder="Enter new value"
+                    autoFocus
+                    className={[
+                      'w-full h-9 px-3.5 text-sm border rounded-md bg-white transition-all',
+                      'focus:outline-none focus:ring-2 focus:border-emerald-500',
+                      editError
+                        ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
+                        : 'border-slate-200 focus:ring-emerald-500/20',
+                    ].join(' ')}
+                  />
+                )}
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${(TYPE_BADGE[editSetting.value_type] || TYPE_BADGE.text).class}`}>
                     {(TYPE_BADGE[editSetting.value_type] || TYPE_BADGE.text).label}
