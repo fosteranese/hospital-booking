@@ -116,6 +116,7 @@ const roleNav: Record<string, NavGroup[]> = {
       items: [
         { label: "Today's", href: '/dashboard/today-appointments', icon: Calendar01Icon },
         { label: 'Upcoming', href: '/dashboard/my-appointments', icon: Calendar02Icon },
+        { label: 'Past', href: '/dashboard/past-appointments', icon: TimeScheduleIcon },
         { label: 'Calendar', href: '/dashboard/calendar', icon: Calendar01Icon },
         { label: 'Referrals', href: '/dashboard/referrals', icon: ArrowRight01Icon },
       ],

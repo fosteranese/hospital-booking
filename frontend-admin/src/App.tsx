@@ -11,6 +11,7 @@ import { DoctorAppointmentsPage } from '@/pages/dashboard/DoctorAppointmentsPage
 import { DoctorUnavailabilityPage } from '@/pages/dashboard/DoctorUnavailabilityPage';
 import { DoctorConflictsPage } from '@/pages/dashboard/DoctorConflictsPage';
 import { DoctorReferralsPage } from '@/pages/dashboard/DoctorReferralsPage';
+import { DoctorPastAppointmentsPage } from '@/pages/dashboard/DoctorPastAppointmentsPage';
 import { CalendarPage } from '@/pages/dashboard/CalendarPage';
 import { SchedulerDashboard } from '@/pages/dashboard/SchedulerDashboard';
 import { DashboardUnavailability } from '@/pages/dashboard/DashboardUnavailability';
@@ -120,6 +121,16 @@ function AppRoutes() {
           <DashboardGuard>
             <DashboardLayout>
               <DoctorReferralsPage />
+            </DashboardLayout>
+          </DashboardGuard>
+        }
+      />
+      <Route
+        path="/dashboard/past-appointments"
+        element={
+          <DashboardGuard>
+            <DashboardLayout>
+              <DoctorPastAppointmentsPage />
             </DashboardLayout>
           </DashboardGuard>
         }

@@ -274,7 +274,8 @@ function FutureStatCard({
 
 export function DoctorDashboard() {
   const navigate = useNavigate();
-  const { token, otpIdentifier, doctorCanCreateAppointments, doctorCanRefer } = useAuth();
+  const { token, otpIdentifier, doctorCanCreateAppointments, doctorCanRefer,
+    attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
   const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'Book a Follow Up'
@@ -648,6 +649,11 @@ export function DoctorDashboard() {
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}
           canSchedule={canSchedule}
           scheduleLabel={scheduleLabel}
+          forcedScheduleType={forcedScheduleType}
+          attendedFollowUpDays={attendedFollowUpDays}
+          attendedReferralDays={attendedReferralDays}
+          missedRescheduleDays={missedRescheduleDays}
+          missedReferralDays={missedReferralDays}
         />
       )}
 

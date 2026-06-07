@@ -26,6 +26,11 @@ export function AppointmentSlidePanel({
   onScheduleNew,
   canSchedule = true,
   scheduleLabel = 'New Appointment',
+  attendedFollowUpDays = 30,
+  attendedReferralDays = 30,
+  missedRescheduleDays = 7,
+  missedReferralDays = 7,
+  forcedScheduleType,
 }: {
   appointment: AppointmentHistoryItem;
   onClose: () => void;
@@ -34,6 +39,11 @@ export function AppointmentSlidePanel({
   onScheduleNew?: (appointment: AppointmentHistoryItem) => void;
   canSchedule?: boolean;
   scheduleLabel?: string;
+  attendedFollowUpDays?: number;
+  attendedReferralDays?: number;
+  missedRescheduleDays?: number;
+  missedReferralDays?: number;
+  forcedScheduleType?: 'follow-up' | 'referral';
 }) {
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
@@ -58,6 +68,18 @@ export function AppointmentSlidePanel({
   const isMissed = appointment.attended === false;
   const isCancelled = appointment.status === 'cancelled';
   const isPending = !isAttended && !isMissed && !isCancelled;
+
+  const apptDate = new Date(appointment.slot_date + 'T00:00:00');
+  const today = new Date();
+  const daysSince = Math.floor((today.getTime() - apptDate.getTime()) / 86400000);
+
+  const attendedDays = forcedScheduleType === 'referral' ? attendedReferralDays : attendedFollowUpDays;
+  const canReschedule = isPending || (isMissed && daysSince <= missedRescheduleDays);
+  const canScheduleNew = canSchedule && (
+    isPending
+    || (isAttended && daysSince <= attendedDays)
+    || (isMissed && daysSince <= missedReferralDays)
+  );
 
   function statusInfo() {
     if (isAttended) return { label: `Attended${appointment.minutes_late ? ` · ${appointment.minutes_late}m late` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
@@ -192,7 +214,7 @@ export function AppointmentSlidePanel({
 
         {/* Action buttons — sticky footer */}
         {isPending && (
-          <div className="shrink-0 bg-white py-5">
+          <div className="shrink-0 bg-white py-5 border-t border-slate-200">
             {/* Attendance row */}
             <div className="flex gap-3 px-7">
               <button
@@ -211,10 +233,10 @@ export function AppointmentSlidePanel({
               </button>
             </div>
 
+            {(canReschedule || canScheduleNew) && (
             <div className="border-t border-slate-100 pt-4 mt-4">
-            {/* Secondary actions */}
             <div className="flex gap-2 px-7">
-              {isPending && (
+              {canReschedule && (
                 <button
                   onClick={() => onReschedule?.(appointment)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
@@ -223,7 +245,35 @@ export function AppointmentSlidePanel({
                   Reschedule
                 </button>
               )}
-              {canSchedule && (
+              {canScheduleNew && (
+              <button
+                onClick={() => onScheduleNew?.(appointment)}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
+              >
+                <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
+                {scheduleLabel}
+              </button>
+              )}
+            </div>
+            </div>
+            )}
+          </div>
+        )}
+
+        {/* Scheduling-only section — for attended/missed (within window) */}
+        {!isPending && (canReschedule || canScheduleNew) && (
+          <div className="shrink-0 border-t border-slate-200 bg-white py-5">
+            <div className="flex gap-2 px-7">
+              {canReschedule && (
+                <button
+                  onClick={() => onReschedule?.(appointment)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                >
+                  <HugeiconsIcon icon={TimeScheduleIcon} className="size-4" />
+                  Reschedule
+                </button>
+              )}
+              {canScheduleNew && (
               <button
                 onClick={() => onScheduleNew?.(appointment)}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
@@ -234,8 +284,7 @@ export function AppointmentSlidePanel({
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );

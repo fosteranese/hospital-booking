@@ -12,6 +12,10 @@ interface AuthContextValue extends AuthState {
   clearAuth: () => void;
   doctorCanCreateAppointments: boolean;
   doctorCanRefer: boolean;
+  attendedFollowUpDays: number;
+  attendedReferralDays: number;
+  missedRescheduleDays: number;
+  missedReferralDays: number;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,23 +44,35 @@ function saveToStorage(state: AuthState) {
   } catch {}
 }
 
-function parseSetting(settings: Array<{ name: string; value: string | null }>, name: string, defaultVal: boolean): boolean {
+function parseBool(settings: Array<{ name: string; value: string | null }>, name: string, defaultVal: boolean): boolean {
   const s = settings.find(s => s.name === name);
   return s ? s.value === 'true' : defaultVal;
+}
+
+function parseIntVal(settings: Array<{ name: string; value: string | null }>, name: string, defaultVal: number): number {
+  const s = settings.find(s => s.name === name);
+  return s ? parseInt(s.value || String(defaultVal), 10) || defaultVal : defaultVal;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(loadFromStorage);
   const [doctorCanCreateAppointments, setCanCreate] = useState(true);
   const [doctorCanRefer, setCanRefer] = useState(true);
+  const [attendedFollowUpDays, setAttendedFollowUpDays] = useState(30);
+  const [attendedReferralDays, setAttendedReferralDays] = useState(30);
+  const [missedRescheduleDays, setMissedRescheduleDays] = useState(7);
+  const [missedReferralDays, setMissedReferralDays] = useState(7);
 
-  // Fetch doctor permissions when token changes
   useEffect(() => {
     if (!state.token) return;
     api.getSettingsGroup('appointment')
       .then(settings => {
-        setCanCreate(parseSetting(settings, 'doctor_can_create_appointments', true));
-        setCanRefer(parseSetting(settings, 'doctor_can_refer', true));
+        setCanCreate(parseBool(settings, 'doctor_can_create_appointments', true));
+        setCanRefer(parseBool(settings, 'doctor_can_refer', true));
+        setAttendedFollowUpDays(parseIntVal(settings, 'attended_follow_up_days', 30));
+        setAttendedReferralDays(parseIntVal(settings, 'attended_referral_days', 30));
+        setMissedRescheduleDays(parseIntVal(settings, 'missed_reschedule_days', 7));
+        setMissedReferralDays(parseIntVal(settings, 'missed_referral_days', 7));
       })
       .catch(() => {});
   }, [state.token]);
@@ -78,10 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: '', userRole: '', otpIdentifier: '' });
     setCanCreate(true);
     setCanRefer(true);
+    setAttendedFollowUpDays(30);
+    setAttendedReferralDays(30);
+    setMissedRescheduleDays(7);
+    setMissedReferralDays(7);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, setAll, clearAuth, doctorCanCreateAppointments, doctorCanRefer }}>
+    <AuthContext.Provider value={{
+      ...state, setAll, clearAuth,
+      doctorCanCreateAppointments, doctorCanRefer,
+      attendedFollowUpDays, attendedReferralDays,
+      missedRescheduleDays, missedReferralDays,
+    }}>
       {children}
     </AuthContext.Provider>
   );

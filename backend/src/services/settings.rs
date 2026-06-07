@@ -74,6 +74,10 @@ impl SettingsService {
             ("appointment", "max_upcoming_appointments", "3", false, "Maximum number of upcoming appointments a patient can have at a time", "integer"),
             ("appointment", "doctor_can_create_appointments", "false", false, "Allow doctors to create appointments for patients", "boolean"),
             ("appointment", "doctor_can_refer", "true", false, "Allow doctors to create appointments for other doctors (referrals)", "boolean"),
+            ("appointment", "attended_follow_up_days", "30", false, "Days back an attended appointment can be to create a follow-up", "integer"),
+            ("appointment", "attended_referral_days", "30", false, "Days back an attended appointment can be to create a referral", "integer"),
+            ("appointment", "missed_reschedule_days", "7", false, "Days back a missed appointment can be rescheduled", "integer"),
+            ("appointment", "missed_referral_days", "7", false, "Days back a missed appointment can be referred", "integer"),
             ("otp", "length", "6", false, "OTP code length (number of digits)", "integer"),
         ];
 

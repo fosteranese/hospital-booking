@@ -108,7 +108,8 @@ const placeholderMap: Record<string, string> = {
 };
 
 export function DoctorAppointmentsPage() {
-  const { token, doctorCanCreateAppointments, doctorCanRefer } = useAuth();
+  const { token, doctorCanCreateAppointments, doctorCanRefer,
+    attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
   const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'Book a Follow Up'
@@ -525,6 +526,11 @@ export function DoctorAppointmentsPage() {
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}
           canSchedule={canSchedule}
           scheduleLabel={scheduleLabel}
+          forcedScheduleType={forcedScheduleType}
+          attendedFollowUpDays={attendedFollowUpDays}
+          attendedReferralDays={attendedReferralDays}
+          missedRescheduleDays={missedRescheduleDays}
+          missedReferralDays={missedReferralDays}
         />
       )}
 
