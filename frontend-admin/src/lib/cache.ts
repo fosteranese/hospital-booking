@@ -5,7 +5,7 @@ interface CacheEntry<T> {
 
 const memoryCache = new Map<string, CacheEntry<any>>();
 
-const STALE_TIME = 30_000;
+const STALE_TIME = 300_000;
 
 export function getCached<T>(key: string): T | null {
   const mem = memoryCache.get(key);

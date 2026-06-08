@@ -8,19 +8,23 @@ export function useCachedData<T>(
   fetcher: () => Promise<T>,
   options?: { staleTime?: number; enabled?: boolean }
 ): { data: T | null; loading: boolean; error: string; refresh: () => void } {
-  const [data, setData] = useState<T | null>(() => (cacheKey ? getCached<T>(cacheKey) : null));
-  const [loading, setLoading] = useState(!data);
+  const cached = cacheKey ? getCached<T>(cacheKey) : null;
+  const [data, setData] = useState<T | null>(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState('');
   const mountedRef = useRef(true);
   const keyRef = useRef(cacheKey);
+  const hasCachedRef = useRef(!!cached);
 
   keyRef.current = cacheKey;
 
-  const fetch = useCallback(() => {
+  const fetch = useCallback((silent = false) => {
     if (!cacheKey) return;
     const key = cacheKey;
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     setError('');
 
     const doFetch = () => {
@@ -63,13 +67,15 @@ export function useCachedData<T>(
     if (options?.enabled === false) return;
     if (!cacheKey) return;
 
-    // If we already have cached data, do a background refresh
-    if (getCached<T>(cacheKey)) {
-      fetch();
-    } else {
-      fetch();
-    }
+    hasCachedRef.current = !!getCached<T>(cacheKey);
+
+    // Silent background refresh — never shows loading if we have cached data
+    fetch(hasCachedRef.current);
   }, [cacheKey, options?.enabled, fetch]);
 
-  return { data, loading, error, refresh: fetch };
+  const refresh = useCallback(() => {
+    fetch(false);
+  }, [fetch]);
+
+  return { data, loading, error, refresh };
 }
