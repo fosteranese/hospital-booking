@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
 import { MiniCalendar } from '@/components/MiniCalendar';
-import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { DateRangeSlidePanel } from '@/components/DateRangeSlidePanel';
 
 function formatTime(timeStr: string) {
@@ -340,7 +340,10 @@ export function DoctorPastAppointmentsPage() {
                                 <PatientAvatar name={a.patient_name} />
                               </td>
                               <td className="min-w-0 py-4 border-b border-slate-100 align-top">
-                                <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                                  {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
+                                </div>
                                 <div className="text-xs text-slate-400 mt-0.5">
                                   {formatDate(a.slot_date)} · Dr. {a.doctor_name}
                                   {a.notes && <span className="ml-2 text-slate-300">· {a.notes}</span>}

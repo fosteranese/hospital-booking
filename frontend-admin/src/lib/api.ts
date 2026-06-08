@@ -138,6 +138,8 @@ export interface AppointmentHistoryItem {
   minutes_late: number | null;
   cancellation_reason: string;
   has_conflict: boolean;
+  referring_doctor_id?: string;
+  referring_doctor_name?: string;
 }
 
 export interface AppointmentResponse {

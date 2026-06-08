@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { tokenStore, api } from '@/lib/api';
+import { invalidateCache } from '@/lib/cache';
 
 interface AuthState {
   token: string;
@@ -91,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAuth = useCallback(() => {
+    invalidateCache();
     setState({ token: '', userRole: '', otpIdentifier: '' });
     setCanCreate(true);
     setCanRefer(true);

@@ -11,6 +11,8 @@ import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflic
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Calendar01Icon,
@@ -328,9 +330,6 @@ export function DoctorDashboard() {
   const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
   const [pendingAttendance, setPendingAttendance] = useState<{
@@ -344,20 +343,16 @@ export function DoctorDashboard() {
   const [totalConflicts, setTotalConflicts] = useState(0);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await api.listAppointments({}, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  const { data: appointments, loading, error, refresh: refreshAppointments } = useCachedData(
+    'appointments',
+    useCallback(() => api.listAppointments({}, token), [token]),
+    { enabled: !!token }
+  );
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const refreshAll = useCallback(() => {
+    invalidateCache('appointments');
+    refreshAppointments();
+  }, [refreshAppointments]);
 
   useEffect(() => {
     if (!token) return;
@@ -375,11 +370,11 @@ export function DoctorDashboard() {
     try {
       await api.markAttendance(id, { attended, minutes_late }, token);
       setLatenessInput(null);
-      fetchAppointments();
+      refreshAll();
     } catch (e: any) {
-      setError(e.message || 'Failed to update attendance');
+      console.error('Failed to update attendance:', e);
     }
-  }, [token, fetchAppointments]);
+  }, [token, refreshAll]);
 
   const requestAttendance = useCallback((id: string, attended: boolean) => {
     setPendingAttendance({ id, attended });
@@ -391,15 +386,17 @@ export function DoctorDashboard() {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
       setPendingAttendance(null);
       setSelectedAppointment(null);
-      fetchAppointments();
+      refreshAll();
     } catch (e: any) {
-      setError(e.message || 'Failed to update attendance');
+      console.error('Failed to update attendance:', e);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, fetchAppointments]);
+  }, [pendingAttendance, token, refreshAll]);
+
+  const appts = appointments ?? [];
 
   const selectedForModal = pendingAttendance
-    ? appointments.find(a => a.id === pendingAttendance.id)
+    ? appts.find(a => a.id === pendingAttendance.id)
     : null;
 
   const { setContainerClass } = useContentContainer();
@@ -426,8 +423,8 @@ export function DoctorDashboard() {
   const prevYearStart = (now.getFullYear() - 1) + '-01-01';
   const prevYearEnd = (now.getFullYear() - 1) + '-12-31';
 
-  const todayAppts = appointments.filter(a => a.slot_date === today);
-  const conflictAppts = appointments.filter(a => a.has_conflict);
+  const todayAppts = appts.filter(a => a.slot_date === today);
+  const conflictAppts = appts.filter(a => a.has_conflict);
   const todayConflicts = todayAppts.filter(a => a.has_conflict);
 
   const pendingToday = todayAppts.filter(a => getEffectiveStatus(a) === 'confirmed').length;
@@ -435,20 +432,20 @@ export function DoctorDashboard() {
   const missedToday = todayAppts.filter(a => getEffectiveStatus(a) === 'missed').length;
   const totalToday = pendingToday + attendedToday + missedToday;
 
-  const tomorrowTotal = appointments.filter(a => a.slot_date === tomorrow && a.status !== 'cancelled').length;
-  const todayNonCancelled = appointments.filter(a => a.slot_date === today && a.status !== 'cancelled').length;
+  const tomorrowTotal = appts.filter(a => a.slot_date === tomorrow && a.status !== 'cancelled').length;
+  const todayNonCancelled = appts.filter(a => a.slot_date === today && a.status !== 'cancelled').length;
   const tomorrowTrend = todayNonCancelled > 0 ? Math.round(((tomorrowTotal - todayNonCancelled) / todayNonCancelled) * 100) : null;
 
-  const thisWeekTotal = appointments.filter(a => a.slot_date >= weekRange.start && a.slot_date <= weekRange.end && a.status !== 'cancelled').length;
-  const prevWeekTotal = appointments.filter(a => a.slot_date >= prevWeekStart && a.slot_date <= prevWeekEnd && a.status !== 'cancelled').length;
+  const thisWeekTotal = appts.filter(a => a.slot_date >= weekRange.start && a.slot_date <= weekRange.end && a.status !== 'cancelled').length;
+  const prevWeekTotal = appts.filter(a => a.slot_date >= prevWeekStart && a.slot_date <= prevWeekEnd && a.status !== 'cancelled').length;
   const weekTrend = prevWeekTotal > 0 ? Math.round(((thisWeekTotal - prevWeekTotal) / prevWeekTotal) * 100) : null;
 
-  const thisMonthTotal = appointments.filter(a => a.slot_date >= monthStart && a.slot_date <= monthEnd && a.status !== 'cancelled').length;
-  const prevMonthTotal = appointments.filter(a => a.slot_date >= prevMonthStart && a.slot_date <= prevMonthEnd && a.status !== 'cancelled').length;
+  const thisMonthTotal = appts.filter(a => a.slot_date >= monthStart && a.slot_date <= monthEnd && a.status !== 'cancelled').length;
+  const prevMonthTotal = appts.filter(a => a.slot_date >= prevMonthStart && a.slot_date <= prevMonthEnd && a.status !== 'cancelled').length;
   const monthTrend = prevMonthTotal > 0 ? Math.round(((thisMonthTotal - prevMonthTotal) / prevMonthTotal) * 100) : null;
 
-  const thisYearTotal = appointments.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
-  const prevYearTotal = appointments.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
+  const thisYearTotal = appts.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
+  const prevYearTotal = appts.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
   const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
 
   const unavailabilityCount = unavailability.length;
@@ -704,6 +701,7 @@ export function DoctorDashboard() {
                             <div className="flex items-center gap-1.5">
                               <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
                               {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
+                              {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
                             </div>
                             {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                           </td>
@@ -779,7 +777,7 @@ export function DoctorDashboard() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => { setSelectedAppointment(null); fetchAppointments(); }}
+          onClose={() => { setSelectedAppointment(null); refreshAll(); }}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}
@@ -810,7 +808,7 @@ export function DoctorDashboard() {
         open={!!rescheduleTarget}
         appointment={rescheduleTarget}
         onClose={() => setRescheduleTarget(null)}
-        onResolved={fetchAppointments}
+        onResolved={refreshAll}
       />
       <ScheduleModal
         open={!!scheduleTarget}
@@ -819,7 +817,7 @@ export function DoctorDashboard() {
         currentDoctorId={scheduleTarget?.doctor_id || ''}
         currentDoctorName={scheduleTarget?.doctor_name || ''}
         onClose={() => setScheduleTarget(null)}
-        onScheduled={fetchAppointments}
+        onScheduled={refreshAll}
         forcedType={forcedScheduleType}
       />
     </div>

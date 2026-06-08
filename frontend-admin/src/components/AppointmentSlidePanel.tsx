@@ -9,6 +9,7 @@ import {
   AlertCircleIcon,
   Calendar01Icon,
   TimeScheduleIcon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -133,6 +134,12 @@ export function AppointmentSlidePanel({
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`size-2 rounded-full ${status.dot}`} />
                 <span className="text-sm font-medium text-slate-600">{status.label}</span>
+                {(appointment as any).referring_doctor_id && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
+                    <HugeiconsIcon icon={UserGroupIcon} className="size-3" />
+                    Referred
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">

@@ -10,6 +10,7 @@ import {
   Calendar01Icon,
   CheckmarkCircle01Icon,
   Cancel01Icon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -217,6 +218,7 @@ export function DoctorConflictsPage() {
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
                                 <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
+                                {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
                               </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>
