@@ -11,6 +11,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { MiniCalendar } from '@/components/MiniCalendar';
 import { CalendarSlidePanel } from '@/components/CalendarSlidePanel';
 import {
@@ -137,9 +139,6 @@ export function DoctorAppointmentsPage() {
   const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
@@ -159,25 +158,25 @@ export function DoctorAppointmentsPage() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
+  const { data: rawAppointments, loading, error, refresh: refreshAppointments } = useCachedData(
+    'appointments:upcoming',
+    useCallback(async () => {
       const data = await api.listAppointments({}, token);
       const upcoming = data.filter(a => a.slot_date >= today);
       upcoming.sort((a, b) => {
         if (a.slot_date !== b.slot_date) return a.slot_date.localeCompare(b.slot_date);
         return a.start_time.localeCompare(b.start_time);
       });
-      setAppointments(upcoming);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, today]);
+      return upcoming;
+    }, [token, today]),
+    { enabled: !!token }
+  );
+  const appointments = rawAppointments ?? [];
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const refreshAll = useCallback(() => {
+    invalidateCache('appointments:upcoming');
+    refreshAppointments();
+  }, [refreshAppointments]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -207,17 +206,17 @@ export function DoctorAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
-      setAppointments(prev => prev.map(a => a.id === pendingAttendance.id ? { ...a, attended: pendingAttendance.attended, status: 'confirmed' } : a));
       setPendingAttendance(null);
       setSelectedAppointment(null);
+      refreshAll();
     } catch (e: any) {
-      setError(e.message);
+      console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token]);
+  }, [pendingAttendance, token, refreshAll]);
 
   const selectedForModal = pendingAttendance
-    ? appointments.find(a => a.id === pendingAttendance.id)
+    ? (appointments as AppointmentHistoryItem[]).find(a => a.id === pendingAttendance.id)
     : null;
 
   const { setContainerClass } = useContentContainer();
@@ -586,7 +585,7 @@ export function DoctorAppointmentsPage() {
         open={!!rescheduleTarget}
         appointment={rescheduleTarget}
         onClose={() => setRescheduleTarget(null)}
-        onResolved={fetchAppointments}
+        onResolved={refreshAll}
       />
       <ScheduleModal
         open={!!scheduleTarget}
@@ -595,7 +594,7 @@ export function DoctorAppointmentsPage() {
         currentDoctorId={scheduleTarget?.doctor_id || ''}
         currentDoctorName={scheduleTarget?.doctor_name || ''}
         onClose={() => setScheduleTarget(null)}
-        onScheduled={fetchAppointments}
+        onScheduled={refreshAll}
         forcedType={forcedScheduleType}
       />
     </div>

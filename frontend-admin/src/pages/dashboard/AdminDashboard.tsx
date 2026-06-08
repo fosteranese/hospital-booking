@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
+import { api, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -14,6 +14,8 @@ import {
   AlertCircleIcon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -52,33 +54,31 @@ const selectClass = "h-8 px-2.5 text-xs border border-slate-200 rounded-md bg-wh
 
 export function AdminDashboard() {
   const { token } = useAuth();
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [doctorFilter, setDoctorFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const query: Record<string, string> = {};
+  const cacheKey = `appointments:admin:${doctorFilter || ''}:${statusFilter || ''}:${dateFilter || ''}`;
+
+  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+    cacheKey,
+    useCallback(async () => {
+      const query: any = {};
       if (doctorFilter) query.doctor_id = doctorFilter;
       if (statusFilter) query.status = statusFilter;
       if (dateFilter) query.date = dateFilter;
-      const data = await api.listAppointments(query as any, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [token, doctorFilter, statusFilter, dateFilter]);
+      return await api.listAppointments(query as any, token);
+    }, [token, doctorFilter, statusFilter, dateFilter]),
+    { enabled: !!token }
+  );
+  const appointments = raw ?? [];
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const refreshAll = useCallback(() => {
+    invalidateCache(cacheKey);
+    fetchAppointments();
+  }, [fetchAppointments, cacheKey]);
 
   useEffect(() => {
     api.getDoctors().then(setDoctors).catch(() => {});
@@ -209,7 +209,7 @@ export function AdminDashboard() {
         <AppointmentDetailModal
           appointmentId={selectedAppointmentId}
           onClose={() => setSelectedAppointmentId(null)}
-          onUpdated={() => fetchAppointments()}
+          onUpdated={refreshAll}
         />
       )}
     </div>

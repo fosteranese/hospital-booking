@@ -7,7 +7,7 @@ export function useCachedData<T>(
   cacheKey: string | null,
   fetcher: () => Promise<T>,
   options?: { staleTime?: number; enabled?: boolean }
-): { data: T | null; loading: boolean; error: string; refresh: () => void } {
+): { data: T | null; loading: boolean; error: string; refresh: () => Promise<void> } {
   const cached = cacheKey ? getCached<T>(cacheKey) : null;
   const [data, setData] = useState<T | null>(cached);
   const [loading, setLoading] = useState(!cached);
@@ -18,8 +18,8 @@ export function useCachedData<T>(
 
   keyRef.current = cacheKey;
 
-  const fetch = useCallback((silent = false) => {
-    if (!cacheKey) return;
+  const fetch = useCallback((silent = false): Promise<void> => {
+    if (!cacheKey) return Promise.resolve();
     const key = cacheKey;
 
     if (!silent) {
@@ -27,35 +27,29 @@ export function useCachedData<T>(
     }
     setError('');
 
-    const doFetch = () => {
-      const pending = inflight.get(key);
-      if (pending) return pending;
+    const pending = inflight.get(key);
+    if (pending) return pending.then(() => {}, () => {});
 
-      const promise = fetcher()
-        .then(result => {
-          setCache(key, result, options?.staleTime);
-          if (mountedRef.current && keyRef.current === key) {
-            setData(result);
-            setLoading(false);
-          }
-          return result;
-        })
-        .catch(e => {
-          if (mountedRef.current && keyRef.current === key) {
-            setError(e.message || 'Failed to load');
-            setLoading(false);
-          }
-          throw e;
-        })
-        .finally(() => {
-          inflight.delete(key);
-        });
+    const promise = fetcher()
+      .then(result => {
+        setCache(key, result, options?.staleTime);
+        if (mountedRef.current && keyRef.current === key) {
+          setData(result);
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        if (mountedRef.current && keyRef.current === key) {
+          setError(e.message || 'Failed to load');
+          setLoading(false);
+        }
+      })
+      .finally(() => {
+        inflight.delete(key);
+      });
 
-      inflight.set(key, promise);
-      return promise;
-    };
-
-    doFetch().catch(() => {});
+    inflight.set(key, promise);
+    return promise;
   }, [cacheKey, fetcher, options?.staleTime]);
 
   useEffect(() => {
@@ -74,7 +68,7 @@ export function useCachedData<T>(
   }, [cacheKey, options?.enabled, fetch]);
 
   const refresh = useCallback(() => {
-    fetch(false);
+    return fetch(false);
   }, [fetch]);
 
   return { data, loading, error, refresh };

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Scheduler, type CalendarEvent as CKEvent } from 'calendarkit-pro';
 import { format } from 'date-fns';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
@@ -74,10 +76,6 @@ export function CalendarPage() {
   const { token, userRole } = useAuth();
   const isDoctor = userRole === 'doctor';
 
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<'month' | 'week' | 'day'>('week');
 
@@ -94,22 +92,19 @@ export function CalendarPage() {
   const schedulerCloseRef = useRef<(() => void) | null>(null);
   const schedulerHandledRef = useRef(false);
 
-  const fetchAppointments = useCallback(async (showLoader = true) => {
-    if (showLoader) setLoading(true);
-    setError('');
-    try {
-      const data = await api.listAppointments({ status: statusFilter || undefined }, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, statusFilter]);
+  const cacheKey = `appointments:calendar:${statusFilter || 'all'}`;
 
-  useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+  const { data: rawAppointments, loading, error, refresh: fetchAppointments } = useCachedData(
+    cacheKey,
+    useCallback(() => api.listAppointments({ status: statusFilter || undefined }, token), [token, statusFilter]),
+    { enabled: !!token }
+  );
+  const appointments = rawAppointments ?? [];
+
+  const refreshAll = useCallback(async () => {
+    invalidateCache(cacheKey);
+    await fetchAppointments();
+  }, [fetchAppointments, cacheKey]);
 
   const events = useMemo(() => appointments.map(toCKEvent), [appointments]);
 
@@ -139,7 +134,7 @@ export function CalendarPage() {
 
     setReschedOpen(false);
     setReschedEvent(null);
-    await fetchAppointments();
+    await refreshAll();
   };
 
   const handleUpdateEvent = async (data: { attended?: boolean | null; notes?: string }) => {
@@ -150,7 +145,7 @@ export function CalendarPage() {
     if (data.attended !== selectedEvent.attended && data.attended !== undefined && data.attended !== null) {
       await api.markAttendance(selectedEvent.id, { attended: data.attended }, token);
     }
-    await fetchAppointments();
+    await refreshAll();
   };
 
   const handleDeleteEvent = async () => {
@@ -158,7 +153,7 @@ export function CalendarPage() {
     await api.cancelAppointment(selectedEvent.id, { cancellation_reason: 'Cancelled by staff' }, token);
     setDetailOpen(false);
     setSelectedEvent(null);
-    await fetchAppointments();
+    await refreshAll();
   };
 
   const handleCreateAppointment = async (data: {
@@ -166,7 +161,7 @@ export function CalendarPage() {
     start_time: string; end_time: string; notes?: string;
   }) => {
     await api.createAppointment(data, token);
-    await fetchAppointments();
+    await refreshAll();
   };
 
   const eventsWithModified = useMemo(() => events.map(ev => {

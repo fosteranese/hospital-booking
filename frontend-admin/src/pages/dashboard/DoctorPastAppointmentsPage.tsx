@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { MiniCalendar } from '@/components/MiniCalendar';
 import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { DateRangeSlidePanel } from '@/components/DateRangeSlidePanel';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -73,9 +75,7 @@ export function DoctorPastAppointmentsPage() {
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = daysAgo(1);
 
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -100,20 +100,17 @@ export function DoctorPastAppointmentsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await api.listAppointments({ from: dateFrom, to: dateTo }, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [token, dateFrom, dateTo]);
-
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const cacheKey = `appointments:past:${dateFrom}:${dateTo}`;
+  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+    cacheKey,
+    useCallback(() => api.listAppointments({ from: dateFrom, to: dateTo }, token), [token, dateFrom, dateTo]),
+    { enabled: !!token }
+  );
+  const appointments = raw ?? [];
+  const refreshAll = useCallback(() => {
+    invalidateCache(cacheKey);
+    fetchAppointments();
+  }, [fetchAppointments, cacheKey]);
 
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
   const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
@@ -145,14 +142,14 @@ export function DoctorPastAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
-      fetchAppointments();
+      refreshAll();
       setPendingAttendance(null);
       setSelectedAppointment(null);
     } catch (e: any) {
-      setError(e.message);
+      console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, fetchAppointments]);
+  }, [pendingAttendance, token, refreshAll]);
 
   const selectedForModal = pendingAttendance
     ? appointments.find(a => a.id === pendingAttendance.id)
@@ -386,7 +383,7 @@ export function DoctorPastAppointmentsPage() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => { setSelectedAppointment(null); fetchAppointments(); }}
+          onClose={() => { setSelectedAppointment(null); refreshAll(); }}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}
@@ -417,7 +414,7 @@ export function DoctorPastAppointmentsPage() {
         open={!!rescheduleTarget}
         appointment={rescheduleTarget}
         onClose={() => setRescheduleTarget(null)}
-        onResolved={fetchAppointments}
+        onResolved={refreshAll}
       />
 
       <ScheduleModal
@@ -427,7 +424,7 @@ export function DoctorPastAppointmentsPage() {
         currentDoctorId={scheduleTarget?.doctor_id || ''}
         currentDoctorName={scheduleTarget?.doctor_name || ''}
         onClose={() => setScheduleTarget(null)}
-        onScheduled={fetchAppointments}
+        onScheduled={refreshAll}
         forcedType={forcedScheduleType}
       />
 

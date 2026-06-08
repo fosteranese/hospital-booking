@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -46,10 +48,7 @@ const inputClass = "h-8 px-2.5 text-xs border border-slate-200 rounded-md bg-whi
 
 export function SchedulerDashboard() {
   const { token } = useAuth();
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [view, setView] = useState<'today' | 'all'>('today');
   const [doctorFilter, setDoctorFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -57,28 +56,28 @@ export function SchedulerDashboard() {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const query: Record<string, string> = {};
-      if (view === 'today') {
-        query.date = today;
-      } else {
-        if (doctorFilter) query.doctor_id = doctorFilter;
-        if (statusFilter) query.status = statusFilter;
-        if (dateFilter) query.date = dateFilter;
-      }
-      const data = await api.listAppointments(query as any, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [token, view, doctorFilter, statusFilter, dateFilter, today]);
+  const cacheKey = `appointments:scheduler:${view}:${doctorFilter || ''}:${statusFilter || ''}:${dateFilter || ''}`;
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+    cacheKey,
+    useCallback(async () => {
+      if (view === 'today') {
+        return await api.listAppointments({ date: today }, token);
+      }
+      const query: Record<string, string> = {};
+      if (doctorFilter) query.doctor_id = doctorFilter;
+      if (statusFilter) query.status = statusFilter;
+      if (dateFilter) query.date = dateFilter;
+      return await api.listAppointments(query as any, token);
+    }, [token, view, doctorFilter, statusFilter, dateFilter, today]),
+    { enabled: !!token }
+  );
+  const appointments = raw ?? [];
+
+  const refreshAll = useCallback(() => {
+    invalidateCache(cacheKey);
+    fetchAppointments();
+  }, [fetchAppointments, cacheKey]);
 
   useEffect(() => {
     api.getDoctors().then(setDoctors).catch(() => {});
@@ -214,7 +213,7 @@ export function SchedulerDashboard() {
         <AppointmentDetailModal
           appointmentId={selectedAppointmentId}
           onClose={() => setSelectedAppointmentId(null)}
-          onUpdated={() => fetchAppointments()}
+          onUpdated={() => refreshAll()}
         />
       )}
     </div>

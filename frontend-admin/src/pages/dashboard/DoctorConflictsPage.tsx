@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { RescheduleModal } from '@/components/RescheduleModal';
@@ -95,9 +97,6 @@ function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: 
 export function DoctorConflictsPage() {
   const { token } = useAuth();
   const [doctorId, setDoctorId] = useState<string | null>(null);
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
   useEffect(() => {
@@ -109,26 +108,22 @@ export function DoctorConflictsPage() {
     })();
   }, [token]);
 
-  const fetchConflicts = useCallback(async () => {
-    if (!doctorId) return;
-    setLoading(true);
-    setError('');
-    try {
-      const data = await api.listAppointments({ doctor_id: doctorId }, token);
-      setAppointments(data.filter(a => a.has_conflict));
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [doctorId, token]);
-
-  useEffect(() => {
-    if (doctorId) fetchConflicts();
-  }, [doctorId, fetchConflicts]);
+  const { data: raw, loading, error, refresh: fetchConflicts } = useCachedData(
+    doctorId ? `appointments:conflicts:${doctorId}` : null,
+    useCallback(async () => {
+      const data = await api.listAppointments({ doctor_id: doctorId! }, token);
+      return data.filter(a => a.has_conflict);
+    }, [doctorId, token]),
+    { enabled: !!doctorId }
+  );
+  const appointments = raw ?? [];
+  const refreshAll = useCallback(() => {
+    if (doctorId) invalidateCache(`appointments:conflicts:${doctorId}`);
+    fetchConflicts();
+  }, [fetchConflicts, doctorId]);
 
   const handleResolved = () => {
-    fetchConflicts();
+    refreshAll();
   };
 
   const today = new Date().toISOString().slice(0, 10);

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
@@ -124,30 +126,23 @@ export function DoctorTodayAppointmentsPage() {
     : undefined;
   const today = new Date().toISOString().slice(0, 10);
 
-  const [todayAppts, setTodayAppts] = useState<AppointmentHistoryItem[]>([]);
-  const [todayLoading, setTodayLoading] = useState(true);
-  const [todayError, setTodayError] = useState('');
-
-  const fetchToday = useCallback(async () => {
-    setTodayLoading(true);
-    try {
-      const data = await api.listAppointments({ date: today }, token);
-      setTodayAppts(data);
-    } catch (e: any) {
-      setTodayError(e.message);
-    } finally {
-      setTodayLoading(false);
-    }
-  }, [token, today]);
-
-  useEffect(() => { fetchToday(); }, [fetchToday]);
+  const { data: rawToday, loading: todayLoading, error: todayError, refresh: fetchToday } = useCachedData(
+    `appointments:today:${today}`,
+    useCallback(() => api.listAppointments({ date: today }, token), [token, today]),
+    { enabled: !!token }
+  );
+  const todayAppts = rawToday ?? [];
+  const refreshAll = useCallback(() => {
+    invalidateCache(`appointments:today:${today}`);
+    fetchToday();
+  }, [fetchToday, today]);
 
   const handleAttendance = async (id: string, attended: boolean, minutes?: number) => {
     try {
       await api.markAttendance(id, { attended, minutes_late: minutes }, token);
-      setTodayAppts(prev => prev.map(a => a.id === id ? { ...a, attended, status: 'confirmed' } : a));
+      refreshAll();
     } catch (e: any) {
-      setTodayError(e.message);
+      console.error(e.message);
     }
   };
 
@@ -182,14 +177,14 @@ export function DoctorTodayAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
-      setTodayAppts(prev => prev.map(a => a.id === pendingAttendance.id ? { ...a, attended: pendingAttendance.attended, status: 'confirmed' } : a));
+      refreshAll();
       setPendingAttendance(null);
       setSelectedAppointment(null);
     } catch (e: any) {
-      setTodayError(e.message);
+      console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token]);
+  }, [pendingAttendance, token, refreshAll]);
 
   const selectedForModal = pendingAttendance
     ? todayAppts.find(a => a.id === pendingAttendance.id)
@@ -425,7 +420,7 @@ export function DoctorTodayAppointmentsPage() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => { setSelectedAppointment(null); fetchToday(); }}
+          onClose={() => { setSelectedAppointment(null); refreshAll(); }}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}
@@ -452,22 +447,22 @@ export function DoctorTodayAppointmentsPage() {
         />
       )}
 
-      <RescheduleModal
-        open={!!rescheduleTarget}
-        appointment={rescheduleTarget}
-        onClose={() => setRescheduleTarget(null)}
-        onResolved={fetchToday}
-      />
-      <ScheduleModal
-        open={!!scheduleTarget}
-        patientId={scheduleTarget?.patient_id || ''}
-        patientName={scheduleTarget?.patient_name || ''}
-        currentDoctorId={scheduleTarget?.doctor_id || ''}
-        currentDoctorName={scheduleTarget?.doctor_name || ''}
-        onClose={() => setScheduleTarget(null)}
-        onScheduled={fetchToday}
-        forcedType={forcedScheduleType}
-      />
+        <RescheduleModal
+          open={!!rescheduleTarget}
+          appointment={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onResolved={refreshAll}
+        />
+        <ScheduleModal
+          open={!!scheduleTarget}
+          patientId={scheduleTarget?.patient_id || ''}
+          patientName={scheduleTarget?.patient_name || ''}
+          currentDoctorId={scheduleTarget?.doctor_id || ''}
+          currentDoctorName={scheduleTarget?.doctor_name || ''}
+          onClose={() => setScheduleTarget(null)}
+          onScheduled={refreshAll}
+          forcedType={forcedScheduleType}
+        />
     </div>
   );
 }

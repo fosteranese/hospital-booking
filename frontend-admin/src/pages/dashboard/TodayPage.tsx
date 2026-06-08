@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useCachedData } from '@/hooks/useCachedData';
+import { invalidateCache } from '@/lib/cache';
 import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
@@ -126,28 +128,23 @@ export function TodayPage() {
   const today = new Date().toISOString().slice(0, 10);
   const now = new Date();
 
-  const [appointments, setAppointments] = useState<AppointmentHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
 
-  const fetchAppointments = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
+  const cacheKey = `appointments:today:${today}:${selectedDoctor || 'all'}`;
+
+  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+    cacheKey,
+    useCallback(async () => {
       const params: { date: string; doctor_id?: string } = { date: today };
       if (selectedDoctor) params.doctor_id = selectedDoctor;
-      const data = await api.listAppointments(params, token);
-      setAppointments(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load appointments');
-    } finally {
-      setLoading(false);
-    }
-  }, [token, today, selectedDoctor]);
+      return await api.listAppointments(params, token);
+    }, [token, today, selectedDoctor]),
+    { enabled: !!token }
+  );
+  const appointments = raw ?? [];
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -158,15 +155,19 @@ export function TodayPage() {
   }, []);
 
   useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  const refreshAll = useCallback(() => {
+    invalidateCache(cacheKey);
+    fetchAppointments();
+  }, [fetchAppointments, cacheKey]);
 
   const handleConfirmAttend = useCallback(async (id: string, attended: boolean, minutes_late?: number | null) => {
     try {
       await api.markAttendance(id, { attended, minutes_late }, token);
       setLatenessInput(null);
-      fetchAppointments();
+      refreshAll();
     } catch (e: any) {
-      setError(e.message || 'Failed to update attendance');
+      console.error(e.message || 'Failed to update attendance');
     }
   }, [token, fetchAppointments]);
 
@@ -369,7 +370,7 @@ export function TodayPage() {
         <AppointmentDetailModal
           appointmentId={selectedAppointmentId}
           onClose={() => setSelectedAppointmentId(null)}
-          onUpdated={() => fetchAppointments()}
+          onUpdated={() => refreshAll()}
         />
       )}
     </div>
