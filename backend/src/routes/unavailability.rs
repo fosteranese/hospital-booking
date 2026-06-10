@@ -245,7 +245,14 @@ pub async fn list_unavailability_conflicts(
                 d.specialization, \
                 s.slot_date, s.start_time, s.end_time, \
                 a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason, \
-                TRUE AS has_conflict \
+                TRUE AS has_conflict, \
+                $2 AS conflict_slot_date, \
+                $3 AS conflict_end_date, \
+                $4 AS conflict_start_time, \
+                $5 AS conflict_end_time, \
+                ''::text AS conflict_reason, \
+                NULL::uuid AS referring_doctor_id, \
+                NULL::text AS referring_doctor_name \
          FROM appointments a \
          JOIN patients p ON p.id = a.patient_id \
          JOIN doctors d ON d.id = a.doctor_id \

@@ -61,6 +61,11 @@ pub struct AppointmentHistoryItem {
     pub minutes_late: Option<i32>,
     pub cancellation_reason: String,
     pub has_conflict: bool,
+    pub conflict_slot_date: Option<chrono::NaiveDate>,
+    pub conflict_end_date: Option<chrono::NaiveDate>,
+    pub conflict_start_time: Option<chrono::NaiveTime>,
+    pub conflict_end_time: Option<chrono::NaiveTime>,
+    pub conflict_reason: Option<String>,
     pub referring_doctor_id: Option<Uuid>,
     pub referring_doctor_name: Option<String>,
 }

@@ -420,7 +420,7 @@ export function DoctorTodayAppointmentsPage() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => { setSelectedAppointment(null); refreshAll(); }}
+          onClose={() => setSelectedAppointment(null)}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}

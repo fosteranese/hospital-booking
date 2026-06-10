@@ -9,6 +9,7 @@ import {
   AlertCircleIcon,
   Calendar01Icon,
   TimeScheduleIcon,
+  ArrowRight01Icon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
@@ -17,6 +18,10 @@ function formatTime(timeStr: string) {
   const period = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function AppointmentSlidePanel({
@@ -108,9 +113,24 @@ export function AppointmentSlidePanel({
 
         {/* Conflict banner */}
         {appointment.has_conflict && (
-          <div className="flex items-center gap-1.5 px-7 py-2.5 bg-red-50 border-b border-red-100">
-            <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
-            <span className="text-xs text-red-700">This appointment conflicts with your unavailability</span>
+          <div className="px-7 py-2.5 bg-red-50 border-b border-red-100">
+            <div className="flex items-center gap-1.5">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
+              <span className="text-xs text-red-700 font-medium">Scheduling Conflict</span>
+            </div>
+            <p className="text-[11px] text-red-600 mt-0.5 ml-5">
+              This appointment overlaps with your unavailability period. Consider rescheduling.
+            </p>
+          </div>
+        )}
+
+        {/* Referral banner */}
+        {(appointment as any).referring_doctor_id && (
+          <div className="flex items-center gap-1.5 px-7 py-2.5 bg-violet-50 border-b border-violet-100">
+            <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+            <span className="text-xs text-violet-700">
+              Referred by <strong>{(appointment as any).referring_doctor_name || 'another doctor'}</strong>
+            </span>
           </div>
         )}
 
@@ -207,6 +227,58 @@ export function AppointmentSlidePanel({
               </div>
             </div>
           </div>
+
+          {/* Conflict details */}
+          {appointment.has_conflict && (appointment as any).conflict_slot_date && (
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-500" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Conflict — Unavailability</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                    {formatDate((appointment as any).conflict_slot_date)}
+                    {(appointment as any).conflict_end_date && (appointment as any).conflict_end_date !== (appointment as any).conflict_slot_date && (
+                      <span> — {formatDate((appointment as any).conflict_end_date)}</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    {(appointment as any).conflict_start_time ? (
+                      <>{formatTime((appointment as any).conflict_start_time)} — {formatTime((appointment as any).conflict_end_time)}</>
+                    ) : 'All day'}
+                    {(appointment as any).conflict_reason && (
+                      <span className="text-slate-400 ml-1">· {(appointment as any).conflict_reason}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Referral details */}
+          {(appointment as any).referring_doctor_id && (
+            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-violet-500" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Referred by</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{(appointment as any).referring_doctor_name || 'Another doctor'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-emerald-500" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">To</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.doctor_name}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           {appointment.notes && (

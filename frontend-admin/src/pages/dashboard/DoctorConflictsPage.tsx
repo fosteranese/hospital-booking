@@ -5,6 +5,7 @@ import { useCachedData } from '@/hooks/useCachedData';
 import { invalidateCache } from '@/lib/cache';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { RescheduleModal } from '@/components/RescheduleModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -98,6 +99,7 @@ export function DoctorConflictsPage() {
   const { token } = useAuth();
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -143,7 +145,7 @@ export function DoctorConflictsPage() {
   const sortedDates = Object.keys(groupedByDate).sort();
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 transition-[margin-right] duration-200 ${selectedAppointment ? 'lg:mr-[480px]' : ''}`}>
       <PageHeader
         title="Appointment Conflicts"
         description={`${appointments.length} appointment${appointments.length !== 1 ? 's' : ''} with scheduling conflicts`}
@@ -197,8 +199,9 @@ export function DoctorConflictsPage() {
                         return (
                           <tr
                             key={a.id}
-                            className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
+                             className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 transform-gpu"
                             style={{ transformOrigin: 'center' }}
+                            onClick={() => setSelectedAppointment(a)}
                           >
                             <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                               <div className="flex flex-col items-start">
@@ -253,6 +256,15 @@ export function DoctorConflictsPage() {
         onClose={() => setRescheduleTarget(null)}
         onResolved={handleResolved}
       />
+
+      {selectedAppointment && (
+        <AppointmentSlidePanel
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onRequestAttendance={() => {}}
+          onReschedule={setRescheduleTarget}
+        />
+      )}
     </div>
   );
 }

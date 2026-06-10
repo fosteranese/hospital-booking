@@ -448,7 +448,12 @@ export function DoctorDashboard() {
   const prevYearTotal = appts.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
   const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
 
-  const unavailabilityCount = unavailability.length;
+  const unavailabilityCount = unavailability.reduce((sum, u) => {
+    const start = new Date(u.slot_date + 'T00:00:00');
+    const end = new Date(u.end_date + 'T00:00:00');
+    const days = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+    return sum + days;
+  }, 0);
   const todayStr = new Date().toISOString().slice(0, 10);
   const futureUnavailability = [...unavailability]
     .filter(u => u.slot_date >= todayStr)
@@ -777,7 +782,7 @@ export function DoctorDashboard() {
       {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
-          onClose={() => { setSelectedAppointment(null); refreshAll(); }}
+          onClose={() => setSelectedAppointment(null)}
           onRequestAttendance={requestAttendance}
           onReschedule={setRescheduleTarget}
           onScheduleNew={canSchedule ? setScheduleTarget : undefined}

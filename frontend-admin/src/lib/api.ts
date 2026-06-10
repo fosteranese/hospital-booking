@@ -138,6 +138,11 @@ export interface AppointmentHistoryItem {
   minutes_late: number | null;
   cancellation_reason: string;
   has_conflict: boolean;
+  conflict_slot_date?: string;
+  conflict_end_date?: string;
+  conflict_start_time?: string;
+  conflict_end_time?: string;
+  conflict_reason?: string;
   referring_doctor_id?: string;
   referring_doctor_name?: string;
 }

@@ -141,20 +141,28 @@ pub async fn list_appointments(
                 a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
-                EXISTS(
-                  SELECT 1 FROM doctor_unavailability du
-                  WHERE du.doctor_id = a.doctor_id
-                    AND s.slot_date BETWEEN du.slot_date AND du.end_date
-                    AND a.attended IS NULL
-                    AND a.status != 'cancelled'
-                    AND ((du.start_time IS NULL AND du.end_time IS NULL)
-                         OR (s.start_time < du.end_time AND s.end_time > du.start_time))
-                ) AS has_conflict
+                CASE WHEN conflict.slot_date IS NOT NULL THEN true ELSE false END AS has_conflict,
+                conflict.slot_date AS conflict_slot_date,
+                conflict.end_date AS conflict_end_date,
+                conflict.start_time AS conflict_start_time,
+                conflict.end_time AS conflict_end_time,
+                conflict.reason AS conflict_reason
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
          LEFT JOIN doctors rd ON rd.id = a.referring_doctor_id
+         LEFT JOIN LATERAL (
+           SELECT du.slot_date, du.end_date, du.start_time, du.end_time, du.reason
+           FROM doctor_unavailability du
+           WHERE du.doctor_id = a.doctor_id
+             AND s.slot_date BETWEEN du.slot_date AND du.end_date
+             AND a.attended IS NULL
+             AND a.status != 'cancelled'
+             AND ((du.start_time IS NULL AND du.end_time IS NULL)
+                  OR (s.start_time < du.end_time AND s.end_time > du.start_time))
+           LIMIT 1
+         ) AS conflict ON true
          WHERE 1=1"
     );
     let mut param_idx = 1u32;
@@ -220,20 +228,28 @@ pub async fn export_appointments(
                 a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
-                EXISTS(
-                  SELECT 1 FROM doctor_unavailability du
-                  WHERE du.doctor_id = a.doctor_id
-                    AND s.slot_date BETWEEN du.slot_date AND du.end_date
-                    AND a.attended IS NULL
-                    AND a.status != 'cancelled'
-                    AND ((du.start_time IS NULL AND du.end_time IS NULL)
-                         OR (s.start_time < du.end_time AND s.end_time > du.start_time))
-                ) AS has_conflict
+                CASE WHEN conflict.slot_date IS NOT NULL THEN true ELSE false END AS has_conflict,
+                conflict.slot_date AS conflict_slot_date,
+                conflict.end_date AS conflict_end_date,
+                conflict.start_time AS conflict_start_time,
+                conflict.end_time AS conflict_end_time,
+                conflict.reason AS conflict_reason
          FROM appointments a
          JOIN patients p ON p.id = a.patient_id
          JOIN doctors d ON d.id = a.doctor_id
          JOIN availability_slots s ON s.id = a.slot_id
          LEFT JOIN doctors rd ON rd.id = a.referring_doctor_id
+         LEFT JOIN LATERAL (
+           SELECT du.slot_date, du.end_date, du.start_time, du.end_time, du.reason
+           FROM doctor_unavailability du
+           WHERE du.doctor_id = a.doctor_id
+             AND s.slot_date BETWEEN du.slot_date AND du.end_date
+             AND a.attended IS NULL
+             AND a.status != 'cancelled'
+             AND ((du.start_time IS NULL AND du.end_time IS NULL)
+                  OR (s.start_time < du.end_time AND s.end_time > du.start_time))
+           LIMIT 1
+         ) AS conflict ON true
          WHERE 1=1"
     );
     let mut param_idx = 1u32;
