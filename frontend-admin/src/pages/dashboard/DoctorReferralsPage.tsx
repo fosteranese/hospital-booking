@@ -79,8 +79,8 @@ export function DoctorReferralsPage() {
           icon={ArrowRight01Icon}
         />
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
               <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
           </button>
@@ -99,7 +99,7 @@ export function DoctorReferralsPage() {
           <div className="p-8">
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
           </div>
@@ -118,30 +118,30 @@ export function DoctorReferralsPage() {
                   const borderColor = status.color.includes('emerald') ? '#10b981' : status.color.includes('purple') ? '#9333ea' : status.color.includes('amber') ? '#f59e0b' : '#cbd5e1';
                   return (
                     <tr key={r.id}
-                      className="block sm:table-row relative cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md mb-2 sm:mb-0 rounded-lg sm:rounded-none overflow-hidden sm:overflow-visible border sm:border-0 border-slate-100 sm:border-none last:[&>td]:border-b-0"
+                      className="block sm:table-row relative cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md mb-2 sm:mb-0 rounded-lg sm:rounded-none overflow-hidden sm:overflow-visible border sm:border-0 border-border sm:border-none last:[&>td]:border-b-0"
                       onClick={() => setSelectedAppointment(referralToAppointment(r))}
                       style={{ transformOrigin: 'center' }}
                     >
                       {/* Full-height accent bar on mobile */}
                       <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg sm:hidden" style={{ backgroundColor: borderColor }} />
                       <td className="block sm:table-cell pt-3 sm:py-4 pb-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5 sm:border-l-[3px]" data-label="" style={{ borderLeftColor: borderColor }}>
-                        <div className="text-sm font-semibold text-slate-900">{r.patient_name}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">{formatDate(r.slot_date)} · {formatTime(r.start_time)} — {formatTime(r.end_time)}</div>
+                        <div className="text-sm font-semibold text-foreground">{r.patient_name}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{formatDate(r.slot_date)} · {formatTime(r.start_time)} — {formatTime(r.end_time)}</div>
                       </td>
                       <td className="block sm:table-cell py-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="Referred by">
-                        <span className="sm:hidden text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">Referred by</span>
-                        <div className="text-sm font-medium text-slate-900">{r.referring_doctor_name}</div>
+                        <span className="sm:hidden text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-0.5">Referred by</span>
+                        <div className="text-sm font-medium text-foreground">{r.referring_doctor_name}</div>
                       </td>
                       <td className="block sm:table-cell py-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="To">
-                        <span className="sm:hidden text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">To</span>
-                        <div className="text-sm font-medium text-slate-900">{r.doctor_name}</div>
+                        <span className="sm:hidden text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-0.5">To</span>
+                        <div className="text-sm font-medium text-foreground">{r.doctor_name}</div>
                       </td>
                       <td className="block sm:table-cell py-2 sm:py-4 border-b-0 sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
                           status.color === 'bg-emerald-500' ? 'text-emerald-700 bg-emerald-50' :
                           status.color === 'bg-purple-500' ? 'text-purple-700 bg-purple-50' :
                           status.color === 'bg-amber-400' ? 'text-amber-700 bg-amber-50' :
-                          'text-slate-400 bg-slate-50'
+                          'text-muted-foreground bg-muted'
                         }`}>
                           <span className={`size-1.5 rounded-full ${status.color}`} />
                           {status.label}

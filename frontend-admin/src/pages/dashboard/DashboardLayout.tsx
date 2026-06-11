@@ -273,7 +273,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
             {/* Profile Dropdown */}
             {profileOpen && !collapsed && (
-              <div className="absolute bottom-full left-2 right-2 mb-1 bg-white rounded-lg shadow-lg shadow-slate-200/60 border border-sidebar-border/60 overflow-hidden z-50">
+              <div className="absolute bottom-full left-2 right-2 mb-1 bg-card rounded-lg shadow-lg shadow-border border border-sidebar-border/60 overflow-hidden z-50">
                 <div className="px-3 py-2 border-b border-sidebar-border/40">
                   <p className="text-sm font-medium text-sidebar-foreground truncate">{otpIdentifier}</p>
                   <p className="text-[11px] text-sidebar-foreground/40">{roleLabel} Account</p>

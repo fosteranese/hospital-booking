@@ -165,7 +165,7 @@ export function AppointmentSlidePanel({
         <div className={`flex-1 overflow-y-auto px-7 pb-6 transition-opacity duration-200 ${switching ? 'opacity-60' : ''}`}>
           {/* Patient header */}
           <div className="flex items-center gap-4 pt-6">
-            <div className="size-12 rounded-full bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-lg font-bold text-slate-600 shrink-0 shadow-sm">
+            <div className="size-12 rounded-full bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0 shadow-sm">
               {(appointment.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
             </div>
             <div className="min-w-0 flex-1">

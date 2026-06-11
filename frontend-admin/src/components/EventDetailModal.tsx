@@ -134,7 +134,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
                             ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
                             : val === false
                             ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
-                            : 'bg-slate-100 text-slate-700 ring-1 ring-slate-300'
+                            : 'bg-slate-100 text-foreground ring-1 ring-border'
                           : 'bg-transparent text-muted-foreground hover:bg-accent ring-1 ring-border'
                       }`}
                     >

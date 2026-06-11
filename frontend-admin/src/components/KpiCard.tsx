@@ -41,8 +41,8 @@ const colorMap = {
   },
   slate: {
     border: 'border-l-slate-500',
-    icon: 'bg-slate-100 text-slate-600',
-    pill: 'text-slate-700 bg-slate-50 ring-1 ring-slate-200/50',
+    icon: 'bg-slate-100 text-muted-foreground',
+    pill: 'text-foreground bg-muted ring-1 ring-border/50',
   },
 };
 
@@ -55,7 +55,7 @@ const trendIconMap = {
 const trendColorMap = {
   up: 'text-emerald-600',
   down: 'text-red-500',
-  flat: 'text-slate-400',
+  flat: 'text-muted-foreground',
 };
 
 export function KpiCard({ label, value, icon, color, trend, trendLabel, comparisonText, className }: KpiCardProps) {

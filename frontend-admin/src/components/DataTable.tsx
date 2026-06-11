@@ -40,7 +40,7 @@ export function DataTable<T>({
     return (
       <div className="space-y-2">
         {Array.from({ length: skeletonRows }).map((_, i) => (
-          <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />
+          <div key={i} className="h-10 bg-muted rounded-md animate-pulse" />
         ))}
       </div>
     );

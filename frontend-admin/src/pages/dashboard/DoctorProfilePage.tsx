@@ -40,10 +40,10 @@ export function DoctorProfilePage() {
         <PageHeader title="My Profile" description="Your account and professional details" icon={UserIcon} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-6 h-48 animate-pulse">
-              <div className="h-4 w-24 bg-slate-100 rounded mb-4" />
-              <div className="h-3 w-full bg-slate-100 rounded mb-2" />
-              <div className="h-3 w-3/4 bg-slate-100 rounded" />
+            <div key={i} className="bg-card rounded-xl border border-border/80 p-6 h-48 animate-pulse">
+              <div className="h-4 w-24 bg-muted rounded mb-4" />
+              <div className="h-3 w-full bg-muted rounded mb-2" />
+              <div className="h-3 w-3/4 bg-muted rounded" />
             </div>
           ))}
         </div>
@@ -94,9 +94,9 @@ export function DoctorProfilePage() {
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-slate-900">{fullName}</h2>
+            <h2 className="text-xl font-bold text-foreground">{fullName}</h2>
             {profile.specialization && (
-              <p className="text-sm text-slate-600 mt-0.5">{profile.specialization}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{profile.specialization}</p>
             )}
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="success">{profile.role}</Badge>
@@ -120,8 +120,8 @@ export function DoctorProfilePage() {
                   <HugeiconsIcon icon={StethoscopeIcon} className="size-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Specialization</p>
-                  <p className="text-sm font-medium text-slate-900 mt-0.5">{profile.specialization || '—'}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Specialization</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{profile.specialization || '—'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -129,8 +129,8 @@ export function DoctorProfilePage() {
                   <HugeiconsIcon icon={IdVerifiedIcon} className="size-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Doctor ID</p>
-                  <p className="text-sm font-mono text-slate-600 mt-0.5">{profile.doctor_id}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Doctor ID</p>
+                  <p className="text-sm font-mono text-muted-foreground mt-0.5">{profile.doctor_id}</p>
                 </div>
               </div>
             </div>
@@ -149,8 +149,8 @@ export function DoctorProfilePage() {
                 <HugeiconsIcon icon={Mail01Icon} className="size-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Email</p>
-                <p className="text-sm font-medium text-slate-900 mt-0.5">{profile.email || profile.identifier}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{profile.email || profile.identifier}</p>
               </div>
             </div>
             {profile.phone && (
@@ -159,8 +159,8 @@ export function DoctorProfilePage() {
                   <HugeiconsIcon icon={CallIcon} className="size-4 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Phone</p>
-                  <p className="text-sm font-medium text-slate-900 mt-0.5">{profile.phone}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{profile.phone}</p>
                 </div>
               </div>
             )}
@@ -175,12 +175,12 @@ export function DoctorProfilePage() {
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex items-start gap-3">
-              <div className="size-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                <HugeiconsIcon icon={UserIcon} className="size-4 text-slate-600" />
+              <div className="size-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <HugeiconsIcon icon={UserIcon} className="size-4 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Username</p>
-                <p className="text-sm font-medium text-slate-900 mt-0.5">{profile.identifier}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Username</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{profile.identifier}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -188,8 +188,8 @@ export function DoctorProfilePage() {
                 <HugeiconsIcon icon={IdVerifiedIcon} className="size-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Role</p>
-                <p className="text-sm font-medium text-slate-900 mt-0.5 capitalize">{profile.role}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Role</p>
+                <p className="text-sm font-medium text-foreground mt-0.5 capitalize">{profile.role}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -197,8 +197,8 @@ export function DoctorProfilePage() {
                 <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Member Since</p>
-                <p className="text-sm font-medium text-slate-900 mt-0.5">{joinDate}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Member Since</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{joinDate}</p>
               </div>
             </div>
           </div>

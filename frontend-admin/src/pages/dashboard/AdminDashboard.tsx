@@ -69,8 +69,8 @@ export function AdminDashboard() {
         icon={Calendar01Icon}
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-slate-500">
+            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-muted-foreground">
                 <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               </svg>
             </button>
@@ -89,8 +89,8 @@ export function AdminDashboard() {
       )}
 
       {/* Filter toolbar */}
-      <div className="flex flex-wrap items-center gap-2 bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)] px-3.5 py-2">
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+      <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)] px-3.5 py-2">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" />
         </div>
         <select value={doctorFilter} onChange={e => setDoctorFilter(e.target.value)} className={`${selectClass} w-[170px]`}>
@@ -108,10 +108,10 @@ export function AdminDashboard() {
           type="date"
           value={dateFilter}
           onChange={e => setDateFilter(e.target.value)}
-          className="h-8 px-2.5 text-xs border border-slate-200 rounded-md bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-[150px]"
+          className="h-8 px-2.5 text-xs border border-border rounded-md bg-card text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-[150px]"
         />
         {hasFilters && (
-          <button onClick={clearFilters} className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-1">
+          <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1">
             Clear
           </button>
         )}
@@ -121,15 +121,15 @@ export function AdminDashboard() {
       <Card padding="none">
         <DataTable<AppointmentHistoryItem>
           columns={[
-            { key: 'date', header: 'Date', render: (a) => <span className="text-sm text-slate-900">{a.slot_date}</span> },
-            { key: 'time', header: 'Time', render: (a) => <span className="text-sm text-slate-500">{formatTime(a.start_time)} – {formatTime(a.end_time)}</span> },
+            { key: 'date', header: 'Date', render: (a) => <span className="text-sm text-foreground">{a.slot_date}</span> },
+            { key: 'time', header: 'Time', render: (a) => <span className="text-sm text-muted-foreground">{formatTime(a.start_time)} – {formatTime(a.end_time)}</span> },
             {
               key: 'doctor', header: 'Doctor', render: (a) => (
                 <div className="flex items-center gap-2.5">
                   <div className="size-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">
                     {a.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
-                  <span className="text-sm text-slate-900">{a.doctor_name}</span>
+                  <span className="text-sm text-foreground">{a.doctor_name}</span>
                   {a.referring_doctor_id && (
                     <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                       <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500 shrink-0" />
@@ -139,8 +139,8 @@ export function AdminDashboard() {
               ),
             },
             { key: 'status', header: 'Status', render: (a) => <StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /> },
-            { key: 'notes', header: 'Notes', render: (a) => <span className="text-sm text-slate-400 max-w-[160px] truncate block">{a.notes || '—'}</span> },
-            { key: 'arrow', header: '', className: 'w-8', render: () => <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" /> },
+            { key: 'notes', header: 'Notes', render: (a) => <span className="text-sm text-muted-foreground max-w-[160px] truncate block">{a.notes || '—'}</span> },
+            { key: 'arrow', header: '', className: 'w-8', render: () => <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" /> },
           ]}
           data={appointments}
           loading={loading}

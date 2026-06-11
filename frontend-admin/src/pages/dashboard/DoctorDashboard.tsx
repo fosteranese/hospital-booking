@@ -157,20 +157,20 @@ function TodayStatCard({
 function TrendBadge({ value, label }: { value: number | null; label: string }) {
   if (value === null) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-slate-400">
-        —<span className="text-slate-400 ml-0.5">{label}</span>
+      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
+        —<span className="text-muted-foreground ml-0.5">{label}</span>
       </span>
     );
   }
   const isUp = value > 0;
   const isNeutral = value === 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${isNeutral ? 'text-slate-400' : isUp ? 'text-emerald-600' : 'text-red-500'}`}>
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${isNeutral ? 'text-muted-foreground' : isUp ? 'text-emerald-600' : 'text-red-500'}`}>
       {!isNeutral && (
         <HugeiconsIcon icon={isUp ? ArrowUp01Icon : ArrowDown01Icon} className="size-3" />
       )}
       {isNeutral ? '—' : `${Math.abs(value)}%`}
-      <span className="text-slate-400 ml-0.5">{label}</span>
+      <span className="text-muted-foreground ml-0.5">{label}</span>
     </span>
   );
 }
@@ -192,16 +192,16 @@ function FutureStatCard({
   borderClass: string;
 }) {
   return (
-    <div className={`relative bg-white overflow-hidden rounded-xl border ${borderClass}`}>
+    <div className={`relative bg-card overflow-hidden rounded-xl border ${borderClass}`}>
       <div className="py-4.5 px-4">
         <div className="flex items-center gap-4">
           <div className={`size-11 rounded-xl flex items-center justify-center shrink-0 ${accentClass}`}>
             <HugeiconsIcon icon={icon} className="size-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-slate-500 font-medium">{label}</div>
+            <div className="text-xs text-muted-foreground font-medium">{label}</div>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xl font-bold text-slate-900">{value}</span>
+              <span className="text-xl font-bold text-foreground">{value}</span>
               <TrendBadge value={trend} label="vs prev" />
             </div>
           </div>
@@ -231,17 +231,17 @@ function InfoCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 py-4 px-4 ${className || ''}`} style={{ borderLeft: `4px solid ${borderColor}` }}>
+    <div className={`bg-card rounded-xl border border-border py-4 px-4 ${className || ''}`} style={{ borderLeft: `4px solid ${borderColor}` }}>
       <div className="flex items-start gap-4">
-        <div className="size-11 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
-          <HugeiconsIcon icon={icon} className="size-5 text-slate-500" />
+        <div className="size-11 rounded-xl bg-muted flex items-center justify-center shrink-0">
+          <HugeiconsIcon icon={icon} className="size-5 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-slate-500 font-medium">{label}</div>
+          <div className="text-xs text-muted-foreground font-medium">{label}</div>
           {children ?? (
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xl font-bold text-slate-900">{value}</span>
-              {subtext && <span className="text-xs text-slate-400">{subtext}</span>}
+              <span className="text-xl font-bold text-foreground">{value}</span>
+              {subtext && <span className="text-xs text-muted-foreground">{subtext}</span>}
             </div>
           )}
         </div>
@@ -413,8 +413,8 @@ export function DoctorDashboard() {
           icon={Calendar01Icon}
         />
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
               <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
           </button>
@@ -434,7 +434,7 @@ export function DoctorDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="col-span-1">
           {loading ? (
-            <div className="h-full min-h-[148px] bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-full min-h-[148px] bg-muted rounded-lg animate-pulse" />
           ) : (
             <TodayStatCard
               label="Pending Today"
@@ -449,7 +449,7 @@ export function DoctorDashboard() {
         </div>
         <div className="col-span-1">
           {loading ? (
-            <div className="h-full min-h-[148px] bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-full min-h-[148px] bg-muted rounded-lg animate-pulse" />
           ) : (
             <TodayStatCard
               label="Attended Today"
@@ -464,7 +464,7 @@ export function DoctorDashboard() {
         </div>
         <div className="col-span-1">
           {loading ? (
-            <div className="h-full min-h-[148px] bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-full min-h-[148px] bg-muted rounded-lg animate-pulse" />
           ) : (
             <TodayStatCard
               label="Missed Today"
@@ -479,7 +479,7 @@ export function DoctorDashboard() {
         </div>
         <div className="col-span-1">
           {loading ? (
-            <div className="h-full min-h-[148px] bg-slate-100 rounded-lg animate-pulse" />
+            <div className="h-full min-h-[148px] bg-muted rounded-lg animate-pulse" />
           ) : (
             <TodayStatCard
               label="Total Today"
@@ -499,14 +499,14 @@ export function DoctorDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-slate-500" />
-              <h3 className="text-sm font-semibold text-slate-900">Future Appointments</h3>
+              <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Future Appointments</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
             {loading ? (
               <>
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
+                  <div key={i} className="h-[76px] bg-muted rounded-lg animate-pulse" />
                 ))}
               </>
             ) : (
@@ -521,31 +521,31 @@ export function DoctorDashboard() {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-slate-500" />
-              <h3 className="text-sm font-semibold text-slate-900">Other Info</h3>
+              <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Other Info</h3>
             </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {loading ? (
                 <>
-                  <div className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
-                  <div className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
+                  <div className="h-[76px] bg-muted rounded-lg animate-pulse" />
+                  <div className="h-[76px] bg-muted rounded-lg animate-pulse" />
                 </>
               ) : (
               <>
-              <div className="bg-white rounded-xl border border-slate-200 py-3 px-5 flex flex-col">
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Unavailability</span>
+              <div className="bg-card rounded-xl border border-border py-3 px-5 flex flex-col">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Unavailability</span>
                 <div className="flex-1 flex items-center justify-start">
-                  <span className="text-4xl font-bold text-slate-900">{unavailabilityCount}</span>
-                  <span className="text-base font-medium text-slate-400 ml-2 mt-2 self-center">day{unavailabilityCount !== 1 ? 's' : ''}</span>
+                  <span className="text-4xl font-bold text-foreground">{unavailabilityCount}</span>
+                  <span className="text-base font-medium text-muted-foreground ml-2 mt-2 self-center">day{unavailabilityCount !== 1 ? 's' : ''}</span>
                 </div>
                 {nextUnavailability && (
                   <div className="mt-auto pt-3 border-t border-slate-50">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <HugeiconsIcon icon={TimeScheduleIcon} className="size-3.5 text-orange-400 shrink-0" />
                       <span className="font-medium">Next:</span>
                       <span>{nextDateFormatted}</span>
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5 ml-5">{nextTime}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5 ml-5">{nextTime}</div>
                   </div>
                 )}
               </div>
@@ -555,7 +555,7 @@ export function DoctorDashboard() {
                     <div className="h-12 w-1 shrink-0 rounded-full bg-violet-500" />
                     <div className="flex flex-1 justify-between">
                       <div className="space-y-0.5">
-                        <p className="text-xs text-slate-500 font-medium">Incoming Referrals</p>
+                        <p className="text-xs text-muted-foreground font-medium">Incoming Referrals</p>
                         <p className="text-xl font-bold tracking-tight">{incomingReferrals}</p>
                       </div>
                       <div className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-100 shrink-0">
@@ -569,7 +569,7 @@ export function DoctorDashboard() {
                     <div className="h-12 w-1 shrink-0 rounded-full bg-blue-500" />
                     <div className="flex flex-1 justify-between">
                       <div className="space-y-0.5">
-                        <p className="text-xs text-slate-500 font-medium">Outgoing Referrals</p>
+                        <p className="text-xs text-muted-foreground font-medium">Outgoing Referrals</p>
                         <p className="text-xl font-bold tracking-tight">{outgoingReferrals}</p>
                       </div>
                       <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 shrink-0">
@@ -589,8 +589,8 @@ export function DoctorDashboard() {
       {/* Today's schedule */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">Today's Schedule</h3>
+          <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">Today's Schedule</h3>
           <div className="ml-auto flex items-center gap-2">
             {todayConflicts.length > 0 && (
               <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
@@ -609,7 +609,7 @@ export function DoctorDashboard() {
         <Card padding="none">
             {loading ? (
               <div className="p-5 space-y-2.5">
-                {[1, 2, 3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-md animate-pulse" />)}
+                {[1, 2, 3].map(i => <div key={i} className="h-14 bg-muted rounded-md animate-pulse" />)}
               </div>
             ) : todayAppts.length === 0 ? (
               <EmptyState
@@ -637,22 +637,22 @@ export function DoctorDashboard() {
                       return (
                         <tr
                           key={a.id}
-                          className={`cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30' : ''}`}
+                          className={`cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30' : ''}`}
                           onClick={() => setSelectedAppointment(a)}
                           style={{ transformOrigin: 'center' }}
                         >
-                          <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                          <td className="py-4 w-[110px] border-b border-border align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                             <div className="flex flex-col items-start">
-                              <span className="text-base font-semibold text-slate-900">{formatTime(a.start_time)}</span>
-                              <span className="text-xs text-slate-400">{formatTime(a.end_time)}</span>
+                              <span className="text-base font-semibold text-foreground">{formatTime(a.start_time)}</span>
+                              <span className="text-xs text-muted-foreground">{formatTime(a.end_time)}</span>
                             </div>
                           </td>
-                          <td className="w-10 p-2 border-b border-slate-100 text-center">
+                          <td className="w-10 p-2 border-b border-border text-center">
                             <PatientAvatar name={a.patient_name} />
                           </td>
-                          <td className="min-w-0 py-4 border-b border-slate-100 align-top">
+                          <td className="min-w-0 py-4 border-b border-border align-top">
                             <div className="flex items-center gap-1.5">
-                              <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                              <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
                               {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
                               {a.referring_doctor_id && (
                                 <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
@@ -661,16 +661,16 @@ export function DoctorDashboard() {
                               )}
                               {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                             </div>
-                            {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
+                            {a.notes && <div className="text-xs text-muted-foreground truncate mt-0.5">{a.notes}</div>}
                           </td>
-                          <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} arrival_time={a.arrival_time} start_time={a.start_time} has_conflict={a.has_conflict} /></td>
-                          <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                          <td className="w-[100px] py-4 border-b border-border align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} arrival_time={a.arrival_time} start_time={a.start_time} has_conflict={a.has_conflict} /></td>
+                          <td className="pr-3 w-0 py-4 border-b border-border align-top">
                             {isEditingLatness ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] text-slate-500 whitespace-nowrap">Arrival:</span>
+                                <span className="text-[11px] text-muted-foreground whitespace-nowrap">Arrival:</span>
                                 <input
                                   type="time"
-                                  className="w-24 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                  className="w-24 h-7 text-xs text-center border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
                                   value={latenessInput.arrivalTime}
                                   onChange={e => setLatenessInput({ ...latenessInput, arrivalTime: e.target.value })}
                                   autoFocus
@@ -684,7 +684,7 @@ export function DoctorDashboard() {
                                 </button>
                                 <button
                                   onClick={() => setLatenessInput(null)}
-                                  className="p-1 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                  className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                                   title="Cancel"
                                 >
                                   <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
@@ -714,7 +714,7 @@ export function DoctorDashboard() {
                                 )}
                                 <button
                                   onClick={() => setSelectedAppointment(a)}
-                                  className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                                 >
                                   <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
                                 </button>

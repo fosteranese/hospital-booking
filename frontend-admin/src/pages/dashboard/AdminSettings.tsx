@@ -94,7 +94,7 @@ export function AdminSettings() {
     );
   };
 
-  const inputClass = "w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
+  const inputClass = "w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -124,22 +124,22 @@ export function AdminSettings() {
           description={mfaStatus?.has_password ? 'Change your account password' : 'Set a password to enable password-based sign-in'}
         />
         {mfaLoading ? (
-          <div className="h-20 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-20 bg-muted rounded-lg animate-pulse" />
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {mfaStatus?.has_password && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Current Password</label>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">Current Password</label>
                   <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Current password" className={inputClass} />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">New Password</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">New Password</label>
                 <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min. 8 characters" className={inputClass} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Confirm Password</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Confirm Password</label>
                 <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" className={inputClass} />
               </div>
             </div>
@@ -157,7 +157,7 @@ export function AdminSettings() {
           description="Choose at least one verification method for sign-in"
         />
         {mfaLoading ? (
-          <div className="h-32 bg-slate-100 rounded-lg animate-pulse" />
+          <div className="h-32 bg-muted rounded-lg animate-pulse" />
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -174,8 +174,8 @@ export function AdminSettings() {
                   <HugeiconsIcon icon={Mail01Icon} className="size-4 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">Email</p>
-                  <p className="text-xs text-slate-500">Receive a code at {mfaStatus?.email || 'your email'}</p>
+                  <p className="text-sm font-medium text-foreground">Email</p>
+                  <p className="text-xs text-muted-foreground">Receive a code at {mfaStatus?.email || 'your email'}</p>
                 </div>
                 {mfaMethods.includes('email') && <Badge variant="success">Active</Badge>}
               </label>
@@ -193,8 +193,8 @@ export function AdminSettings() {
                   <HugeiconsIcon icon={CallIcon} className="size-4 text-amber-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">Phone (SMS)</p>
-                  <p className="text-xs text-slate-500">Receive a code via SMS</p>
+                  <p className="text-sm font-medium text-foreground">Phone (SMS)</p>
+                  <p className="text-xs text-muted-foreground">Receive a code via SMS</p>
                 </div>
                 {mfaMethods.includes('phone') && <Badge variant="success">Active</Badge>}
               </label>
@@ -224,18 +224,18 @@ export function AdminSettings() {
                   <HugeiconsIcon icon={FingerPrintScanIcon} className="size-4 text-purple-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">Authenticator App</p>
-                  <p className="text-xs text-slate-500">Google Authenticator, Authy, or any TOTP app</p>
+                  <p className="text-sm font-medium text-foreground">Authenticator App</p>
+                  <p className="text-xs text-muted-foreground">Google Authenticator, Authy, or any TOTP app</p>
                 </div>
                 {mfaMethods.includes('authenticator') && <Badge variant="success">Active</Badge>}
               </label>
             </div>
 
             {mfaSetupResult?.qr_code_svg && (
-              <div className="rounded-xl border border-slate-200 p-5 bg-slate-50 flex flex-col items-center gap-3">
-                <p className="text-xs font-medium text-slate-600">Scan with your authenticator app</p>
-                <div className="size-48 bg-white rounded-lg p-2 shadow-sm" dangerouslySetInnerHTML={{ __html: mfaSetupResult.qr_code_svg }} />
-                <p className="text-[10px] text-slate-500 break-all font-mono text-center max-w-full">
+              <div className="rounded-xl border border-border p-5 bg-muted flex flex-col items-center gap-3">
+                <p className="text-xs font-medium text-muted-foreground">Scan with your authenticator app</p>
+                <div className="size-48 bg-card rounded-lg p-2 shadow-sm" dangerouslySetInnerHTML={{ __html: mfaSetupResult.qr_code_svg }} />
+                <p className="text-[10px] text-muted-foreground break-all font-mono text-center max-w-full">
                   Secret: {mfaSetupResult.mfa_secret}
                 </p>
               </div>

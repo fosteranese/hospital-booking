@@ -196,17 +196,17 @@ export function DoctorPastAppointmentsPage() {
           icon={TimeScheduleIcon}
         />
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
               <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
           </button>
           <button
             onClick={() => { setSelectedAppointment(null); if (datePanelOpen) { handleDatePanelClose(); } else { setDatePanelOpen(true); } }}
-            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-card shadow-sm transition-all ${
               datePanelOpen
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                : 'border-slate-200 text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
             <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
@@ -214,10 +214,10 @@ export function DoctorPastAppointmentsPage() {
           <div className="relative" ref={calendarDropdownRef}>
             <button
               onClick={() => setCalendarDropdownOpen(v => !v)}
-              className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+              className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-card shadow-sm transition-all ${
                 filterDate || calendarDropdownOpen
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                  : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                  : 'border-slate-200 text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
@@ -225,7 +225,7 @@ export function DoctorPastAppointmentsPage() {
             {calendarDropdownOpen && (
               <div className="fixed inset-0 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:mt-1.5 flex items-center justify-center lg:block">
                 <div className="absolute inset-0 bg-black/30 lg:hidden" onClick={() => setCalendarDropdownOpen(false)} />
-                <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-[calc(100vw-2rem)] max-w-[360px] mx-4 lg:mx-0 lg:w-auto lg:min-w-[280px]">
+                <div className="relative bg-card border border-border rounded-xl shadow-xl p-4 w-[calc(100vw-2rem)] max-w-[360px] mx-4 lg:mx-0 lg:w-auto lg:min-w-[280px]">
                   <MiniCalendar
                     date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
                     selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
@@ -237,7 +237,7 @@ export function DoctorPastAppointmentsPage() {
                   />
                   {filterDate && (
                     <button onClick={() => { setFilterDate(null); setCalendarDropdownOpen(false); }}
-                      className="mt-3 w-full text-xs text-slate-500 hover:text-slate-700 py-1.5 rounded-md hover:bg-slate-50 transition-colors">
+                      className="mt-3 w-full text-xs text-muted-foreground hover:text-foreground py-1.5 rounded-md hover:bg-muted transition-colors">
                       Show all
                     </button>
                   )}
@@ -255,8 +255,8 @@ export function DoctorPastAppointmentsPage() {
       </div>
 
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="shrink-0 text-slate-400 ml-3">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-border bg-card focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="shrink-0 text-muted-foreground ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
           <input
@@ -264,25 +264,25 @@ export function DoctorPastAppointmentsPage() {
             placeholder={placeholderMap[searchFilter]}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-muted-foreground"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="shrink-0 mr-1.5 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+            <button onClick={() => setSearchQuery('')} className="shrink-0 mr-1.5 p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
             </button>
           )}
           <div className="relative p-1.5" ref={filterRef}>
             <button onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1.5 h-full rounded-md py-1.5 px-2.5 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 transition-all whitespace-nowrap"
+              className="flex items-center gap-1.5 h-full rounded-md py-1.5 px-2.5 text-xs font-medium text-muted-foreground bg-muted hover:bg-slate-300 active:bg-muted transition-all whitespace-nowrap"
             >
               {currentFilter?.label}
               <HugeiconsIcon icon={ChevronDownIcon} className={`size-3 transition-transform duration-150 ${filterOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full mt-1.5 min-w-[8rem] bg-white border border-slate-200 rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
+              <div className="absolute right-0 top-full mt-1.5 min-w-[8rem] bg-card border border-border rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
                 {filterOptions.map(opt => (
                   <button key={opt.value} onMouseDown={e => { e.preventDefault(); setSearchFilter(opt.value); setFilterOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-xs transition-colors ${opt.value === searchFilter ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                    className={`w-full text-left px-4 py-2 text-xs transition-colors ${opt.value === searchFilter ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-muted-foreground hover:bg-muted'}`}
                   >{opt.label}</button>
                 ))}
               </div>
@@ -295,7 +295,7 @@ export function DoctorPastAppointmentsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 statusFilter === s.key
                   ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {s.color && <div className={`size-1.5 rounded-full ${s.color}`} />}
@@ -306,7 +306,7 @@ export function DoctorPastAppointmentsPage() {
       </div>
 
       {loading ? (
-          <div className="p-8"><div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />)}</div></div>
+          <div className="p-8"><div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />)}</div></div>
         ) : filtered.length === 0 ? (
           <EmptyState icon={Calendar01Icon} title="No past appointments" description={statusFilter !== 'all' ? 'No appointments match the selected filter.' : 'No appointments found for the selected date range.'} />
         ) : (
@@ -316,10 +316,10 @@ export function DoctorPastAppointmentsPage() {
               return (
                 <div key={date} className="rounded-lg">
                   <div className="sticky top-0 z-10 bg-background px-5 py-3">
-                    <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">{formatDate(date)}</span>
-                    <span className="ml-2.5 text-xs text-slate-400 font-medium">{rows.length} appointment{rows.length !== 1 ? 's' : ''}</span>
+                    <span className="text-sm font-bold text-foreground uppercase tracking-wider">{formatDate(date)}</span>
+                    <span className="ml-2.5 text-xs text-muted-foreground font-medium">{rows.length} appointment{rows.length !== 1 ? 's' : ''}</span>
                   </div>
-                  <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
+                  <div className="bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
                     <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                       <tbody>
@@ -332,22 +332,22 @@ export function DoctorPastAppointmentsPage() {
                           const canAttend = isPending;
                           return (
                             <tr key={a.id}
-                              className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
+                              className="cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
                               onClick={() => setSelectedAppointment(a)}
                               style={{ transformOrigin: 'center' }}
                             >
-                              <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                              <td className="py-4 w-[110px] border-b border-border align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                                 <div className="flex flex-col items-start">
-                                  <span className="text-base font-semibold text-slate-900">{formatTime(a.start_time)}</span>
-                                  <span className="text-xs text-slate-400">{formatTime(a.end_time)}</span>
+                                  <span className="text-base font-semibold text-foreground">{formatTime(a.start_time)}</span>
+                                  <span className="text-xs text-muted-foreground">{formatTime(a.end_time)}</span>
                                 </div>
                               </td>
-                              <td className="w-10 p-2 border-b border-slate-100 text-center">
+                              <td className="w-10 p-2 border-b border-border text-center">
                                 <PatientAvatar name={a.patient_name} />
                               </td>
-                              <td className="min-w-0 py-4 border-b border-slate-100 align-top">
+                              <td className="min-w-0 py-4 border-b border-border align-top">
                                 <div className="flex items-center gap-1.5">
-                                  <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                                  <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
                                   {a.referring_doctor_id && (
                                     <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                                       <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
@@ -355,15 +355,15 @@ export function DoctorPastAppointmentsPage() {
                                   )}
                                   {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                                 </div>
-                                <div className="text-xs text-slate-400 mt-0.5">
+                                <div className="text-xs text-muted-foreground mt-0.5">
                                   {formatDate(a.slot_date)} · Dr. {a.doctor_name}
-                                  {a.notes && <span className="ml-2 text-slate-300">· {a.notes}</span>}
+                                  {a.notes && <span className="ml-2 text-muted-foreground/30">· {a.notes}</span>}
                                 </div>
                               </td>
-                              <td className="w-[100px] py-4 border-b border-slate-100 align-top">
+                              <td className="w-[100px] py-4 border-b border-border align-top">
                                 <StatusDot status={a.status} attended={a.attended} />
                               </td>
-                              <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                              <td className="pr-3 w-0 py-4 border-b border-border align-top">
                                 {canAttend ? (
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                     <button onClick={e => { e.stopPropagation(); requestAttendance(a.id, true); }}
@@ -376,7 +376,7 @@ export function DoctorPastAppointmentsPage() {
                                 ) : (
                                   <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                     <button onClick={e => { e.stopPropagation(); setSelectedAppointment(a); }}
-                                      className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                      className="p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                                     ><HugeiconsIcon icon={ArrowRight01Icon} className="size-4" /></button>
                                   </div>
                                 )}

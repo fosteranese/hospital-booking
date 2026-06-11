@@ -42,7 +42,7 @@ const TYPE_BADGE: Record<string, { label: string; class: string }> = {
   time:      { label: 'time',   class: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200/50' },
   date:      { label: 'date',   class: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200/50' },
   datetime:  { label: 'dt',     class: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200/50' },
-  text:      { label: 'text',   class: 'bg-slate-50 text-slate-500 ring-1 ring-slate-200/50' },
+  text:      { label: 'text',   class: 'bg-slate-50 text-muted-foreground ring-1 ring-slate-200/50' },
   email:     { label: 'email',  class: 'bg-amber-50 text-amber-600 ring-1 ring-amber-200/50' },
   password:  { label: 'pwd',    class: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/50' },
   pin:       { label: 'pin',    class: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/50' },
@@ -233,18 +233,18 @@ export function ApplicationSettingsPage() {
           <div className="space-y-4">
             <div className="flex gap-1">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-9 w-28 bg-slate-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-9 w-28 bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
             {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-14 bg-slate-50 rounded-lg animate-pulse" />
+              <div key={i} className="h-14 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </Card>
       ) : (
         <Card padding="none">
           {/* Tab bar — GC-inspired clean underline */}
-          <div className="flex gap-1 px-5 pt-3 border-b border-slate-100 overflow-x-auto flex-nowrap">
+          <div className="flex gap-1 px-5 pt-3 border-b border-border overflow-x-auto flex-nowrap">
             {tabs.map(tab => {
               const meta = TAB_META[tab.key] || { label: tab.key, description: '', icon: Settings01Icon };
               const isActive = activeTab === tab.key;
@@ -255,7 +255,7 @@ export function ApplicationSettingsPage() {
                   className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium transition-all relative ${
                     isActive
                       ? 'text-emerald-700'
-                      : 'text-slate-400 hover:text-slate-600'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <HugeiconsIcon icon={meta.icon} className="size-3.5" />
@@ -272,16 +272,16 @@ export function ApplicationSettingsPage() {
           {currentTab && (
             <div>
               {settings.length === 0 ? (
-                <div className="py-12 text-center text-sm text-slate-400">No settings found in this group.</div>
+                <div className="py-12 text-center text-sm text-muted-foreground">No settings found in this group.</div>
               ) : (
                 <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-50">
-                        <th className="text-left text-xs font-medium text-slate-400 px-5 py-2.5 w-[35%]">Setting</th>
-                        <th className="text-left text-xs font-medium text-slate-400 px-5 py-2.5">Current Value</th>
-                        <th className="text-left text-xs font-medium text-slate-400 px-5 py-2.5 w-[60px]">Type</th>
-                        <th className="text-right text-xs font-medium text-slate-400 px-5 py-2.5 w-[70px]">Action</th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-5 py-2.5 w-[35%]">Setting</th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-5 py-2.5">Current Value</th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-5 py-2.5 w-[60px]">Type</th>
+                        <th className="text-right text-xs font-medium text-muted-foreground px-5 py-2.5 w-[70px]">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -289,22 +289,22 @@ export function ApplicationSettingsPage() {
                         const badge = TYPE_BADGE[s.value_type] || TYPE_BADGE.text;
                         const dv = displayValue(s);
                         return (
-                          <tr key={s.id} className="group transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0" style={{ transformOrigin: 'center' }}>
+                          <tr key={s.id} className="group transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0" style={{ transformOrigin: 'center' }}>
                             <td className="py-2.5 px-5 align-top">
                               <div className="pt-0.5">
-                                <span className="text-sm font-medium text-slate-900">{displayName(s.name)}</span>
+                                <span className="text-sm font-medium text-foreground">{displayName(s.name)}</span>
                                 {s.description && (
-                                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed max-w-md">{s.description}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed max-w-md">{s.description}</p>
                                 )}
                               </div>
                             </td>
                             <td className="py-2.5 px-5 align-top">
                               <div className="pt-0.5 flex items-center gap-2">
-                                <span className={`text-sm ${dv.masked ? 'text-slate-300 font-mono tracking-widest' : 'text-slate-700'}`}>
+                                <span className={`text-sm ${dv.masked ? 'text-muted-foreground/30 font-mono tracking-widest' : 'text-foreground'}`}>
                                   {dv.text}
                                 </span>
                                 {dv.masked && (
-                                  <HugeiconsIcon icon={LockIcon} className="size-3 text-slate-300 shrink-0" />
+                                  <HugeiconsIcon icon={LockIcon} className="size-3 text-muted-foreground/30 shrink-0" />
                                 )}
                               </div>
                             </td>
@@ -333,7 +333,7 @@ export function ApplicationSettingsPage() {
           )}
 
           {!currentTab && !loading && (
-            <div className="py-12 text-center text-sm text-slate-400">No settings groups available.</div>
+            <div className="py-12 text-center text-sm text-muted-foreground">No settings groups available.</div>
           )}
         </Card>
       )}
@@ -343,27 +343,27 @@ export function ApplicationSettingsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeEditModal}>
           <div className="absolute inset-0 bg-black/15" />
           <div
-            className="relative bg-white rounded-xl shadow-xl w-full max-w-lg"
+            className="relative bg-card rounded-xl shadow-xl w-full max-w-lg"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">{displayName(editSetting.name)}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{editSetting.group_name}</p>
+                <h2 className="text-sm font-semibold text-foreground">{displayName(editSetting.name)}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{editSetting.group_name}</p>
               </div>
-              <button onClick={closeEditModal} className="p-1 rounded-md hover:bg-slate-100 transition-colors text-slate-400">
+              <button onClick={closeEditModal} className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground">
                 <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
               </button>
             </div>
 
             <div className="px-5 py-4 space-y-4">
               {editSetting.description && (
-                <p className="text-xs text-slate-500 leading-relaxed">{editSetting.description}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{editSetting.description}</p>
               )}
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">Current Value</label>
-                <div className="text-sm text-slate-700 bg-slate-50 rounded-md px-3.5 py-2 font-mono">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">Current Value</label>
+                <div className="text-sm text-foreground bg-muted rounded-md px-3.5 py-2 font-mono">
                   {editSetting.is_sensitive || knownSensitive.includes(editSetting.name)
                     ? '********'
                     : editSetting.value || '(empty)'}
@@ -371,13 +371,13 @@ export function ApplicationSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">New Value</label>
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">New Value</label>
                 {editSetting.value_type === 'boolean' ? (
                   <select
                     value={editValue}
                     onChange={e => handleModalChange(e.target.value)}
                     className={[
-                      'w-full h-9 px-3.5 text-sm border rounded-md bg-white transition-all appearance-none cursor-pointer',
+                      'w-full h-9 px-3.5 text-sm border rounded-md bg-card transition-all appearance-none cursor-pointer',
                       'focus:outline-none focus:ring-2 focus:border-emerald-500',
                       editError
                         ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
@@ -396,7 +396,7 @@ export function ApplicationSettingsPage() {
                     placeholder="Enter new value"
                     autoFocus
                     className={[
-                      'w-full h-9 px-3.5 text-sm border rounded-md bg-white transition-all',
+                      'w-full h-9 px-3.5 text-sm border rounded-md bg-card transition-all',
                       'focus:outline-none focus:ring-2 focus:border-emerald-500',
                       editError
                         ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500'
@@ -409,7 +409,7 @@ export function ApplicationSettingsPage() {
                     {(TYPE_BADGE[editSetting.value_type] || TYPE_BADGE.text).label}
                   </span>
                   {editSetting.is_sensitive && (
-                    <span className="text-xs text-slate-400">Encrypted</span>
+                    <span className="text-xs text-muted-foreground">Encrypted</span>
                   )}
                 </div>
                 {editError && (
@@ -421,7 +421,7 @@ export function ApplicationSettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-border">
               <Button variant="ghost" onClick={closeEditModal} disabled={editSaving} size="sm">
                 Cancel
               </Button>

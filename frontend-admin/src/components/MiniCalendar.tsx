@@ -79,7 +79,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
 
           let cellClass = 'relative flex items-center justify-center transition-all w-10 h-10 text-sm ';
           if (!sameMonth) {
-            cellClass += 'text-slate-200';
+            cellClass += 'text-muted-foreground/20';
           } else if (selected) {
             cellClass += isSidebar
               ? 'bg-emerald-500 text-white font-medium rounded ring-1 ring-emerald-400'
@@ -89,7 +89,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
               ? 'text-emerald-600 font-medium rounded ring-1 ring-emerald-300'
               : 'font-semibold text-emerald-600 rounded ring-1 ring-emerald-400';
           } else if (isFuture) {
-            cellClass += 'text-slate-200 cursor-default';
+            cellClass += 'text-muted-foreground/20 cursor-default';
           } else {
             cellClass += isSidebar
               ? 'text-muted-foreground hover:bg-muted rounded'

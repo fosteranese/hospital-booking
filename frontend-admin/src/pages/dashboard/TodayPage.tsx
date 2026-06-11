@@ -66,7 +66,7 @@ function QuickActionsBar({ pendingCount, onMarkAttendance }: { pendingCount: num
         <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3.5" />
         Mark Attendance
       </button>
-      <span className="text-[11px] text-slate-400">{pendingCount} pending</span>
+      <span className="text-[11px] text-muted-foreground">{pendingCount} pending</span>
     </div>
   );
 }
@@ -132,15 +132,15 @@ export function TodayPage() {
           description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           icon={Calendar01Icon}
         />
-        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all shrink-0" title="Refresh data">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
             <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
           </svg>
         </button>
         <select
           value={selectedDoctor}
           onChange={e => setSelectedDoctor(e.target.value)}
-          className="h-9 text-xs border border-slate-200 rounded-lg px-3 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-400 appearance-none cursor-pointer"
+          className="h-9 text-xs border border-border rounded-lg px-3 bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-400 appearance-none cursor-pointer"
         >
           <option value="">All Doctors</option>
           {doctors.map(d => (
@@ -176,7 +176,7 @@ export function TodayPage() {
             { value: totalToday, bg: 'bg-slate-600', border: 'border-slate-700' },
           ][i];
           if (loading) {
-            return <div key={label} className="h-[108px] bg-slate-100 rounded-lg animate-pulse" />;
+            return <div key={label} className="h-[108px] bg-muted rounded-lg animate-pulse" />;
           }
           return (
             <TodayStatCard
@@ -194,13 +194,13 @@ export function TodayPage() {
       {/* Schedule */}
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-900">Schedule</h3>
+          <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold text-foreground">Schedule</h3>
         </div>
         <Card padding="none">
           {loading ? (
             <div className="p-5 space-y-2.5">
-              {[1, 2, 3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-md animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-14 bg-muted rounded-md animate-pulse" />)}
             </div>
           ) : appointments.length === 0 ? (
             <EmptyState
@@ -228,7 +228,7 @@ export function TodayPage() {
                     return (
                       <tr
                         key={a.id}
-                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group border-b border-slate-100 last:border-b-0"
+                        className="cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group border-b border-border last:border-b-0"
                         onClick={() => setSelectedAppointmentId(a.id)}
                         style={{ transformOrigin: 'center' }}
                       >
@@ -237,14 +237,14 @@ export function TodayPage() {
                         </td>
                         <td className="py-3 w-[56px]">
                           <div className="flex flex-col items-center">
-                            <span className="text-sm font-semibold text-slate-900">{formatTime(a.start_time)}</span>
-                            <span className="text-[10px] text-slate-400">{formatTime(a.end_time)}</span>
+                            <span className="text-sm font-semibold text-foreground">{formatTime(a.start_time)}</span>
+                            <span className="text-[10px] text-muted-foreground">{formatTime(a.end_time)}</span>
                           </div>
                         </td>
                         <td className="w-px"><div className="h-8 bg-slate-100 w-px" /></td>
                         <td className="min-w-0 py-3">
                           <div className="flex items-center gap-1.5">
-                            <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                            <div className="text-sm font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
                             {a.referring_doctor_id && (
                               <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                                 <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
@@ -252,17 +252,17 @@ export function TodayPage() {
                             )}
                             {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate">{a.doctor_name}</div>
-                          {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
+                          <div className="text-[11px] text-muted-foreground truncate">{a.doctor_name}</div>
+                          {a.notes && <div className="text-xs text-muted-foreground truncate mt-0.5">{a.notes}</div>}
                         </td>
                         <td className="w-[144px] py-3"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} arrival_time={a.arrival_time} start_time={a.start_time} has_conflict={a.has_conflict} /></td>
                         <td className="pr-3 w-0 py-3">
                           {isEditingLatness ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] text-slate-500 whitespace-nowrap">Arrival:</span>
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">Arrival:</span>
                               <input
                                 type="time"
-                                className="w-24 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                className="w-24 h-7 text-xs text-center border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
                                 value={latenessInput.arrivalTime}
                                 onChange={e => setLatenessInput({ ...latenessInput, arrivalTime: e.target.value })}
                                 autoFocus
@@ -276,7 +276,7 @@ export function TodayPage() {
                               </button>
                               <button
                                 onClick={() => setLatenessInput(null)}
-                                className="p-1 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                                 title="Cancel"
                               >
                                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
@@ -306,7 +306,7 @@ export function TodayPage() {
                               )}
                               <button
                                 onClick={() => setSelectedAppointmentId(a.id)}
-                                className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
                               >
                                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
                               </button>

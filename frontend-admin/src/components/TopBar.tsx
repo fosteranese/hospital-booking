@@ -54,7 +54,7 @@ export function TopBar() {
         </button>
 
         {profileOpen && (
-          <div className="absolute top-full right-0 mt-1.5 w-56 bg-card rounded-xl shadow-lg shadow-slate-200/60 border border-border overflow-hidden z-50">
+          <div className="absolute top-full right-0 mt-1.5 w-56 bg-card rounded-xl shadow-lg shadow-border border border-border overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-border">
               <p className="text-sm font-semibold text-foreground truncate">{otpIdentifier}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{roleLabel}</p>

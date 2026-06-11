@@ -74,21 +74,21 @@ export function SchedulerDashboard() {
         icon={Calendar01Icon}
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-slate-500">
+            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-muted-foreground">
                 <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               </svg>
             </button>
-            <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <div className="flex rounded-lg border border-border overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <button
                 onClick={() => setView('today')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'today' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'today' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 Today
               </button>
               <button
                 onClick={() => setView('all')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'all' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'all' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 All
               </button>
@@ -110,8 +110,8 @@ export function SchedulerDashboard() {
       )}
 
       {view === 'all' && (
-        <div className="flex flex-wrap items-center gap-2 bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)] px-3.5 py-2">
-          <HugeiconsIcon icon={FilterIcon} className="size-3.5 text-slate-400" />
+        <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)] px-3.5 py-2">
+          <HugeiconsIcon icon={FilterIcon} className="size-3.5 text-muted-foreground" />
           <select value={doctorFilter} onChange={e => setDoctorFilter(e.target.value)} className={`${inputClass} w-[170px]`}>
             <option value="">All doctors</option>
             {doctors.map(d => (
@@ -125,7 +125,7 @@ export function SchedulerDashboard() {
           </select>
           <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className={`${inputClass} w-[150px]`} />
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-1">
+            <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1">
               Clear
             </button>
           )}
@@ -136,7 +136,7 @@ export function SchedulerDashboard() {
         {loading ? (
           <div className="p-5 space-y-2.5">
             {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />
+              <div key={i} className="h-10 bg-muted rounded-md animate-pulse" />
             ))}
           </div>
         ) : appointments.length === 0 ? (
@@ -149,26 +149,26 @@ export function SchedulerDashboard() {
           <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Date</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Time</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Doctor</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Status</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Notes</th>
+                <tr className="border-b border-border">
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Date</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Time</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Doctor</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Status</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Notes</th>
                   <th className="w-8 px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
                 {appointments.map(a => (
-                  <tr key={a.id} onClick={() => setSelectedAppointmentId(a.id)} className="group cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0" style={{ transformOrigin: 'center' }}>
-                    <td className="px-4 py-3 text-sm text-slate-900">{a.slot_date}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{formatTime(a.start_time)} – {formatTime(a.end_time)}</td>
+                  <tr key={a.id} onClick={() => setSelectedAppointmentId(a.id)} className="group cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0" style={{ transformOrigin: 'center' }}>
+                    <td className="px-4 py-3 text-sm text-foreground">{a.slot_date}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatTime(a.start_time)} – {formatTime(a.end_time)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="size-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">
                           {a.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                         </div>
-                        <span className="text-sm text-slate-900">{a.doctor_name}</span>
+                        <span className="text-sm text-foreground">{a.doctor_name}</span>
                         {a.referring_doctor_id && (
                           <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                             <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500 shrink-0" />
@@ -177,9 +177,9 @@ export function SchedulerDashboard() {
                       </div>
                     </td>
                     <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /></td>
-                    <td className="px-4 py-3 text-sm text-slate-400 max-w-[160px] truncate">{a.notes || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[160px] truncate">{a.notes || '—'}</td>
                     <td className="px-4 py-3">
-                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                     </td>
                   </tr>
                 ))}

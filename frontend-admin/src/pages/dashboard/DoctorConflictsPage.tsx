@@ -92,8 +92,8 @@ export function DoctorConflictsPage() {
           icon={AlertCircleIcon}
         />
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
               <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
           </button>
@@ -111,7 +111,7 @@ export function DoctorConflictsPage() {
         <div className="p-8">
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </div>
@@ -128,14 +128,14 @@ export function DoctorConflictsPage() {
             return (
               <div key={date} className="rounded-lg">
                 <div className="sticky top-0 z-10 bg-background px-5 py-3">
-                  <span className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                  <span className="text-sm font-bold text-foreground uppercase tracking-wider">
                     {isToday(date) ? `Today – ${todayLabel}` : isTomorrow(date) ? `Tomorrow – ${todayLabel}` : formatDate(date)}
                   </span>
-                  <span className="ml-2.5 text-xs text-slate-400 font-medium">
+                  <span className="ml-2.5 text-xs text-muted-foreground font-medium">
                     {rows.length} appointment{rows.length !== 1 ? 's' : ''}
                   </span>
                 </div>
-                <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
+                <div className="bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
                   <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                     <tbody>
@@ -148,22 +148,22 @@ export function DoctorConflictsPage() {
                         return (
                           <tr
                             key={a.id}
-                             className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 transform-gpu"
+                             className="cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 transform-gpu"
                             style={{ transformOrigin: 'center' }}
                             onClick={() => setSelectedAppointment(a)}
                           >
-                            <td className="py-4 w-[110px] border-b border-slate-100 align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                            <td className="py-4 w-[110px] border-b border-border align-top pl-4" style={{ borderLeft: `3px solid ${borderColor}` }}>
                               <div className="flex flex-col items-start">
-                                <span className="text-base font-semibold text-slate-900">{formatTime(a.start_time)}</span>
-                                <span className="text-xs text-slate-400">{formatTime(a.end_time)}</span>
+                                <span className="text-base font-semibold text-foreground">{formatTime(a.start_time)}</span>
+                                <span className="text-xs text-muted-foreground">{formatTime(a.end_time)}</span>
                               </div>
                             </td>
-                            <td className="w-10 p-2 border-b border-slate-100 text-center">
+                            <td className="w-10 p-2 border-b border-border text-center">
                               <PatientAvatar name={a.patient_name} />
                             </td>
-                            <td className="min-w-0 py-4 border-b border-slate-100 align-top">
+                            <td className="min-w-0 py-4 border-b border-border align-top">
                               <div className="flex items-center gap-1.5">
-                                <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                                <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
                                 <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
                                 {a.referring_doctor_id && (
                                   <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
@@ -172,12 +172,12 @@ export function DoctorConflictsPage() {
                                 )}
                                 {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                               </div>
-                              {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
+                              {a.notes && <div className="text-xs text-muted-foreground truncate mt-0.5">{a.notes}</div>}
                             </td>
-                            <td className="w-[100px] py-4 border-b border-slate-100 align-top">
+                            <td className="w-[100px] py-4 border-b border-border align-top">
                               <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} start_time={a.start_time} arrival_time={a.arrival_time} slot_date={a.slot_date} has_conflict={a.has_conflict} />
                             </td>
-                            <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
+                            <td className="pr-3 w-0 py-4 border-b border-border align-top">
                               <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={e => e.stopPropagation()}
                               >

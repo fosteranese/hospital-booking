@@ -85,7 +85,7 @@ export function SlotPicker({
       <div className="mb-5">
         <label className="block text-xs font-medium text-muted-foreground mb-2">Select date</label>
         {datesLoading ? (
-          <div className="h-[68px] bg-slate-100 rounded-xl animate-pulse" />
+          <div className="h-[68px] bg-muted rounded-xl animate-pulse" />
         ) : dates.length === 0 ? (
           <div className="text-sm text-muted-foreground py-3 text-center bg-muted rounded-lg">{emptyDatesMessage}</div>
         ) : (
@@ -147,9 +147,9 @@ export function SlotPicker({
           <label className="block text-xs font-medium text-muted-foreground mb-2">Select time</label>
           {slotsLoading ? (
             <div className="space-y-2">
-              <div className="h-8 bg-slate-100 rounded-lg animate-pulse w-24" />
+              <div className="h-8 bg-muted rounded-lg animate-pulse w-24" />
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-muted rounded-xl animate-pulse" />)}
               </div>
             </div>
           ) : groupedSlots.length === 0 ? (

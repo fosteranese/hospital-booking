@@ -53,15 +53,15 @@ export function RescheduleConfirmModal({
 
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-1.5 h-full min-h-[2.5rem] bg-slate-300 rounded-full mt-0.5" />
+              <div className="w-1.5 h-full min-h-[2.5rem] bg-muted/80 rounded-full mt-0.5" />
               <div>
-                <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">Current</div>
-                <div className="text-sm font-semibold text-slate-700">{format(oldStart, 'EEEE, MMM d, yyyy')}</div>
-                <div className="text-sm text-slate-600">{format(oldStart, 'h:mm a')} — {format(oldEnd, 'h:mm a')}</div>
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Current</div>
+                <div className="text-sm font-semibold text-foreground">{format(oldStart, 'EEEE, MMM d, yyyy')}</div>
+                <div className="text-sm text-muted-foreground">{format(oldStart, 'h:mm a')} — {format(oldEnd, 'h:mm a')}</div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
               </svg>

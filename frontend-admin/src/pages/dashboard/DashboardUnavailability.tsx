@@ -112,37 +112,37 @@ export function DashboardUnavailability() {
             <CardHeader title="Add Unavailability" description="Mark a doctor as unavailable for a specific date or time range" />
             <div className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Date *</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Date *</label>
                 <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={`${inputClass} w-full sm:w-[170px]`} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Start time</label>
                 <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-full sm:w-[130px]`} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">End time</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">End time</label>
                 <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-full sm:w-[130px]`} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Reason</label>
                 <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-full sm:w-[180px]`} />
               </div>
               <Button onClick={handleCreate} loading={saving} disabled={!newDate} icon={Add01Icon}>
                 Add
               </Button>
             </div>
-            <p className="text-xs text-slate-500 mt-3">Leave times empty for a full-day unavailability.</p>
+            <p className="text-xs text-muted-foreground mt-3">Leave times empty for a full-day unavailability.</p>
           </Card>
 
           <Card padding="none">
-            <div className="px-5 py-4 border-b border-slate-100">
+            <div className="px-5 py-4 border-b border-border">
               <CardHeader title={`Unavailability Records (${unavail.length})`} />
             </div>
             {loading ? (
               <div className="p-8">
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+                    <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
                   ))}
                 </div>
               </div>
@@ -156,23 +156,23 @@ export function DashboardUnavailability() {
               <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Date</th>
-                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Time</th>
-                      <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Reason</th>
+                    <tr className="border-b border-border">
+                      <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Date</th>
+                      <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Time</th>
+                      <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Reason</th>
                       <th className="w-16 px-5 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {unavail.map((u) => (
-                      <tr key={u.id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
-                        <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{u.slot_date}</td>
-                        <td className="px-5 py-3.5 text-sm text-slate-600">
+                      <tr key={u.id} className="transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
+                        <td className="px-5 py-3.5 text-sm font-medium text-foreground">{u.slot_date}</td>
+                        <td className="px-5 py-3.5 text-sm text-muted-foreground">
                           {u.start_time && u.end_time
                             ? `${u.start_time.slice(0, 5)} – ${u.end_time.slice(0, 5)}`
-                            : <span className="text-slate-400 italic">All day</span>}
+                            : <span className="text-muted-foreground italic">All day</span>}
                         </td>
-                        <td className="px-5 py-3.5 text-sm text-slate-500">{u.reason || '—'}</td>
+                        <td className="px-5 py-3.5 text-sm text-muted-foreground">{u.reason || '—'}</td>
                         <td className="px-5 py-3.5">
                           <button
                             onClick={() => handleDelete(u.id)}

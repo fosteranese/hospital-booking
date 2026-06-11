@@ -40,7 +40,7 @@ export function PatientAvatar({ name }: { name: string }) {
     .map((w) => w.charAt(0).toUpperCase())
     .join('');
   return (
-    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">
+    <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-[11px] font-semibold text-muted-foreground">
       {initials}
     </div>
   );
@@ -104,7 +104,7 @@ export function getWeekRange(date: Date) {
 /* ── Shared CSS strings ── */
 
 export const inputClass =
-  'h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all';
+  'h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all';
 
 export const selectClass =
-  'h-8 px-2.5 text-xs border border-slate-200 rounded-md bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer';
+  'h-8 px-2.5 text-xs border border-border rounded-md bg-card text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer';

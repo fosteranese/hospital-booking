@@ -211,10 +211,10 @@ export function DoctorUnavailabilityPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="My Unavailability" description="Manage your time off and blackout periods" icon={Clock01Icon} />
-        <div className="bg-white rounded-xl border border-slate-200/80 p-8">
+        <div className="bg-card rounded-xl border border-border/80 p-8">
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+              <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
             ))}
           </div>
         </div>
@@ -277,8 +277,8 @@ export function DoctorUnavailabilityPage() {
 
       {/* Search bar + filter pills */}
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="shrink-0 text-slate-400 ml-3">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-border bg-card focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+          <div className="shrink-0 text-muted-foreground ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
           <input
@@ -286,12 +286,12 @@ export function DoctorUnavailabilityPage() {
             placeholder="Search by date or reason..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-slate-400"
+            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-muted-foreground"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="shrink-0 mr-1.5 p-1.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="shrink-0 mr-1.5 p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
             </button>
@@ -310,7 +310,7 @@ export function DoctorUnavailabilityPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 filter === f.key
                   ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {f.color && <div className={`size-1.5 rounded-full ${f.color}`} />}
@@ -326,7 +326,7 @@ export function DoctorUnavailabilityPage() {
           <div className="p-8">
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
           </div>
@@ -364,42 +364,42 @@ export function DoctorUnavailabilityPage() {
                   return (
                     <Fragment key={u.id}>
                       <tr
-                        className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 group last:[&>td]:border-b-0"
+                        className="cursor-pointer transition-all duration-150 hover:bg-muted/80 group last:[&>td]:border-b-0"
                         onClick={() => handleToggleExpand(u.id)}
                       >
-                        <td className="py-4 border-b border-slate-100 align-top px-5 whitespace-nowrap" style={{ borderLeft: `3px solid ${borderColor}` }}>
+                        <td className="py-4 border-b border-border align-top px-5 whitespace-nowrap" style={{ borderLeft: `3px solid ${borderColor}` }}>
                           <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-slate-900">
+                            <span className="text-sm font-semibold text-foreground">
                               {u.end_date !== u.slot_date
                                 ? `${formatDate(u.slot_date)} – ${formatDate(u.end_date)}`
                                 : formatDate(u.slot_date)}
                             </span>
                           </div>
                         </td>
-                        <td className="py-4 border-b border-slate-100 align-top px-5 whitespace-nowrap">
-                          <span className="text-sm text-slate-600">
+                        <td className="py-4 border-b border-border align-top px-5 whitespace-nowrap">
+                          <span className="text-sm text-muted-foreground">
                             {u.start_time && u.end_time
                               ? `${formatTime(u.start_time)} – ${formatTime(u.end_time)}`
-                              : <span className="text-slate-400">All day</span>}
+                              : <span className="text-muted-foreground">All day</span>}
                           </span>
                         </td>
-                        <td className="py-4 border-b border-slate-100 align-top px-5">
-                          <span className="text-sm text-slate-700">{u.reason || <span className="text-slate-400 italic">No reason</span>}</span>
+                        <td className="py-4 border-b border-border align-top px-5">
+                          <span className="text-sm text-foreground">{u.reason || <span className="text-muted-foreground italic">No reason</span>}</span>
                         </td>
-                        <td className="py-4 border-b border-slate-100 align-top px-5">
+                        <td className="py-4 border-b border-border align-top px-5">
                           {hasConflicts ? (
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
                               <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
                               {u.conflict_count ?? 0}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                               <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3" />
                               None
                             </span>
                           )}
                         </td>
-                        <td className="py-4 border-b border-slate-100 align-top">
+                        <td className="py-4 border-b border-border align-top">
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(u.id); }}
                             className="p-1.5 rounded-md hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
@@ -413,25 +413,25 @@ export function DoctorUnavailabilityPage() {
                       {expandedId === u.id && (
                         <tr>
                           <td colSpan={5} className="px-0 py-0">
-                            <div className="bg-slate-50/80 border-b border-slate-100">
+                            <div className="bg-slate-50/80 border-b border-border">
                               {conflictsLoading === u.id ? (
                                 <div className="px-8 py-4 space-y-2">
-                                  {[1, 2].map(i => <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />)}
+                                  {[1, 2].map(i => <div key={i} className="h-10 bg-muted rounded-md animate-pulse" />)}
                                 </div>
                               ) : conflicts[u.id]?.length > 0 ? (
                                 <div>
-                                  <div className="px-8 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                  <div className="px-8 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                     Conflicting Appointments ({conflicts[u.id].length})
                                   </div>
                                   {conflicts[u.id].map(a => {
                                     return (
-                                      <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-slate-100 last:border-b-0">
+                                      <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-border last:border-b-0">
                                         <div className="size-7 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-semibold text-red-600 shrink-0">
                                           {(a.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                          <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name}</div>
-                                          <div className="text-xs text-slate-400">
+                                          <div className="text-sm font-medium text-foreground truncate">{a.patient_name}</div>
+                                          <div className="text-xs text-muted-foreground">
                                             {formatDate(a.slot_date)}
                                             {' · '}{formatTime(a.start_time)} — {formatTime(a.end_time)}
                                           </div>
@@ -450,7 +450,7 @@ export function DoctorUnavailabilityPage() {
                                   })}
                                 </div>
                               ) : (
-                                <div className="px-8 py-4 text-xs text-slate-400">No conflicting appointments found.</div>
+                                <div className="px-8 py-4 text-xs text-muted-foreground">No conflicting appointments found.</div>
                               )}
                             </div>
                           </td>
@@ -469,21 +469,21 @@ export function DoctorUnavailabilityPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 {modalStep === 2 && (
                   <button
                     onClick={() => { setModalStep(1); setNewEndDate(''); setNewStart(''); setNewEnd(''); setIsFullDay(true); }}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
                     <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 rotate-180" />
                   </button>
                 )}
-                <h3 className="text-base font-bold text-slate-900">Add Unavailability</h3>
+                <h3 className="text-base font-bold text-foreground">Add Unavailability</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
               </button>
             </div>
@@ -519,20 +519,20 @@ export function DoctorUnavailabilityPage() {
                 <button
                   type="button"
                   onClick={() => { setIsDateRange(false); setModalStep(2); }}
-                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-border bg-card p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
                     <HugeiconsIcon icon={Calendar02Icon} className="size-6" />
                   </div>
                   <div className="text-center">
-                    <div className="text-base font-semibold text-slate-900">Single Day</div>
-                    <div className="text-sm text-slate-500 mt-1">One date off</div>
+                    <div className="text-base font-semibold text-foreground">Single Day</div>
+                    <div className="text-sm text-muted-foreground mt-1">One date off</div>
                   </div>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsDateRange(true); setModalStep(2); }}
-                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                  className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-border bg-card p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 gap-0.5 group-hover:bg-emerald-100 transition-colors">
                     <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
@@ -540,8 +540,8 @@ export function DoctorUnavailabilityPage() {
                     <HugeiconsIcon icon={Calendar02Icon} className="size-5" />
                   </div>
                   <div className="text-center">
-                    <div className="text-base font-semibold text-slate-900">Date Range</div>
-                    <div className="text-sm text-slate-500 mt-1">Multiple consecutive</div>
+                    <div className="text-base font-semibold text-foreground">Date Range</div>
+                    <div className="text-sm text-muted-foreground mt-1">Multiple consecutive</div>
                   </div>
                 </button>
               </div>
@@ -552,16 +552,16 @@ export function DoctorUnavailabilityPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="size-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</span>
                   </div>
                   <div className={isDateRange ? 'grid grid-cols-2 gap-3' : ''}>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1.5">{isDateRange ? 'Start date *' : 'Date *'}</label>
                       <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} min={today} inputSize="xl" />
                     </div>
                     {isDateRange && (
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1.5">End date *</label>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1.5">End date *</label>
                         <Input type="date" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} min={newDate || today} inputSize="xl" />
                       </div>
                     )}
@@ -572,23 +572,23 @@ export function DoctorUnavailabilityPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="size-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Duration</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Duration</span>
                   </div>
                   <div className="bg-slate-50 rounded-xl p-4 space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700 font-medium">Time</span>
-                      <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                      <span className="text-sm text-foreground font-medium">Time</span>
+                      <div className="flex rounded-lg border border-border overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
                         <button
                           type="button"
                           onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
-                          className={`px-4 py-2 text-sm font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                         >
                           All Day
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsFullDay(false)}
-                          className={`px-4 py-2 text-sm font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                         >
                           Specific Time
                         </button>
@@ -597,11 +597,11 @@ export function DoctorUnavailabilityPage() {
                     {!isFullDay && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">Start time *</label>
+                          <label className="block text-xs font-medium text-muted-foreground mb-1">Start time *</label>
                           <Input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} inputSize="xl" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-slate-500 mb-1">End time *</label>
+                          <label className="block text-xs font-medium text-muted-foreground mb-1">End time *</label>
                           <Input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} inputSize="xl" />
                         </div>
                       </div>
@@ -613,7 +613,7 @@ export function DoctorUnavailabilityPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="size-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Reason</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reason</span>
                   </div>
                   <Input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave, conference, sick day" inputSize="xl" />
                 </div>
@@ -637,12 +637,12 @@ export function DoctorUnavailabilityPage() {
       {conflictWarning && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setConflictWarning(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
             <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">Conflicts Detected</h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <h3 className="text-base font-bold text-foreground mb-1">Conflicts Detected</h3>
+            <p className="text-sm text-muted-foreground mb-6">
               {conflictWarning.count} appointment{conflictWarning.count !== 1 ? 's' : ''} conflict{conflictWarning.count !== 1 ? '' : 's'} with this unavailability. Do you want to proceed?
             </p>
             <div className="flex items-center justify-center gap-3">
@@ -657,12 +657,12 @@ export function DoctorUnavailabilityPage() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteConfirm(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
             <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-1">Delete Unavailability?</h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <h3 className="text-base font-bold text-foreground mb-1">Delete Unavailability?</h3>
+            <p className="text-sm text-muted-foreground mb-6">
               This action cannot be undone. Any conflicting appointments will remain scheduled.
             </p>
             <div className="flex items-center justify-center gap-3">
