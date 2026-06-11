@@ -93,7 +93,7 @@ export function SlotPicker({
             <div
               ref={stripRef}
               onScroll={checkScroll}
-              className="flex gap-2 overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth no-scrollbar pb-1 overscroll-x-contain"
+              className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth pb-1 overscroll-x-contain"
             >
               {dates.map(d => {
                 const dt = new Date(d + 'T12:00:00');
