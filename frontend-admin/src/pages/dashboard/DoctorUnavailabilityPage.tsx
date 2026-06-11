@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -39,7 +40,6 @@ export function DoctorUnavailabilityPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<string>('pending');
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,22 +86,19 @@ export function DoctorUnavailabilityPage() {
     })();
   }, [token]);
 
-  const fetchUnavailability = useCallback(async () => {
-    if (!doctorId) return;
-    setLoading(true);
-    try {
-      const data = await api.getDoctorUnavailability(doctorId, token);
-      setUnavail(data);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [doctorId, token]);
+  const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
+    doctorId ? `unavailability:doctor:${doctorId}` : null,
+    useCallback(async () => {
+      return await api.getDoctorUnavailability(doctorId!, token);
+    }, [doctorId, token]),
+    { enabled: !!doctorId }
+  );
 
   useEffect(() => {
-    if (doctorId) fetchUnavailability();
-  }, [doctorId, fetchUnavailability]);
+    if (cachedUnavail) setUnavail(cachedUnavail);
+  }, [cachedUnavail]);
+
+  const displayError = error || fetchError;
 
   const fetchConflicts = async (unavailId: string) => {
     if (!doctorId) return;
@@ -166,7 +163,7 @@ export function DoctorUnavailabilityPage() {
         reason: newReason || undefined,
       }, token);
       setNewDate(''); setNewEndDate(''); setNewStart(''); setNewEnd(''); setNewReason('');
-      fetchUnavailability();
+      backgroundRefresh();
       setShowModal(false);
       setConflictWarning(null);
       const cc = record.conflict_count ?? 0;
@@ -204,7 +201,7 @@ export function DoctorUnavailabilityPage() {
       ));
       setResolvePrompt(null);
     }
-    fetchUnavailability();
+    backgroundRefresh();
   };
 
   if (profileLoading) {
@@ -250,16 +247,16 @@ export function DoctorUnavailabilityPage() {
         }
       />
 
-      {error && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
+      {displayError && (
+          <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-4 py-3 rounded-lg ring-1 ring-red-200/50 dark:ring-red-900/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {error}
+          {displayError}
         </div>
       )}
 
       {/* Resolve prompt banner */}
       {resolvePrompt && (
-        <div className="flex items-center justify-between gap-4 text-sm text-red-800 bg-red-50 px-5 py-3.5 rounded-lg ring-1 ring-red-200/60">
+        <div className="flex items-center justify-between gap-4 text-sm text-red-800 dark:text-red-300 bg-red-50 dark:bg-red-950/40 px-5 py-3.5 rounded-lg ring-1 ring-red-200/60 dark:ring-red-900/60">
           <div className="flex items-center gap-2">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
             <span>There {resolvePrompt.count === 1 ? 'is' : 'are'} <strong>{resolvePrompt.count}</strong> appointment{resolvePrompt.count !== 1 ? 's' : ''} that conflict with this unavailability.</span>
@@ -268,7 +265,7 @@ export function DoctorUnavailabilityPage() {
             <Button size="sm" onClick={() => { setExpandedId(resolvePrompt.id); if (!conflicts[resolvePrompt.id]) fetchConflicts(resolvePrompt.id); setResolvePrompt(null); }}>
               Resolve Conflicts
             </Button>
-            <button onClick={() => setResolvePrompt(null)} className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-100 transition-colors">
+            <button onClick={() => setResolvePrompt(null)} className="p-1.5 rounded-lg text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
               <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
             </button>
           </div>
@@ -581,14 +578,14 @@ export function DoctorUnavailabilityPage() {
                         <button
                           type="button"
                           onClick={() => { setIsFullDay(true); setNewStart(''); setNewEnd(''); }}
-                          className={`px-4 py-2 text-sm font-medium transition-colors ${isFullDay ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${isFullDay ? 'bg-emerald-600 dark:bg-emerald-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                         >
                           All Day
                         </button>
                         <button
                           type="button"
                           onClick={() => setIsFullDay(false)}
-                          className={`px-4 py-2 text-sm font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                          className={`px-4 py-2 text-sm font-medium transition-colors ${!isFullDay ? 'bg-emerald-600 dark:bg-emerald-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                         >
                           Specific Time
                         </button>

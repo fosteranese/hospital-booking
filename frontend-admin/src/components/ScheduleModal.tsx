@@ -26,7 +26,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
   const [knownDoctors, setKnownDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [availableDates, setAvailableDates] = useState<string[]>([]);
-  const [datesLoading, setDatesLoading] = useState(false);
+  const [datesLoading, setDatesLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
   const [slots, setSlots] = useState<SlotResponse[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);

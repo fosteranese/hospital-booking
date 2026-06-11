@@ -359,7 +359,7 @@ export function DoctorAppointmentsPage() {
                         return (
                           <tr
                             key={a.id}
-                            className={`cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30 dark:bg-red-950/30' : ''}`}
+                            className={`rounded-lg cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30 dark:bg-red-950/30' : ''}`}
                             onClick={() => selectAppointment(a)}
                             style={{ transformOrigin: 'center' }}
                           >

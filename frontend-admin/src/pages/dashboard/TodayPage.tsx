@@ -61,7 +61,7 @@ function QuickActionsBar({ pendingCount, onMarkAttendance }: { pendingCount: num
       <button
         onClick={onMarkAttendance}
         disabled={pendingCount === 0}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-emerald-500 dark:bg-emerald-500 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-3.5" />
         Mark Attendance
@@ -269,7 +269,7 @@ export function TodayPage() {
                               />
                               <button
                                 onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.arrivalTime); }}
-                                className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                                className="p-1 rounded-md text-emerald-500 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
                                 title="Confirm"
                               >
                                 <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
@@ -290,14 +290,14 @@ export function TodayPage() {
                                 <>
                                   <button
                                     onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, arrivalTime: autoArrivalTime }); }}
-                                    className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
+                                    className="p-1.5 rounded-md text-emerald-500 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"
                                     title="Mark attended"
                                   >
                                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                                   </button>
                                   <button
                                     onClick={() => handleConfirmAttend(a.id, false, autoArrivalTime)}
-                                    className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
+                                    className="p-1.5 rounded-md text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                                     title="Mark missed"
                                   >
                                     <HugeiconsIcon icon={Cancel01Icon} className="size-4" />

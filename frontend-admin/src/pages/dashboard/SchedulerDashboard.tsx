@@ -82,13 +82,13 @@ export function SchedulerDashboard() {
             <div className="flex rounded-lg border border-border overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <button
                 onClick={() => setView('today')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'today' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'today' ? 'bg-emerald-600 dark:bg-emerald-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 Today
               </button>
               <button
                 onClick={() => setView('all')}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'all' ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === 'all' ? 'bg-emerald-600 dark:bg-emerald-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 All
               </button>

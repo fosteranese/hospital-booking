@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, Doctor, DoctorUnavailability } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -15,7 +16,6 @@ export function DashboardUnavailability() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [unavail, setUnavail] = useState<DoctorUnavailability[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const [newDate, setNewDate] = useState('');
@@ -28,21 +28,20 @@ export function DashboardUnavailability() {
     api.getDoctors().then(setDoctors).catch(() => {});
   }, []);
 
-  const fetchUnavailability = useCallback(async () => {
-    if (!selectedDoctorId) { setUnavail([]); return; }
-    setLoading(true);
-    setError('');
-    try {
+  const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
+    selectedDoctorId ? `unavailability:admin:${selectedDoctorId}` : null,
+    useCallback(async () => {
       const data = await api.getDoctorUnavailability(selectedDoctorId, token);
-      setUnavail(data);
-    } catch (e: any) {
-      setError(e.message || 'Failed to load unavailability');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDoctorId, token]);
+      return data;
+    }, [selectedDoctorId, token]),
+    { enabled: !!selectedDoctorId }
+  );
 
-  useEffect(() => { fetchUnavailability(); }, [fetchUnavailability]);
+  useEffect(() => {
+    if (cachedUnavail) setUnavail(cachedUnavail);
+  }, [cachedUnavail]);
+
+  const displayError = error || fetchError;
 
   const handleCreate = async () => {
     if (!selectedDoctorId || !newDate) return;
@@ -59,7 +58,7 @@ export function DashboardUnavailability() {
       setNewStart('');
       setNewEnd('');
       setNewReason('');
-      await fetchUnavailability();
+      backgroundRefresh();
     } catch (e: any) {
       setError(e.message || 'Failed to create unavailability');
     } finally {
@@ -85,10 +84,10 @@ export function DashboardUnavailability() {
         icon={Clock01Icon}
       />
 
-      {error && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
+      {displayError && (
+        <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-4 py-3 rounded-lg ring-1 ring-red-200/50 dark:ring-red-900/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {error}
+          {displayError}
         </div>
       )}
 

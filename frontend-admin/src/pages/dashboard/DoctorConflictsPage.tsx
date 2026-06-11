@@ -148,7 +148,7 @@ export function DoctorConflictsPage() {
                         return (
                           <tr
                             key={a.id}
-                             className="cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 bg-red-50/30 dark:bg-red-950/30 transform-gpu"
+                             className="rounded-lg cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 bg-red-50/30 dark:bg-red-950/30 transform-gpu"
                             style={{ transformOrigin: 'center' }}
                             onClick={() => setSelectedAppointment(a)}
                           >

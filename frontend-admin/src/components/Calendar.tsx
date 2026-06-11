@@ -151,7 +151,7 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
                 <span
                   className={`
                     inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium
-                    ${isToday ? 'bg-emerald-600 text-white' : 'text-foreground'}
+                    ${isToday ? 'bg-emerald-600 dark:bg-emerald-500 text-white' : 'text-foreground'}
                   `}
                 >
                   {day}

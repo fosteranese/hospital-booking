@@ -353,7 +353,7 @@ export function AppointmentSlidePanel({
               {canScheduleNew && (
               <button
                 onClick={() => onScheduleNew?.(appointment)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-900/60 hover:bg-sky-100 dark:hover:bg-sky-900/50 hover:text-sky-700 dark:hover:text-sky-300 transition-colors"
               >
                 <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
                 {scheduleLabel}
@@ -381,7 +381,7 @@ export function AppointmentSlidePanel({
               {canScheduleNew && (
               <button
                 onClick={() => onScheduleNew?.(appointment)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 bg-sky-50 rounded-xl border border-sky-200 hover:bg-sky-100 hover:text-sky-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-900/60 hover:bg-sky-100 dark:hover:bg-sky-900/50 hover:text-sky-700 dark:hover:text-sky-300 transition-colors"
               >
                 <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
                 {scheduleLabel}
