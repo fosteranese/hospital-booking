@@ -43,20 +43,20 @@ export function DateRangeSlidePanel({
 
         {filterDate && (
           <div className="mt-4">
-            <p className="text-xs text-slate-400 mb-3">
-              Showing appointments for <span className="text-slate-600 font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
+            <p className="text-xs text-muted-foreground mb-3">
+              Showing appointments for <span className="text-foreground font-medium">{format(new Date(filterDate + 'T12:00:00'), 'MMMM d, yyyy')}</span>
             </p>
             <button onClick={() => onFilterDate(null)}
-              className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
+              className="w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-md hover:bg-muted transition-colors border border-border">
               Clear filter
             </button>
           </div>
         )}
         </div>
       </div>
-      <div className="border-t border-slate-200 px-7 pb-6">
+      <div className="border-t border-border px-7 pb-6">
         <div className="pt-4 space-y-2">
-          <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Select</p>
+          <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Quick Select</p>
           {dateRangeOptions.map(opt => (
             <button
               key={opt.key}
@@ -64,7 +64,7 @@ export function DateRangeSlidePanel({
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
                 selectedRange === opt.key && !filterDate
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  : 'border-border text-muted-foreground hover:bg-muted hover:border-border'
               }`}
             >
               {opt.label}

@@ -88,36 +88,36 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div className="px-6 py-4 border-b border-border bg-muted">
         <div className="flex items-center justify-between">
           <button
             onClick={prevMonth}
-            className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
             aria-label="Previous month"
           >
-            <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-muted-foreground" />
           </button>
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-foreground">
             {monthNames[currentMonth]} {currentYear}
           </h2>
           <button
             onClick={nextMonth}
-            className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
             aria-label="Next month"
           >
-            <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" />
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-muted-foreground" />
           </button>
         </div>
       </div>
-
+      
       {/* Day names */}
-      <div className="grid grid-cols-7 border-b border-slate-200">
+      <div className="grid grid-cols-7 border-b border-border">
         {dayNames.map((day) => (
           <div
             key={day}
-            className="px-2 py-3 text-center text-xs font-semibold text-slate-500 uppercase"
+            className="px-2 py-3 text-center text-xs font-semibold text-muted-foreground uppercase"
           >
             {day}
           </div>
@@ -128,7 +128,7 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
       <div className="grid grid-cols-7">
         {calendarDays.map((day, index) => {
           if (day === null) {
-            return <div key={`empty-${index}`} className="min-h-[100px] border-b border-r border-slate-100 bg-slate-50/50" />;
+            return <div key={`empty-${index}`} className="min-h-[100px] border-b border-r border-border bg-muted/50" />;
           }
 
           const dateKey = formatDateKey(currentYear, currentMonth, day);
@@ -142,8 +142,8 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
               key={dateKey}
               onClick={() => onDateClick?.(dateKey)}
               className={`
-                min-h-[100px] p-2 border-b border-r border-slate-100 cursor-pointer
-                transition-colors hover:bg-slate-50
+                min-h-[100px] p-2 border-b border-r border-border cursor-pointer
+                transition-colors hover:bg-muted
                 ${isSelected ? 'bg-emerald-50' : ''}
               `}
             >
@@ -151,7 +151,7 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
                 <span
                   className={`
                     inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium
-                    ${isToday ? 'bg-emerald-600 text-white' : 'text-slate-700'}
+                    ${isToday ? 'bg-emerald-600 text-white' : 'text-foreground'}
                   `}
                 >
                   {day}

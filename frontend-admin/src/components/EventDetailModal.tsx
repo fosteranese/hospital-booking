@@ -74,7 +74,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative bg-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -100,7 +100,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
             </div>
             <div>
               <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Status</div>
-              <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ring-1 ${STATUS_BADGE[event.status] || 'bg-slate-100 text-slate-700'}`}>
+              <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ring-1 ${STATUS_BADGE[event.status] || 'bg-muted text-foreground'}`}>
                 {event.status}
               </span>
             </div>

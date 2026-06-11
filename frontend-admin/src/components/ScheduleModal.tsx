@@ -97,7 +97,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             {step > 1 && (
@@ -111,22 +111,22 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 setStep(s => s - 1);
                 setSelectedSlot(null); setError('');
               }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <HugeiconsIcon icon={ArrowRight03Icon} className="size-4 rotate-180" />
               </button>
             )}
-            <h3 className="text-lg font-bold text-slate-900">
+            <h3 className="text-lg font-bold text-foreground">
             {forcedType === 'referral' ? 'Refer Patient' : forcedType === 'follow-up' ? 'Schedule Follow-up' : 'Create Appointment'}
           </h3>
           </div>
-          <button onClick={onClose} data-close-modal aria-label="Close modal" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} data-close-modal aria-label="Close modal" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
 
         <div className="flex items-center justify-between mb-6">
-          <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">
+          <span className="text-xs font-semibold text-muted-foreground/70 tracking-wider uppercase">
             {step === 1 ? 'Type' : step === 2 ? 'Doctor' : step === 3 ? 'Schedule' : 'Confirm'}
           </span>
           <div className="flex items-center gap-1">
@@ -144,9 +144,9 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
           </div>
         </div>
 
-        <div className="bg-slate-50 rounded-xl p-4 mb-5">
-          <div className="text-sm font-medium text-slate-900">{patientName}</div>
-          <div className="text-xs text-slate-500 mt-0.5">Dr. {currentDoctorName}</div>
+        <div className="bg-muted rounded-xl p-4 mb-5">
+          <div className="text-sm font-medium text-foreground">{patientName}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Dr. {currentDoctorName}</div>
         </div>
 
         {error && (
@@ -159,7 +159,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 1 && (
           <div className="grid grid-cols-2 gap-4">
             <button type="button" onClick={() => { setScheduleType('follow-up'); setStep(3); }}
-              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-border bg-card p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-100 transition-colors">
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-6" />
@@ -170,7 +170,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
               </div>
             </button>
             <button type="button" onClick={() => { setScheduleType('referral'); setStep(2); }}
-              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+              className="group relative flex flex-col items-center gap-4 rounded-xl border-2 border-border bg-card p-8 transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 gap-0.5 group-hover:bg-emerald-100 transition-colors">
                 <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
@@ -198,15 +198,15 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
                       selectedDoctorId === d.id
                         ? 'border-emerald-400 bg-emerald-50/50'
-                        : 'border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm'
+                        : 'border-border bg-card hover:border-emerald-300 hover:shadow-sm'
                     }`}
                   >
                     <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 shrink-0">
                       {d.first_name[0]}{d.last_name[0]}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900">Dr. {d.first_name} {d.last_name}</div>
-                      <div className="text-xs text-slate-500">{d.specialization}</div>
+                    <div className="text-sm font-semibold text-foreground">Dr. {d.first_name} {d.last_name}</div>
+                    <div className="text-xs text-muted-foreground">{d.specialization}</div>
                     </div>
                     <div className="ml-auto shrink-0">
                       <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-slate-300" />

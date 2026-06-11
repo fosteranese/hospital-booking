@@ -58,14 +58,14 @@ export function DataTable<T>({
             key={keyExtractor(item)}
             onClick={() => onRowClick?.(item)}
             className={cn(
-              'bg-white rounded-xl border border-slate-200 p-4 space-y-2 transition-all',
-              onRowClick && 'cursor-pointer hover:border-slate-300 hover:shadow-sm'
+              'bg-card rounded-xl border border-border p-4 space-y-2 transition-all',
+              onRowClick && 'cursor-pointer hover:border-border hover:shadow-sm'
             )}
           >
             {columns.filter(c => !c.hideOnMobile).map(col => (
               <div key={col.key} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-slate-400 text-xs font-medium uppercase tracking-wider shrink-0">{col.header}</span>
-                <span className="text-slate-800 text-right">{col.render(item)}</span>
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider shrink-0">{col.header}</span>
+                <span className="text-foreground text-right">{col.render(item)}</span>
               </div>
             ))}
           </div>
@@ -78,12 +78,12 @@ export function DataTable<T>({
     <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-slate-200">
+          <tr className="border-b border-border">
             {columns.map(col => (
               <th
                 key={col.key}
                 className={cn(
-                  'text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider pb-2.5 px-3',
+                  'text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider pb-2.5 px-3',
                   col.hideOnMobile && 'hidden lg:table-cell',
                   col.headerClassName
                 )}
@@ -99,15 +99,15 @@ export function DataTable<T>({
               key={keyExtractor(item)}
               onClick={() => onRowClick?.(item)}
               className={cn(
-                'border-b border-slate-100 transition-all',
-                onRowClick && 'cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md transform-gpu'
+                'border-b border-border transition-all',
+                onRowClick && 'cursor-pointer hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md transform-gpu'
               )}
             >
               {columns.map(col => (
                 <td
                   key={col.key}
                   className={cn(
-                    'py-2.5 px-3 text-sm text-slate-700',
+                    'py-2.5 px-3 text-sm text-foreground',
                     col.hideOnMobile && 'hidden lg:table-cell',
                     col.className
                   )}

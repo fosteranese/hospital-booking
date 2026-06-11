@@ -110,7 +110,7 @@ export function SlotPicker({
                       'flex flex-col items-center gap-0.5 min-w-[56px] sm:min-w-[68px] py-2.5 sm:py-3 px-2 sm:px-2.5 rounded-xl border transition-all shrink-0',
                       isSelected
                         ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-primary/40 hover:text-primary',
+                        : 'bg-card text-foreground border-border hover:border-primary/40 hover:text-primary',
                     )}
                   >
                     <span className="text-[10px] font-medium uppercase tracking-wider opacity-70">{dayName}</span>
@@ -124,7 +124,7 @@ export function SlotPicker({
               type="button"
               onClick={() => scrollStrip('left')}
               disabled={!canScrollLeft}
-              className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
+              className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-card/80 hover:bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
               aria-label="Previous dates"
             >
               <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" strokeWidth={2} />
@@ -133,7 +133,7 @@ export function SlotPicker({
               type="button"
               onClick={() => scrollStrip('right')}
               disabled={!canScrollRight}
-              className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-white/80 hover:bg-white shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
+              className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-card/80 hover:bg-card shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
               aria-label="Next dates"
             >
               <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" strokeWidth={2} />
@@ -159,7 +159,7 @@ export function SlotPicker({
               {groupedSlots.map(({ period, slots: periodSlots }) => (
                 <div key={period} className="space-y-2">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-medium text-slate-800">{periodConfig[period].label}</span>
+                    <span className="text-sm font-medium text-foreground">{periodConfig[period].label}</span>
                     <span className="text-[11px] text-slate-400">{periodConfig[period].range}</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -174,14 +174,14 @@ export function SlotPicker({
                             'relative flex items-center justify-center w-full text-center rounded-xl border px-2 py-2.5 transition-all overflow-hidden',
                             isSel
                               ? 'bg-primary text-white border-primary shadow-xs'
-                              : 'bg-white text-slate-800 border-slate-200 hover:border-primary/40 active:scale-[0.98]'
+                              : 'bg-card text-foreground border-border hover:border-primary/40 active:scale-[0.98]'
                           )}
                         >
                           <span className={cn('text-xs font-medium', isSel && 'text-white')}>
                             {slot.start_time.slice(0, 5)} — {slot.end_time.slice(0, 5)}
                           </span>
                           {isSel && (
-                            <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-white flex items-center justify-center shadow-xs">
+                            <span className="absolute -top-1.5 -right-1.5 size-4 rounded-full bg-card flex items-center justify-center shadow-xs">
                               <HugeiconsIcon icon={CheckmarkCircle01Icon} strokeWidth={2} className="size-2.5 text-primary" />
                             </span>
                           )}

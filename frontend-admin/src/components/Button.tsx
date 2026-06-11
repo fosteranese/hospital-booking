@@ -14,9 +14,9 @@ const variants = {
   primary:
     'bg-emerald-600 text-white shadow-[0_1px_3px_rgba(5,150,105,0.2)] hover:bg-emerald-500 active:bg-emerald-700',
   secondary:
-    'bg-white text-slate-700 border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100',
+    'bg-card text-foreground border border-border shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:bg-muted hover:border-border active:bg-muted',
   ghost:
-    'text-slate-600 hover:bg-slate-100 active:bg-slate-200',
+    'text-muted-foreground hover:bg-muted active:bg-muted',
   danger:
     'bg-red-600 text-white shadow-[0_1px_3px_rgba(220,38,38,0.2)] hover:bg-red-500 active:bg-red-700',
 };

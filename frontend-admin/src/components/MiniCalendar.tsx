@@ -31,7 +31,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
 
   const isSidebar = variant === 'sidebar';
 
-  const navBtnClass = 'w-9 h-9 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors';
+  const navBtnClass = 'w-9 h-9 flex items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors';
 
   const labelClass = isSidebar
     ? 'text-slate-500 text-base font-medium'
@@ -92,8 +92,8 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
             cellClass += 'text-slate-200 cursor-default';
           } else {
             cellClass += isSidebar
-              ? 'text-slate-500 hover:bg-slate-50 rounded'
-              : 'text-slate-600 hover:bg-slate-100 rounded';
+              ? 'text-muted-foreground hover:bg-muted rounded'
+              : 'text-foreground hover:bg-muted rounded';
           }
 
           return (
@@ -117,7 +117,7 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
       <div className="mt-3 text-center">
         <button
           onClick={() => { setCurrentMonth(startOfMonth(new Date())); onDateChange(new Date()); }}
-          className="text-xs text-slate-400 hover:text-emerald-600 transition-colors font-medium"
+          className="text-xs text-muted-foreground hover:text-emerald-600 transition-colors font-medium"
         >
           Today
         </button>

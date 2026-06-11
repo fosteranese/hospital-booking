@@ -85,21 +85,21 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-slate-900">Reschedule Appointment</h3>
+          <h3 className="text-base font-bold text-foreground">Reschedule Appointment</h3>
           <button onClick={onClose} data-close-modal aria-label="Close modal" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
 
-        <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50' : 'bg-slate-50'}`}>
-          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${appointment.has_conflict ? 'text-red-600' : 'text-slate-500'}`}>
+        <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50' : 'bg-muted'}`}>
+          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${appointment.has_conflict ? 'text-red-600' : 'text-muted-foreground'}`}>
             <HugeiconsIcon icon={appointment.has_conflict ? AlertCircleIcon : Calendar01Icon} className="size-3.5" />
             {appointment.has_conflict ? 'Conflicting Appointment' : 'Reschedule Appointment'}
           </div>
-          <div className="text-sm font-medium text-slate-900">{appointment.patient_name}</div>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
+          <div className="text-sm font-medium text-foreground">{appointment.patient_name}</div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
               {formatDate(appointment.slot_date)}

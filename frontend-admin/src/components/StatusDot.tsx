@@ -63,7 +63,7 @@ export function StatusDot({
     return null;
   })();
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500" title={s.label}>
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" title={s.label}>
       <span className={`size-1.5 rounded-full ${s.color}`} />
       {s.label}
       {arrivalDisplay && (

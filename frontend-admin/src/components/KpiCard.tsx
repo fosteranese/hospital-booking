@@ -64,7 +64,7 @@ export function KpiCard({ label, value, icon, color, trend, trendLabel, comparis
 
   return (
     <div className={cn(
-      'bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]',
+      'bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]',
       'border-l-4',
       styles.border,
       'p-5',
@@ -75,7 +75,7 @@ export function KpiCard({ label, value, icon, color, trend, trendLabel, comparis
           <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0', styles.icon)}>
             <HugeiconsIcon icon={icon} className="size-[18px]" />
           </div>
-          <span className="text-xs font-medium text-slate-500">{label}</span>
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
         </div>
         {trend && TrendIcon && trendLabel && (
           <span className={cn(
@@ -87,13 +87,13 @@ export function KpiCard({ label, value, icon, color, trend, trendLabel, comparis
           </span>
         )}
       </div>
-      <div className="text-2xl font-bold text-slate-900 tracking-tight mb-2">
+      <div className="text-2xl font-bold text-foreground tracking-tight mb-2">
         {value}
       </div>
       {comparisonText && (
         <div className={cn(
           'flex items-center gap-1 text-[11px] font-medium',
-          trend ? trendColorMap[trend] : 'text-slate-400'
+          trend ? trendColorMap[trend] : 'text-muted-foreground'
         )}>
           {TrendIcon && <HugeiconsIcon icon={TrendIcon} className="size-3" />}
           {comparisonText}

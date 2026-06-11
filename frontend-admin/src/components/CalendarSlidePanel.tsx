@@ -93,20 +93,20 @@ export function CalendarSlidePanel({
         {filterDate && (
           <div className="mt-4">
             <button onClick={() => onFilterDate(null)}
-              className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 rounded-md hover:bg-slate-50 transition-colors border border-slate-100">
+              className="w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-md hover:bg-muted transition-colors border border-border">
               Clear filter
             </button>
           </div>
         )}
       </div>
-      <div className="px-7 pb-2 border-t border-slate-200">
+      <div className="px-7 pb-2 border-t border-border">
         <div className="pt-4">
-          <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Select</p>
+          <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Quick Select</p>
           <div className="space-y-2">
             <button
               onClick={() => handlePresetClick(presets[0])}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                isActive(presets[0]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                isActive(presets[0]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-border text-muted-foreground hover:bg-muted hover:border-border'
               }`}
             >
               {presets[0].label}
@@ -117,7 +117,7 @@ export function CalendarSlidePanel({
                   key={preset.key}
                   onClick={() => handlePresetClick(preset)}
                   className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-border text-muted-foreground hover:bg-muted hover:border-border'
                   }`}
                 >
                   {preset.label}
@@ -130,7 +130,7 @@ export function CalendarSlidePanel({
                   key={preset.key}
                   onClick={() => handlePresetClick(preset)}
                   className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-border text-muted-foreground hover:bg-muted hover:border-border'
                   }`}
                 >
                   {preset.label}
@@ -140,7 +140,7 @@ export function CalendarSlidePanel({
             <button
               onClick={() => handlePresetClick(presets[5])}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                isActive(presets[5]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                isActive(presets[5]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-border text-muted-foreground hover:bg-muted hover:border-border'
               }`}
             >
               {presets[5].label}

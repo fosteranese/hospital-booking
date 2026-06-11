@@ -40,34 +40,34 @@ export function TopBar() {
   const userInitial = otpIdentifier.charAt(0).toUpperCase();
 
   return (
-    <header className="h-14 shrink-0 bg-white border-b border-slate-200/60 flex items-center justify-end px-6">
+    <header className="h-14 shrink-0 bg-background border-b border-border flex items-center justify-end px-6">
       <div className="relative" ref={ref}>
         <button
           onClick={() => setProfileOpen(!profileOpen)}
-          className="flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full hover:bg-slate-100 transition-colors"
+          className="flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full hover:bg-muted transition-colors"
           aria-label="User menu"
         >
           <div className="size-7 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-semibold text-[10px] shadow-sm">
             {userInitial}
           </div>
-          <span className="text-sm font-medium text-slate-700 hidden sm:block">{otpIdentifier}</span>
+          <span className="text-sm font-medium text-foreground hidden sm:block">{otpIdentifier}</span>
         </button>
 
         {profileOpen && (
-          <div className="absolute top-full right-0 mt-1.5 w-56 bg-white rounded-xl shadow-lg shadow-slate-200/60 border border-slate-200/60 overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-slate-100">
-              <p className="text-sm font-semibold text-slate-900 truncate">{otpIdentifier}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{roleLabel}</p>
+          <div className="absolute top-full right-0 mt-1.5 w-56 bg-card rounded-xl shadow-lg shadow-slate-200/60 border border-border overflow-hidden z-50">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-sm font-semibold text-foreground truncate">{otpIdentifier}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{roleLabel}</p>
             </div>
             <div className="p-1.5">
               <button
                 onClick={() => { setProfileOpen(false); navigate('/dashboard/settings'); }}
-                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted transition-colors"
               >
-                <HugeiconsIcon icon={UserSettingsIcon} className="size-4 text-slate-400" />
+                <HugeiconsIcon icon={UserSettingsIcon} className="size-4 text-muted-foreground" />
                 Account Settings
               </button>
-              <div className="my-1 mx-2 h-px bg-slate-100" />
+              <div className="my-1 mx-2 h-px bg-border" />
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"

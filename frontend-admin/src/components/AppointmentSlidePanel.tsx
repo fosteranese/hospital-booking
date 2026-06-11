@@ -127,7 +127,7 @@ export function AppointmentSlidePanel({
   return (
     <>
       <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
-      <div ref={panelRef} className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
+      <div ref={panelRef} className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-card shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
         {/* Conflict banner */}
@@ -155,8 +155,8 @@ export function AppointmentSlidePanel({
 
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Appointment Details</div>
-          <button onClick={handleClose} data-close-modal aria-label="Close panel" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.12em]">Appointment Details</div>
+          <button onClick={handleClose} data-close-modal aria-label="Close panel" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
@@ -169,7 +169,7 @@ export function AppointmentSlidePanel({
               {(appointment.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-lg font-bold text-slate-900 truncate">{appointment.patient_name || 'Patient'}</div>
+              <div className="text-lg font-bold text-foreground truncate">{appointment.patient_name || 'Patient'}</div>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`size-2 rounded-full ${status.dot}`} />
                 <span className="text-sm font-medium text-slate-600">{status.label}</span>
@@ -200,74 +200,74 @@ export function AppointmentSlidePanel({
           </div>
 
           {/* Contain Details */}
-          {((appointment.patient_phone ?? '').length > 0 || (appointment.patient_email ?? '').length > 0) && (<div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+          {((appointment.patient_phone ?? '').length > 0 || (appointment.patient_email ?? '').length > 0) && (<div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
             {(appointment.patient_phone ?? '').length > 0 && (<div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                 <HugeiconsIcon icon={CallIcon} className="size-4 text-emerald-500" />
               </div>
               <div>
-                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Phone</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Phone</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">
                   {appointment.patient_phone}
                 </div>
               </div>
             </div>)}
             {(appointment.patient_email ?? '').length > 0 && (<div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                 <HugeiconsIcon icon={Mail01Icon} className="size-4 text-emerald-500" />
               </div>
               <div>
-                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Email</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.patient_email}</div>
+                <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Email</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">{appointment.patient_email}</div>
               </div>
             </div>)}
           </div>)}
 
           {/* Appointment details card */}
-          <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+          <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                 <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-emerald-500" />
               </div>
               <div>
-                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Date</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Date</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">
                   {new Date(appointment.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+              <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                 <HugeiconsIcon icon={TimeScheduleIcon} className="size-4 text-emerald-500" />
               </div>
               <div>
-                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Time</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{formatTime(appointment.start_time)} — {formatTime(appointment.end_time)}</div>
+                <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Time</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">{formatTime(appointment.start_time)} — {formatTime(appointment.end_time)}</div>
               </div>
             </div>
           </div>
 
           {/* Conflict details */}
           {appointment.has_conflict && appointment.conflict_slot_date && (
-            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+            <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                   <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-500" />
                 </div>
                 <div>
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Conflict — Unavailability</div>
-                  <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                  <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Conflict — Unavailability</div>
+                  <div className="text-sm font-semibold text-foreground mt-0.5">
                     {formatDate(appointment.conflict_slot_date)}
                     {appointment.conflict_end_date && appointment.conflict_end_date !== appointment.conflict_slot_date && (
                       <span> — {formatDate(appointment.conflict_end_date)}</span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {appointment.conflict_start_time ? (
                       <>{formatTime(appointment.conflict_start_time!)} — {formatTime(appointment.conflict_end_time!)}</>
                     ) : 'All day'}
                     {appointment.conflict_reason && (
-                      <span className="text-slate-400 ml-1">· {appointment.conflict_reason}</span>
+                      <span className="text-muted-foreground ml-1">· {appointment.conflict_reason}</span>
                     )}
                   </div>
                 </div>
@@ -277,23 +277,23 @@ export function AppointmentSlidePanel({
 
           {/* Referral details */}
           {appointment.referring_doctor_id && (
-            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
+            <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                   <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-violet-500" />
                 </div>
                 <div>
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Referred by</div>
-                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.referring_doctor_name || 'Another doctor'}</div>
+                  <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Referred by</div>
+                  <div className="text-sm font-semibold text-foreground mt-0.5">{appointment.referring_doctor_name || 'Another doctor'}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
                   <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-emerald-500" />
                 </div>
                 <div>
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">To</div>
-                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.doctor_name}</div>
+                  <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">To</div>
+                  <div className="text-sm font-semibold text-foreground mt-0.5">{appointment.doctor_name}</div>
                 </div>
               </div>
             </div>
@@ -301,24 +301,24 @@ export function AppointmentSlidePanel({
 
           {/* Notes */}
           {appointment.notes && (
-            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
-              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">Notes</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.notes}</div>
+            <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Notes</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">{appointment.notes}</div>
             </div>
           )}
 
           {/* Cancellation reason */}
           {appointment.cancellation_reason && (
-            <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
-              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-2">Cancellation Reason</div>
-                <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.cancellation_reason}</div>
+            <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
+              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Cancellation Reason</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">{appointment.cancellation_reason}</div>
             </div>
           )}
         </div>
 
         {/* Action buttons — sticky footer */}
         {isPending && (canMarkAttendance || canReschedule || canScheduleNew) && (
-          <div className={`shrink-0 bg-white py-5`}>
+          <div className={`shrink-0 bg-card py-5`}>
             {canMarkAttendance && (
             <div className="flex gap-3 px-7">
               <button
@@ -330,7 +330,7 @@ export function AppointmentSlidePanel({
               </button>
               <button
                 onClick={() => onRequestAttendance(appointment.id, false)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-slate-700 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-foreground bg-card rounded-xl border border-border hover:bg-muted hover:border-border transition-colors shadow-sm"
               >
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 Missed
@@ -339,12 +339,12 @@ export function AppointmentSlidePanel({
             )}
 
             {(canReschedule || canScheduleNew) && (
-            <div className='border-t border-slate-100 pt-4 mt-4'>
+            <div className='border-t border-border pt-4 mt-4'>
             <div className="flex gap-2 px-7">
               {canReschedule && (
                 <button
                   onClick={() => onReschedule?.(appointment)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-muted-foreground bg-muted rounded-xl border border-border hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <HugeiconsIcon icon={TimeScheduleIcon} className="size-4" />
                   Reschedule
@@ -367,12 +367,12 @@ export function AppointmentSlidePanel({
 
         {/* Scheduling-only section — for attended/missed (within window) */}
         {!isPending && (canReschedule || canScheduleNew) && (
-          <div className="shrink-0 border-t border-slate-200 bg-white py-5">
+          <div className="shrink-0 border-t border-border bg-card py-5">
             <div className="flex gap-2 px-7">
               {canReschedule && (
                 <button
                   onClick={() => onReschedule?.(appointment)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-slate-600 bg-slate-50 rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-muted-foreground bg-muted rounded-xl border border-border hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <HugeiconsIcon icon={TimeScheduleIcon} className="size-4" />
                   Reschedule

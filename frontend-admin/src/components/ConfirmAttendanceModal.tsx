@@ -106,7 +106,7 @@ export function ConfirmAttendanceModal({
       onMouseDown={e => { if (e.target === e.currentTarget && !confirming) onCancel(); }}
     >
       <div
-        className={`w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ${
+        className={`w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ${
           visible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
         }`}
       >
@@ -118,24 +118,24 @@ export function ConfirmAttendanceModal({
               actionColor === 'emerald' ? 'text-emerald-600' : 'text-red-500'
             }`} strokeWidth={2} />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">Confirm Attendance</h2>
-          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-            Mark <span className="font-semibold text-slate-700">{patientName}</span> as{' '}
+          <h2 className="text-lg font-semibold text-foreground">Confirm Attendance</h2>
+          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+            Mark <span className="font-semibold text-foreground">{patientName}</span> as{' '}
             <span className={`font-semibold ${
               actionColor === 'emerald' ? 'text-emerald-600' : 'text-red-500'
             }`}>{actionLabel}</span>?
           </p>
-          <p className="text-xs text-slate-400 mt-1.5">
+          <p className="text-xs text-muted-foreground/70 mt-1.5">
             {formatDate(slotDate)} · {formatTime(startTime)} — {formatTime(endTime)}
           </p>
         </div>
 
         {attended && (
           <div className="px-6 pt-4">
-            <label className="text-xs font-medium text-slate-500 mb-1.5 block">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
               Arrival time
             </label>
-            <div className="text-xs text-slate-400 mb-2">
+            <div className="text-xs text-muted-foreground/70 mb-2">
               Scheduled: {formatTime(startTime)}
             </div>
             <input
@@ -143,7 +143,7 @@ export function ConfirmAttendanceModal({
               type="time"
               value={arrivalTimeInput}
               onChange={e => setArrivalTimeInput(e.target.value)}
-              className="w-full h-10 px-3.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="w-full h-10 px-3.5 text-sm border border-border rounded-xl bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
         )}
@@ -152,7 +152,7 @@ export function ConfirmAttendanceModal({
           <button
             onClick={onCancel}
             disabled={confirming}
-            className="flex-1 h-11 text-sm font-semibold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 transition-all"
+            className="flex-1 h-11 text-sm font-semibold text-muted-foreground bg-card rounded-xl border border-border hover:bg-muted hover:border-border disabled:opacity-50 transition-all"
           >
             Cancel
           </button>
