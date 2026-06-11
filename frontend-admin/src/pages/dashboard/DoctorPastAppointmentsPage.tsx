@@ -328,11 +328,11 @@ export function DoctorPastAppointmentsPage() {
                           const isMissed = a.attended === false;
                           const isCancelled = a.status === 'cancelled';
                           const isPending = !isAttended && !isMissed && !isCancelled;
-                          const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#9333ea';
+                          const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#9333ea';
                           const canAttend = isPending;
                           return (
                             <tr key={a.id}
-                              className="cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0"
+                              className={`cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30 dark:bg-red-950/30' : ''}`}
                               onClick={() => setSelectedAppointment(a)}
                               style={{ transformOrigin: 'center' }}
                             >
@@ -348,6 +348,7 @@ export function DoctorPastAppointmentsPage() {
                               <td className="min-w-0 py-4 border-b border-border align-top">
                                 <div className="flex items-center gap-1.5">
                                   <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
+                                  {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 dark:text-red-400 shrink-0" />}
                                   {a.referring_doctor_id && (
                                     <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                                       <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
@@ -361,16 +362,16 @@ export function DoctorPastAppointmentsPage() {
                                 </div>
                               </td>
                               <td className="w-[100px] py-4 border-b border-border align-top">
-                                <StatusDot status={a.status} attended={a.attended} />
+                                <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} start_time={a.start_time} arrival_time={a.arrival_time} slot_date={a.slot_date} has_conflict={a.has_conflict} />
                               </td>
                               <td className="pr-3 w-0 py-4 border-b border-border align-top">
                                 {canAttend ? (
                                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                     <button onClick={e => { e.stopPropagation(); requestAttendance(a.id, true); }}
-                                      className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors" title="Mark attended"
+                                      className="p-1.5 rounded-md text-emerald-500 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors" title="Mark attended"
                                     ><HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" /></button>
                                     <button onClick={e => { e.stopPropagation(); requestAttendance(a.id, false); }}
-                                      className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors" title="Mark missed"
+                                      className="p-1.5 rounded-md text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors" title="Mark missed"
                                     ><HugeiconsIcon icon={Cancel01Icon} className="size-4" /></button>
                                   </div>
                                 ) : (
