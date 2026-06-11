@@ -301,7 +301,7 @@ export function DoctorUnavailabilityPage() {
           {[
             { key: 'pending', label: 'Pending', color: 'bg-amber-400' },
             { key: 'conflicts', label: 'Conflicts', color: 'bg-red-500' },
-            { key: 'past', label: 'Past', color: 'bg-slate-400' },
+            { key: 'past', label: 'Past', color: 'bg-muted-foreground' },
             { key: 'all', label: 'All', color: '' },
           ].map(f => (
             <button
@@ -309,7 +309,7 @@ export function DoctorUnavailabilityPage() {
               onClick={() => setFilter(f.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 filter === f.key
-                  ? 'bg-slate-900 text-white shadow-sm'
+                  ? 'bg-foreground text-background shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
@@ -413,7 +413,7 @@ export function DoctorUnavailabilityPage() {
                       {expandedId === u.id && (
                         <tr>
                           <td colSpan={5} className="px-0 py-0">
-                            <div className="bg-slate-50/80 border-b border-border">
+                            <div className="bg-muted/80 border-b border-border">
                               {conflictsLoading === u.id ? (
                                 <div className="px-8 py-4 space-y-2">
                                   {[1, 2].map(i => <div key={i} className="h-10 bg-muted rounded-md animate-pulse" />)}
@@ -574,7 +574,7 @@ export function DoctorUnavailabilityPage() {
                     <div className="size-1.5 rounded-full bg-emerald-500" />
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Duration</span>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                  <div className="bg-muted rounded-xl p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-foreground font-medium">Time</span>
                       <div className="flex rounded-lg border border-border overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
