@@ -607,24 +607,32 @@ export function DoctorDashboard() {
                 )}
               </div>
               <div className="space-y-4">
-                <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Incoming Referrals</div>
-                    <HugeiconsIcon icon={UserGroupIcon} className="size-4 text-violet-400" />
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-bold text-slate-900">{incomingReferrals}</span>
-                    <span className="text-xs text-slate-400">patient{incomingReferrals !== 1 ? 's' : ''}</span>
+                <div className="border bg-card text-card-foreground overflow-hidden rounded-xl transition-all duration-200 hover:border-primary/20">
+                  <div className="flex items-start gap-4 p-4">
+                    <div className="h-12 w-1 shrink-0 rounded-full bg-violet-500" />
+                    <div className="flex flex-1 justify-between">
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-slate-500 font-medium">Incoming Referrals</p>
+                        <p className="text-xl font-bold tracking-tight">{incomingReferrals}</p>
+                      </div>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-100 shrink-0">
+                        <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl border border-slate-200 py-3 px-5">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium text-slate-500">Outgoing Referrals</div>
-                    <HugeiconsIcon icon={Share08Icon} className="size-4 text-blue-400" />
-                  </div>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-bold text-slate-900">{outgoingReferrals}</span>
-                    <span className="text-xs text-slate-400">patient{outgoingReferrals !== 1 ? 's' : ''}</span>
+                <div className="border bg-card text-card-foreground overflow-hidden rounded-xl transition-all duration-200 hover:border-primary/20">
+                  <div className="flex items-start gap-4 p-4">
+                    <div className="h-12 w-1 shrink-0 rounded-full bg-blue-500" />
+                    <div className="flex flex-1 justify-between">
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-slate-500 font-medium">Outgoing Referrals</p>
+                        <p className="text-xl font-bold tracking-tight">{outgoingReferrals}</p>
+                      </div>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 shrink-0">
+                        <HugeiconsIcon icon={Share08Icon} className="size-3 text-blue-500" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
