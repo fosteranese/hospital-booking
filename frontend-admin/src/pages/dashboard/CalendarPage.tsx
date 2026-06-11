@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Scheduler, type CalendarEvent as CKEvent } from 'calendarkit-pro';
 import { format } from 'date-fns';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
+
+
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
@@ -94,7 +95,7 @@ export function CalendarPage() {
 
   const cacheKey = `appointments:calendar:${statusFilter || 'all'}`;
 
-  const { data: rawAppointments, loading, error, refresh: fetchAppointments } = useCachedData(
+  const { data: rawAppointments, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(() => api.listAppointments({ status: statusFilter || undefined }, token), [token, statusFilter]),
     { enabled: !!token }
@@ -102,9 +103,8 @@ export function CalendarPage() {
   const appointments = rawAppointments ?? [];
 
   const refreshAll = useCallback(async () => {
-    invalidateCache(cacheKey);
-    await fetchAppointments();
-  }, [fetchAppointments, cacheKey]);
+    await backgroundRefresh();
+  }, [backgroundRefresh]);
 
   const events = useMemo(() => appointments.map(toCKEvent), [appointments]);
 
@@ -194,6 +194,11 @@ export function CalendarPage() {
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
+          <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-slate-500">
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </button>
           <HugeiconsIcon icon={FilterIcon} className="size-4 text-muted-foreground" />
           <select
             value={statusFilter}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon, AlertCircleIcon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, AlertCircleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 
 interface Props {
   appointmentId: string;
@@ -109,6 +109,12 @@ export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Pr
         <div className="px-6 pb-6 space-y-4">
           {action === 'view' && (
             <>
+              {appt!.referring_doctor_id && (
+                <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100">
+                  <HugeiconsIcon icon={UserGroupIcon as any} className="size-3.5 text-violet-500" />
+                  <span className="text-xs text-violet-700">Referred by another doctor</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground text-xs">Status</p>

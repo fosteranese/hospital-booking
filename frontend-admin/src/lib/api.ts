@@ -117,6 +117,7 @@ export interface ReferralItem {
   status: string;
   notes: string;
   attended: boolean | null;
+  arrival_time: string | null;
   cancellation_reason: string;
 }
 
@@ -136,6 +137,7 @@ export interface AppointmentHistoryItem {
   notes: string;
   attended: boolean | null;
   minutes_late: number | null;
+  arrival_time: string | null;
   cancellation_reason: string;
   has_conflict: boolean;
   conflict_slot_date?: string;
@@ -156,6 +158,7 @@ export interface AppointmentResponse {
   notes: string;
   attended: boolean | null;
   minutes_late: number | null;
+  arrival_time: string | null;
   cancellation_reason: string;
   created_at: string;
 }
@@ -168,7 +171,11 @@ export interface AppointmentDetail {
   status: string;
   notes: string;
   attended: boolean | null;
+  minutes_late: number | null;
+  arrival_time: string | null;
   cancellation_reason: string;
+  referring_doctor_id: string | null;
+  referring_doctor_name: string | null;
   created_at: string;
 }
 
@@ -450,7 +457,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
     }),
 
-  markAttendance: (id: string, data: { attended: boolean; minutes_late?: number | null }, token: string) =>
+  markAttendance: (id: string, data: { attended: boolean; arrival_time?: string | null }, token: string) =>
     request<AppointmentResponse>(`/appointments/${id}/attendance`, {
       method: 'PATCH',
       body: JSON.stringify(data),

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
 import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
@@ -15,6 +14,7 @@ import {
   Cancel01Icon,
   AlertCircleIcon,
   TimeScheduleIcon,
+  UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -38,7 +38,7 @@ function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 
   return 'confirmed';
 }
 
-function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+function StatusDot({ status, attended, minutes_late, arrival_time, start_time, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; arrival_time?: string | null; start_time?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium">
@@ -55,12 +55,26 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
   const s = map[effective];
+  const arrivalDisplay = (() => {
+    if (arrival_time) {
+      const timePart = arrival_time.split('T')[1]?.slice(0, 5);
+      if (timePart) return formatTime(timePart);
+    }
+    if (attended === true && minutes_late != null && minutes_late > 0 && start_time) {
+      const [h, m] = start_time.split(':').map(Number);
+      const totalMin = h * 60 + m + minutes_late;
+      const newH = Math.floor(totalMin / 60) % 24;
+      const newM = totalMin % 60;
+      return `${newH % 12 || 12}:${String(newM).padStart(2, '0')} ${newH >= 12 ? 'PM' : 'AM'}`;
+    }
+    return null;
+  })();
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
       <span className={`size-1.5 rounded-full ${s.color}`} />
       {s.label}
-      {attended === true && minutes_late != null && minutes_late > 0 && (
-        <span className="text-amber-600 font-medium">{minutes_late} min late</span>
+      {arrivalDisplay && (
+        <span className="text-amber-600 font-medium">· arrived {arrivalDisplay}</span>
       )}
     </span>
   );
@@ -131,11 +145,11 @@ export function TodayPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-  const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
+  const [latenessInput, setLatenessInput] = useState<{ id: string; arrivalTime: string } | null>(null);
 
   const cacheKey = `appointments:today:${today}:${selectedDoctor || 'all'}`;
 
-  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+  const { data: raw, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(async () => {
       const params: { date: string; doctor_id?: string } = { date: today };
@@ -157,19 +171,19 @@ export function TodayPage() {
   useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
 
   const refreshAll = useCallback(() => {
-    invalidateCache(cacheKey);
-    fetchAppointments();
-  }, [fetchAppointments, cacheKey]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
-  const handleConfirmAttend = useCallback(async (id: string, attended: boolean, minutes_late?: number | null) => {
+  const handleConfirmAttend = useCallback(async (id: string, attended: boolean, arrivalTime?: string | null) => {
     try {
-      await api.markAttendance(id, { attended, minutes_late }, token);
+      const arrivalIso = arrivalTime ? `${today}T${arrivalTime}:00` : `${today}T00:00:00`;
+      await api.markAttendance(id, { attended, arrival_time: arrivalIso }, token);
       setLatenessInput(null);
       refreshAll();
     } catch (e: any) {
       console.error(e.message || 'Failed to update attendance');
     }
-  }, [token, fetchAppointments]);
+  }, [token, fetchAppointments, today]);
 
   const pendingToday = appointments.filter(a => getEffectiveStatus(a) === 'confirmed').length;
   const attendedToday = appointments.filter(a => getEffectiveStatus(a) === 'attended').length;
@@ -184,6 +198,11 @@ export function TodayPage() {
           description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           icon={Calendar01Icon}
         />
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
         <select
           value={selectedDoctor}
           onChange={e => setSelectedDoctor(e.target.value)}
@@ -269,11 +288,7 @@ export function TodayPage() {
                     const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : '#f59e0b';
                     const isEditingLatness = latenessInput?.id === a.id;
 
-                    const autoLatness = (() => {
-                      const [h, m] = a.start_time.split(':').map(Number);
-                      const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-                      return Math.max(0, Math.floor((now.getTime() - slotStart.getTime()) / 60000));
-                    })();
+                    const autoArrivalTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
                     return (
                       <tr
@@ -293,26 +308,32 @@ export function TodayPage() {
                         </td>
                         <td className="w-px"><div className="h-8 bg-slate-100 w-px" /></td>
                         <td className="min-w-0 py-3">
-                          <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="text-sm font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
+                            {a.referring_doctor_id && (
+                              <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                                <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+                              </span>
+                            )}
+                            {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
+                          </div>
                           <div className="text-[11px] text-slate-400 truncate">{a.doctor_name}</div>
                           {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                         </td>
-                        <td className="w-[144px] py-3"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} /></td>
+                        <td className="w-[144px] py-3"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} arrival_time={a.arrival_time} start_time={a.start_time} has_conflict={a.has_conflict} /></td>
                         <td className="pr-3 w-0 py-3">
                           {isEditingLatness ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] text-slate-500 whitespace-nowrap">Late:</span>
+                              <span className="text-[11px] text-slate-500 whitespace-nowrap">Arrival:</span>
                               <input
-                                type="number"
-                                min={0}
-                                className="w-16 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                                value={latenessInput.minutes}
-                                onChange={e => setLatenessInput({ ...latenessInput, minutes: Math.max(0, parseInt(e.target.value) || 0) })}
+                                type="time"
+                                className="w-24 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                value={latenessInput.arrivalTime}
+                                onChange={e => setLatenessInput({ ...latenessInput, arrivalTime: e.target.value })}
                                 autoFocus
                               />
-                              <span className="text-[11px] text-slate-500">min</span>
                               <button
-                                onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.minutes); }}
+                                onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.arrivalTime); }}
                                 className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
                                 title="Confirm"
                               >
@@ -333,14 +354,14 @@ export function TodayPage() {
                               {isPending && (
                                 <>
                                   <button
-                                    onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, minutes: autoLatness }); }}
+                                    onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, arrivalTime: autoArrivalTime }); }}
                                     className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
                                     title="Mark attended"
                                   >
                                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                                   </button>
                                   <button
-                                    onClick={() => handleConfirmAttend(a.id, false)}
+                                    onClick={() => handleConfirmAttend(a.id, false, autoArrivalTime)}
                                     className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
                                     title="Mark missed"
                                   >

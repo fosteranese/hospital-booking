@@ -244,7 +244,7 @@ pub async fn list_unavailability_conflicts(
                 d.first_name || ' ' || d.last_name AS doctor_name, \
                 d.specialization, \
                 s.slot_date, s.start_time, s.end_time, \
-                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason, \
+                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.arrival_time, a.cancellation_reason, \
                 TRUE AS has_conflict, \
                 $2 AS conflict_slot_date, \
                 $3 AS conflict_end_date, \

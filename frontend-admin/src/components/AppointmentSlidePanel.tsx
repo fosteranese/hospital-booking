@@ -77,7 +77,17 @@ export function AppointmentSlidePanel({
     const today = new Date(); today.setHours(0, 0, 0, 0);
     return new Date(appointment.slot_date + 'T00:00:00') < today;
   })();
+  const isAppointmentTimePast = (() => {
+    const apptDate = new Date(appointment.slot_date + 'T00:00:00');
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    if (apptDate < todayDate) return true;
+    if (apptDate > todayDate) return false;
+    const [h, m] = (appointment.end_time || '23:59').split(':').map(Number);
+    const slotEnd = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate(), h, m);
+    return new Date() >= slotEnd;
+  })();
   const isPending = !isAttended && !isMissed && !isCancelled && !isBeforeToday;
+  const canMarkAttendance = isPending && isAppointmentTimePast;
   const effectivelyMissed = isMissed || (isBeforeToday && !isAttended && !isCancelled);
 
   const apptDate = new Date(appointment.slot_date + 'T00:00:00');
@@ -93,7 +103,20 @@ export function AppointmentSlidePanel({
   );
 
   function statusInfo() {
-    if (isAttended) return { label: `Attended${appointment.minutes_late ? ` · ${appointment.minutes_late}m late` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
+    if (isAttended) {
+      let arrivalDisplay = '';
+      if (appointment.arrival_time) {
+        const timePart = appointment.arrival_time.split('T')[1]?.slice(0, 5);
+        if (timePart) arrivalDisplay = formatTime(timePart);
+      } else if (appointment.minutes_late) {
+        const [h, m] = appointment.start_time.split(':').map(Number);
+        const totalMin = h * 60 + m + appointment.minutes_late;
+        const newH = Math.floor(totalMin / 60) % 24;
+        const newM = totalMin % 60;
+        arrivalDisplay = `${newH % 12 || 12}:${String(newM).padStart(2, '0')} ${newH >= 12 ? 'PM' : 'AM'}`;
+      }
+      return { label: `Attended${arrivalDisplay ? ` · arrived ${arrivalDisplay}` : ''}`, dot: 'bg-emerald-500', bar: 'bg-emerald-500' };
+    }
     if (isMissed) return { label: 'Missed', dot: 'bg-purple-500', bar: 'bg-purple-500' };
     if (isCancelled) return { label: 'Cancelled', dot: 'bg-slate-300', bar: 'bg-slate-300' };
     if (isBeforeToday) return { label: 'Missed', dot: 'bg-purple-500', bar: 'bg-purple-500' };
@@ -298,9 +321,9 @@ export function AppointmentSlidePanel({
         </div>
 
         {/* Action buttons — sticky footer */}
-        {isPending && (
-          <div className="shrink-0 bg-white py-5 border-t border-slate-200">
-            {/* Attendance row */}
+        {isPending && (canMarkAttendance || canReschedule || canScheduleNew) && (
+          <div className={`shrink-0 bg-white py-5`}>
+            {canMarkAttendance && (
             <div className="flex gap-3 px-7">
               <button
                 onClick={() => onRequestAttendance(appointment.id, true)}
@@ -317,9 +340,10 @@ export function AppointmentSlidePanel({
                 Missed
               </button>
             </div>
+            )}
 
             {(canReschedule || canScheduleNew) && (
-            <div className="border-t border-slate-100 pt-4 mt-4">
+            <div className='border-t border-slate-100 pt-4 mt-4'>
             <div className="flex gap-2 px-7">
               {canReschedule && (
                 <button

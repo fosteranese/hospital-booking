@@ -72,7 +72,7 @@ pub struct CancelAppointmentRequest {
 #[derive(Deserialize)]
 pub struct MarkAttendanceRequest {
     pub attended: bool,
-    pub minutes_late: Option<i32>,
+    pub arrival_time: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -95,6 +95,7 @@ pub struct AppointmentResponse {
     pub notes: String,
     pub attended: Option<bool>,
     pub minutes_late: Option<i32>,
+    pub arrival_time: Option<chrono::DateTime<chrono::Utc>>,
     pub cancellation_reason: String,
     pub referring_doctor_id: Option<Uuid>,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -138,7 +139,7 @@ pub async fn list_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
+                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.arrival_time, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 CASE WHEN conflict.slot_date IS NOT NULL THEN true ELSE false END AS has_conflict,
@@ -225,7 +226,7 @@ pub async fn export_appointments(
                 p.email AS patient_email, p.phone AS patient_phone,
                 a.doctor_id, d.first_name || ' ' || d.last_name AS doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time,
-                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.cancellation_reason,
+                a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.minutes_late, a.arrival_time, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 CASE WHEN conflict.slot_date IS NOT NULL THEN true ELSE false END AS has_conflict,
@@ -630,6 +631,7 @@ pub async fn create_appointment(
         notes: appointment.notes,
         attended: appointment.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: appointment.cancellation_reason,
         referring_doctor_id: appointment.referring_doctor_id,
         created_at: appointment.created_at,
@@ -692,6 +694,7 @@ pub async fn get_appointment(
         notes: appointment.notes,
         attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: appointment.cancellation_reason,
         referring_doctor_id: appointment.referring_doctor_id,
         created_at: appointment.created_at,
@@ -804,6 +807,7 @@ pub async fn cancel_appointment(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
@@ -905,6 +909,7 @@ pub async fn reschedule_appointment(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
@@ -949,6 +954,7 @@ pub async fn change_doctor(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
@@ -963,13 +969,27 @@ pub async fn mark_attendance(
 ) -> Result<Json<AppointmentResponse>, AppError> {
     state.check_mutation_rate_limit(&format!("mark_attendance:{}", auth.sub))?;
 
+    // Only allow marking attendance for today's appointments
+    let slot_date = sqlx::query_scalar::<_, chrono::NaiveDate>(
+        "SELECT s.slot_date FROM appointments a JOIN availability_slots s ON a.slot_id = s.id WHERE a.id = $1"
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?
+    .ok_or_else(|| AppError::NotFound("Appointment not found".to_string()))?;
+
+    if slot_date != chrono::Utc::now().date_naive() {
+        return Err(AppError::BadRequest("Cannot mark attendance for non-today appointments".to_string()));
+    }
+
     let updated = if auth.role == "admin" || auth.role == "scheduler" {
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 RETURNING *"
+            "UPDATE appointments SET attended = $2, arrival_time = $3, updated_at = NOW() WHERE id = $1 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
-        .bind(body.minutes_late)
+        .bind(body.arrival_time)
         .fetch_one(&state.pool)
         .await
         .map_err(|e| {
@@ -990,11 +1010,11 @@ pub async fn mark_attendance(
         .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
 
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 AND doctor_id = $4 RETURNING *"
+            "UPDATE appointments SET attended = $2, arrival_time = $3, updated_at = NOW() WHERE id = $1 AND doctor_id = $4 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
-        .bind(body.minutes_late)
+        .bind(body.arrival_time)
         .bind(doctor_id)
         .fetch_one(&state.pool)
         .await
@@ -1008,11 +1028,11 @@ pub async fn mark_attendance(
     } else {
         let patient = get_patient_from_auth(&state, &auth).await?;
         sqlx::query_as::<_, Appointment>(
-            "UPDATE appointments SET attended = $2, minutes_late = $3, updated_at = NOW() WHERE id = $1 AND patient_id = $4 RETURNING *"
+            "UPDATE appointments SET attended = $2, arrival_time = $3, updated_at = NOW() WHERE id = $1 AND patient_id = $4 RETURNING *"
         )
         .bind(id)
         .bind(body.attended)
-        .bind(body.minutes_late)
+        .bind(body.arrival_time)
         .bind(patient.id)
         .fetch_one(&state.pool)
         .await
@@ -1034,6 +1054,7 @@ pub async fn mark_attendance(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: updated.minutes_late,
+        arrival_time: updated.arrival_time,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
@@ -1107,6 +1128,7 @@ pub async fn update_appointment(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,
@@ -1358,6 +1380,7 @@ pub async fn reschedule_appointment_by_time(
         notes: updated.notes,
         attended: updated.attended,
         minutes_late: None,
+        arrival_time: None,
         cancellation_reason: updated.cancellation_reason,
         referring_doctor_id: updated.referring_doctor_id,
         created_at: updated.created_at,

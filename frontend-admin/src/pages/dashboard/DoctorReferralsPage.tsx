@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api, ReferralItem, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
@@ -46,6 +46,7 @@ function referralToAppointment(r: ReferralItem): AppointmentHistoryItem {
     notes: r.notes,
     attended: r.attended,
     minutes_late: null,
+    arrival_time: r.arrival_time,
     cancellation_reason: r.cancellation_reason,
     has_conflict: false,
     referring_doctor_id: r.referring_doctor_id,
@@ -58,11 +59,15 @@ export function DoctorReferralsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
 
-  const { data: referrals, loading, error } = useCachedData(
+  const { data: referrals, loading, error, refresh: fetchReferrals, backgroundRefresh } = useCachedData(
     'referrals',
-    () => api.getReferrals(token),
+    useCallback(() => api.getReferrals(token), [token]),
     { enabled: !!token }
   );
+
+  const refreshAll = useCallback(() => {
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   const { setContainerClass } = useContentContainer();
   const panelOpen = !!selectedAppointment;
@@ -76,11 +81,18 @@ export function DoctorReferralsPage() {
 
   return (
     <div className={`space-y-6 transition-[margin-right] duration-200 ${panelOpen ? 'lg:mr-[480px]' : ''}`}>
-      <PageHeader
-        title="Referrals"
-        description="Appointments referred by doctors to other practitioners"
-        icon={ArrowRight01Icon}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title="Referrals"
+          description="Appointments referred by doctors to other practitioners"
+          icon={ArrowRight01Icon}
+        />
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
+      </div>
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">

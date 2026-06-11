@@ -12,7 +12,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
+
+
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Calendar01Icon,
@@ -51,7 +52,7 @@ function getEffectiveStatus(a: AppointmentHistoryItem): 'attended' | 'missed' | 
   return 'confirmed';
 }
 
-function StatusDot({ status, attended, minutes_late, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; has_conflict?: boolean }) {
+function StatusDot({ status, attended, minutes_late, arrival_time, start_time, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; arrival_time?: string | null; start_time?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium" title="Conflict">
@@ -68,12 +69,26 @@ function StatusDot({ status, attended, minutes_late, has_conflict }: { status: s
     confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
   };
   const s = map[effective];
+  const arrivalDisplay = (() => {
+    if (arrival_time) {
+      const timePart = arrival_time.split('T')[1]?.slice(0, 5);
+      if (timePart) return formatTime(timePart);
+    }
+    if (attended === true && minutes_late != null && minutes_late > 0 && start_time) {
+      const [h, m] = start_time.split(':').map(Number);
+      const totalMin = h * 60 + m + minutes_late;
+      const newH = Math.floor(totalMin / 60) % 24;
+      const newM = totalMin % 60;
+      return `${newH % 12 || 12}:${String(newM).padStart(2, '0')} ${newH >= 12 ? 'PM' : 'AM'}`;
+    }
+    return null;
+  })();
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500" title={s.label}>
       <span className={`size-1.5 rounded-full ${s.color}`} />
       {s.label}
-      {attended === true && minutes_late != null && minutes_late > 0 && (
-        <span className="text-amber-600 font-medium">{minutes_late} min late</span>
+      {arrivalDisplay && (
+        <span className="text-amber-600 font-medium">· arrived {arrivalDisplay}</span>
       )}
     </span>
   );
@@ -331,7 +346,7 @@ export function DoctorDashboard() {
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
-  const [latenessInput, setLatenessInput] = useState<{ id: string; minutes: number } | null>(null);
+  const [latenessInput, setLatenessInput] = useState<{ id: string; arrivalTime: string } | null>(null);
   const [pendingAttendance, setPendingAttendance] = useState<{
     id: string;
     attended: boolean;
@@ -343,16 +358,15 @@ export function DoctorDashboard() {
   const [totalConflicts, setTotalConflicts] = useState(0);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
 
-  const { data: appointments, loading, error, refresh: refreshAppointments } = useCachedData(
+  const { data: appointments, loading, error, refresh: refreshAppointments, backgroundRefresh } = useCachedData(
     'appointments',
     useCallback(() => api.listAppointments({}, token), [token]),
     { enabled: !!token }
   );
 
   const refreshAll = useCallback(() => {
-    invalidateCache('appointments');
-    refreshAppointments();
-  }, [refreshAppointments]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   useEffect(() => {
     if (!token) return;
@@ -366,9 +380,11 @@ export function DoctorDashboard() {
     api.getReferrals(token).then(setReferrals);
   }, [token]);
 
-  const handleConfirmAttend = useCallback(async (id: string, attended: boolean, minutes_late?: number | null) => {
+  const handleConfirmAttend = useCallback(async (id: string, attended: boolean, arrivalTime?: string | null) => {
     try {
-      await api.markAttendance(id, { attended, minutes_late }, token);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const arrivalIso = arrivalTime ? `${todayStr}T${arrivalTime}:00` : `${todayStr}T00:00:00`;
+      await api.markAttendance(id, { attended, arrival_time: arrivalIso }, token);
       setLatenessInput(null);
       refreshAll();
     } catch (e: any) {
@@ -380,10 +396,10 @@ export function DoctorDashboard() {
     setPendingAttendance({ id, attended });
   }, []);
 
-  const confirmAttendance = useCallback(async (minutesLate?: number) => {
+  const confirmAttendance = useCallback(async (arrivalTime?: string) => {
     if (!pendingAttendance) return;
     try {
-      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
+      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
       setPendingAttendance(null);
       setSelectedAppointment(null);
       refreshAll();
@@ -472,11 +488,18 @@ export function DoctorDashboard() {
     <div className={`space-y-7 transition-[margin-right] duration-200 ${
       selectedAppointment ? 'lg:mr-[480px]' : ''
     }`}>
-      <PageHeader
-        title={`Welcome, Dr. ${otpIdentifier ? otpIdentifier.charAt(0).toUpperCase() + otpIdentifier.split('@')[0].slice(1) : 'Doctor'}`}
-        description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-        icon={Calendar01Icon}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title={`Welcome, Dr. ${otpIdentifier ? otpIdentifier.charAt(0).toUpperCase() + otpIdentifier.split('@')[0].slice(1) : 'Doctor'}`}
+          description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          icon={Calendar01Icon}
+        />
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
+      </div>
 
       {error && (
         <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
@@ -688,11 +711,7 @@ export function DoctorDashboard() {
                       const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : isCancelled ? '#cbd5e1' : a.has_conflict ? '#ef4444' : '#f59e0b';
                       const isEditingLatness = latenessInput?.id === a.id;
 
-                      const autoLatness = (() => {
-                        const [h, m] = a.start_time.split(':').map(Number);
-                        const slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-                        return Math.max(0, Math.floor((now.getTime() - slotStart.getTime()) / 60000));
-                      })();
+                      const autoArrivalTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
                       return (
                         <tr
@@ -714,26 +733,29 @@ export function DoctorDashboard() {
                             <div className="flex items-center gap-1.5">
                               <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
                               {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
-                              {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
+                              {a.referring_doctor_id && (
+                                <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                                  <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+                                </span>
+                              )}
+                              {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                             </div>
                             {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                           </td>
-                          <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} has_conflict={a.has_conflict} /></td>
+                          <td className="w-[100px] py-4 border-b border-slate-100 align-top"><StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} arrival_time={a.arrival_time} start_time={a.start_time} has_conflict={a.has_conflict} /></td>
                           <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                             {isEditingLatness ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] text-slate-500 whitespace-nowrap">Late:</span>
+                                <span className="text-[11px] text-slate-500 whitespace-nowrap">Arrival:</span>
                                 <input
-                                  type="number"
-                                  min={0}
-                                  className="w-16 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                                  value={latenessInput.minutes}
-                                  onChange={e => setLatenessInput({ ...latenessInput, minutes: Math.max(0, parseInt(e.target.value) || 0) })}
+                                  type="time"
+                                  className="w-24 h-7 text-xs text-center border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                                  value={latenessInput.arrivalTime}
+                                  onChange={e => setLatenessInput({ ...latenessInput, arrivalTime: e.target.value })}
                                   autoFocus
                                 />
-                                <span className="text-[11px] text-slate-500">min</span>
                                 <button
-                                  onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.minutes); }}
+                                  onClick={e => { e.stopPropagation(); handleConfirmAttend(a.id, true, latenessInput.arrivalTime); }}
                                   className="p-1 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
                                   title="Confirm"
                                 >
@@ -754,14 +776,14 @@ export function DoctorDashboard() {
                                 {isPending && (
                                   <>
                                     <button
-                                      onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, minutes: autoLatness }); }}
+                                      onClick={e => { e.stopPropagation(); setLatenessInput({ id: a.id, arrivalTime: autoArrivalTime }); }}
                                       className="p-1.5 rounded-md text-emerald-500 hover:bg-emerald-50 transition-colors"
                                       title="Mark attended"
                                     >
                                       <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                                     </button>
                                     <button
-                                      onClick={() => handleConfirmAttend(a.id, false)}
+                                      onClick={() => handleConfirmAttend(a.id, false, autoArrivalTime)}
                                       className="p-1.5 rounded-md text-red-400 hover:bg-red-50 transition-colors"
                                       title="Mark missed"
                                     >

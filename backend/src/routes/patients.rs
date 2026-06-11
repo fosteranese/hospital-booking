@@ -291,7 +291,7 @@ pub async fn get_appointment_history(
                 p.email AS patient_email, p.phone AS patient_phone,
                 d.id as doctor_id, d.first_name || ' ' || d.last_name as doctor_name,
                 d.specialization, s.slot_date, s.start_time, s.end_time, a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended,
-                a.minutes_late, a.cancellation_reason,
+                a.minutes_late, a.arrival_time, a.cancellation_reason,
                 a.referring_doctor_id,
                 rd.first_name || ' ' || rd.last_name AS referring_doctor_name,
                 CASE WHEN conflict.slot_date IS NOT NULL THEN true ELSE false END AS has_conflict,

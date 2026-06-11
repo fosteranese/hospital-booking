@@ -8,7 +8,7 @@ export function useCachedData<T>(
   cacheKey: string | null,
   fetcher: () => Promise<T>,
   options?: { staleTime?: number; enabled?: boolean }
-): { data: T | null; loading: boolean; refreshing: boolean; error: string; refresh: () => Promise<void> } {
+): { data: T | null; loading: boolean; refreshing: boolean; error: string; refresh: () => Promise<void>; backgroundRefresh: () => Promise<void> } {
   const cached = cacheKey ? getCached<T>(cacheKey) : null;
   const [data, setData] = useState<T | null>(cached);
   const [loading, setLoading] = useState(!cached);
@@ -88,5 +88,9 @@ export function useCachedData<T>(
     return fetch(false);
   }, [fetch]);
 
-  return { data, loading, refreshing, error, refresh };
+  const backgroundRefresh = useCallback(() => {
+    return fetch(true);
+  }, [fetch]);
+
+  return { data, loading, refreshing, error, refresh, backgroundRefresh };
 }

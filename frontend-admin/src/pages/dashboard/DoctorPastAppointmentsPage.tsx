@@ -14,7 +14,6 @@ import { MiniCalendar } from '@/components/MiniCalendar';
 import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { DateRangeSlidePanel } from '@/components/DateRangeSlidePanel';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -101,16 +100,15 @@ export function DoctorPastAppointmentsPage() {
   }, []);
 
   const cacheKey = `appointments:past:${dateFrom}:${dateTo}`;
-  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+  const { data: raw, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(() => api.listAppointments({ from: dateFrom, to: dateTo }, token), [token, dateFrom, dateTo]),
     { enabled: !!token }
   );
   const appointments = raw ?? [];
   const refreshAll = useCallback(() => {
-    invalidateCache(cacheKey);
-    fetchAppointments();
-  }, [fetchAppointments, cacheKey]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
   const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
@@ -138,10 +136,10 @@ export function DoctorPastAppointmentsPage() {
     setPendingAttendance({ id, attended });
   }, []);
 
-  const confirmAttendance = useCallback(async (minutesLate?: number) => {
+  const confirmAttendance = useCallback(async (arrivalTime?: string) => {
     if (!pendingAttendance) return;
     try {
-      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
+      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
       refreshAll();
       setPendingAttendance(null);
       setSelectedAppointment(null);
@@ -228,6 +226,11 @@ export function DoctorPastAppointmentsPage() {
           description={currentRange ? `${currentRange.label}` : `${appointments.length} past appointment${appointments.length !== 1 ? 's' : ''}`}
           icon={TimeScheduleIcon}
         />
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
         <button
           onClick={() => { setSelectedAppointment(null); if (datePanelOpen) { handleDatePanelClose(); } else { setDatePanelOpen(true); } }}
           className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all mt-1.5 shrink-0 ${
@@ -339,7 +342,12 @@ export function DoctorPastAppointmentsPage() {
                               <td className="min-w-0 py-4 border-b border-slate-100 align-top">
                                 <div className="flex items-center gap-1.5">
                                   <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
-                                  {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
+                                  {a.referring_doctor_id && (
+                                    <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                                      <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+                                    </span>
+                                  )}
+                                  {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                                 </div>
                                 <div className="text-xs text-slate-400 mt-0.5">
                                   {formatDate(a.slot_date)} · Dr. {a.doctor_name}

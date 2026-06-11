@@ -26,6 +26,7 @@ pub struct ReferralItem {
     pub status: String,
     pub notes: String,
     pub attended: Option<bool>,
+    pub arrival_time: Option<chrono::DateTime<chrono::Utc>>,
     pub cancellation_reason: String,
 }
 
@@ -57,14 +58,14 @@ pub async fn list_referrals(
              a.referring_doctor_id, \
              rd.first_name || ' ' || rd.last_name AS referring_doctor_name, \
              s.slot_date, s.start_time, s.end_time, \
-             a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.cancellation_reason \
-              FROM appointments a \
-              JOIN patients p ON p.id = a.patient_id \
-              JOIN doctors d ON d.id = a.doctor_id \
-              JOIN doctors rd ON rd.id = a.referring_doctor_id \
-              JOIN availability_slots s ON s.id = a.slot_id \
-              WHERE a.referring_doctor_id IS NOT NULL \
-                AND a.referring_doctor_id = $1 \
+              a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.arrival_time, a.cancellation_reason \
+               FROM appointments a \
+               JOIN patients p ON p.id = a.patient_id \
+               JOIN doctors d ON d.id = a.doctor_id \
+               JOIN doctors rd ON rd.id = a.referring_doctor_id \
+               JOIN availability_slots s ON s.id = a.slot_id \
+               WHERE a.referring_doctor_id IS NOT NULL \
+                 AND a.referring_doctor_id = $1 \
              ORDER BY s.slot_date DESC, s.start_time DESC"
         )
         .bind(doctor_id)
@@ -82,13 +83,13 @@ pub async fn list_referrals(
              a.referring_doctor_id, \
              rd.first_name || ' ' || rd.last_name AS referring_doctor_name, \
              s.slot_date, s.start_time, s.end_time, \
-             a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.cancellation_reason \
-              FROM appointments a \
-              JOIN patients p ON p.id = a.patient_id \
-              JOIN doctors d ON d.id = a.doctor_id \
-              JOIN doctors rd ON rd.id = a.referring_doctor_id \
-              JOIN availability_slots s ON s.id = a.slot_id \
-              WHERE a.referring_doctor_id IS NOT NULL \
+              a.status, a.notes, CASE WHEN a.attended IS NULL AND s.slot_date < CURRENT_DATE AND a.status != 'cancelled' THEN false ELSE a.attended END AS attended, a.arrival_time, a.cancellation_reason \
+               FROM appointments a \
+               JOIN patients p ON p.id = a.patient_id \
+               JOIN doctors d ON d.id = a.doctor_id \
+               JOIN doctors rd ON rd.id = a.referring_doctor_id \
+               JOIN availability_slots s ON s.id = a.slot_id \
+               WHERE a.referring_doctor_id IS NOT NULL \
              ORDER BY s.slot_date DESC, s.start_time DESC"
         )
         .fetch_all(&state.pool)

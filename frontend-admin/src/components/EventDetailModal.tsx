@@ -116,29 +116,37 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
 
           <div>
             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Attendance</div>
-            <div className="flex gap-2">
-              {[true, false, null].map((val) => {
-                const label = val === true ? 'Attended' : val === false ? 'Missed' : 'Unmarked';
-                const active = attended === val;
-                return (
-                  <button
-                    key={String(val)}
-                    onClick={() => setAttended(val)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                      active
-                        ? val === true
-                          ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
-                          : val === false
-                          ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
-                          : 'bg-slate-100 text-slate-700 ring-1 ring-slate-300'
-                        : 'bg-transparent text-muted-foreground hover:bg-accent ring-1 ring-border'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            {(() => {
+              const now = new Date();
+              const isToday = now.getFullYear() === event.start.getFullYear() && now.getMonth() === event.start.getMonth() && now.getDate() === event.start.getDate();
+              return isToday ? (
+              <div className="flex gap-2">
+                {[true, false, null].map((val) => {
+                  const label = val === true ? 'Attended' : val === false ? 'Missed' : 'Unmarked';
+                  const active = attended === val;
+                  return (
+                    <button
+                      key={String(val)}
+                      onClick={() => setAttended(val)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                        active
+                          ? val === true
+                            ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                            : val === false
+                            ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
+                            : 'bg-slate-100 text-slate-700 ring-1 ring-slate-300'
+                          : 'bg-transparent text-muted-foreground hover:bg-accent ring-1 ring-border'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              ) : (
+                <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">Attendance can only be marked on the day of the appointment.</p>
+              );
+            })()}
           </div>
 
           <div>

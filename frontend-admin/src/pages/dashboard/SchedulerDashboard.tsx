@@ -2,14 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
+
+
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Calendar01Icon, AlertCircleIcon, Download01Icon, FilterIcon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, AlertCircleIcon, Download01Icon, FilterIcon, ArrowRight01Icon, UserGroupIcon } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':').map(Number);
@@ -58,7 +59,7 @@ export function SchedulerDashboard() {
 
   const cacheKey = `appointments:scheduler:${view}:${doctorFilter || ''}:${statusFilter || ''}:${dateFilter || ''}`;
 
-  const { data: raw, loading, error, refresh: fetchAppointments } = useCachedData(
+  const { data: raw, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(async () => {
       if (view === 'today') {
@@ -75,9 +76,8 @@ export function SchedulerDashboard() {
   const appointments = raw ?? [];
 
   const refreshAll = useCallback(() => {
-    invalidateCache(cacheKey);
-    fetchAppointments();
-  }, [fetchAppointments, cacheKey]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   useEffect(() => {
     api.getDoctors().then(setDoctors).catch(() => {});
@@ -104,6 +104,11 @@ export function SchedulerDashboard() {
         icon={Calendar01Icon}
         actions={
           <div className="flex items-center gap-2">
+            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-slate-500">
+                <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              </svg>
+            </button>
             <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
               <button
                 onClick={() => setView('today')}
@@ -194,6 +199,11 @@ export function SchedulerDashboard() {
                           {a.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                         </div>
                         <span className="text-sm text-slate-900">{a.doctor_name}</span>
+                        {a.referring_doctor_id && (
+                          <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                            <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500 shrink-0" />
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /></td>

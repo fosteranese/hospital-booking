@@ -12,7 +12,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
+
+
 import { MiniCalendar } from '@/components/MiniCalendar';
 import { CalendarSlidePanel } from '@/components/CalendarSlidePanel';
 import {
@@ -62,7 +63,7 @@ function isBeforeToday(dateStr: string): boolean {
   return new Date(dateStr + 'T00:00:00') < today;
 }
 
-function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; slot_date?: string; has_conflict?: boolean }) {
+function StatusDot({ status, attended, minutes_late, start_time, arrival_time, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; start_time?: string; arrival_time?: string | null; slot_date?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <div className="flex items-center gap-1.5">
@@ -72,11 +73,25 @@ function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: 
     );
   }
   if (attended === true) {
+    const arrivalDisplay = (() => {
+      if (arrival_time) {
+        const timePart = arrival_time.split('T')[1]?.slice(0, 5);
+        if (timePart) return timePart;
+      }
+      if (minutes_late != null && minutes_late > 0 && start_time) {
+        const [h, m] = start_time.split(':').map(Number);
+        const totalMin = h * 60 + m + minutes_late;
+        const newH = Math.floor(totalMin / 60) % 24;
+        const newM = totalMin % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+      }
+      return null;
+    })();
     return (
       <div className="flex items-center gap-1.5">
         <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
         <span className="text-xs text-emerald-600 font-medium">
-          Attended{minutes_late ? ` (${minutes_late}m late)` : ''}
+          Attended{arrivalDisplay ? ` · arrived ${formatTime(arrivalDisplay)}` : ''}
         </span>
       </div>
     );
@@ -158,7 +173,7 @@ export function DoctorAppointmentsPage() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: rawAppointments, loading, error, refresh: refreshAppointments } = useCachedData(
+  const { data: rawAppointments, loading, error, refresh: refreshAppointments, backgroundRefresh } = useCachedData(
     'appointments:upcoming',
     useCallback(async () => {
       const data = await api.listAppointments({}, token);
@@ -174,9 +189,8 @@ export function DoctorAppointmentsPage() {
   const appointments = rawAppointments ?? [];
 
   const refreshAll = useCallback(() => {
-    invalidateCache('appointments:upcoming');
-    refreshAppointments();
-  }, [refreshAppointments]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -202,10 +216,10 @@ export function DoctorAppointmentsPage() {
     setPendingAttendance({ id, attended });
   }, []);
 
-  const confirmAttendance = useCallback(async (minutesLate?: number) => {
+  const confirmAttendance = useCallback(async (arrivalTime?: string) => {
     if (!pendingAttendance) return;
     try {
-      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, minutes_late: minutesLate }, token);
+      await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
       setPendingAttendance(null);
       setSelectedAppointment(null);
       refreshAll();
@@ -291,6 +305,11 @@ export function DoctorAppointmentsPage() {
         />
 
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </button>
           <button
             onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
             className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
@@ -464,7 +483,11 @@ export function DoctorAppointmentsPage() {
                         const isPending = !isAttended && !isMissed;
                         const isPast = isPending && isBeforeToday(a.slot_date);
                         const borderColor = isAttended ? '#10b981' : isMissed ? '#9333ea' : a.has_conflict ? '#ef4444' : isPast ? '#9333ea' : '#f59e0b';
-                        const canAttend = isToday(a.slot_date) && isPending;
+                        const canAttend = isToday(a.slot_date) && isPending && (() => {
+                          const [h, m] = a.end_time.split(':').map(Number);
+                          const slotEnd = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), h, m);
+                          return new Date() >= slotEnd;
+                        })();
 
                         return (
                           <tr
@@ -486,12 +509,17 @@ export function DoctorAppointmentsPage() {
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
                                 {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
-                                {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
+                                {a.referring_doctor_id && (
+                                  <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                                    <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+                                  </span>
+                                )}
+                                {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                               </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>
                             <td className="w-[100px] py-4 border-b border-slate-100 align-top">
-                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} slot_date={a.slot_date} has_conflict={a.has_conflict} />
+                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} start_time={a.start_time} arrival_time={a.arrival_time} slot_date={a.slot_date} has_conflict={a.has_conflict} />
                             </td>
                             <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                               {canAttend ? (

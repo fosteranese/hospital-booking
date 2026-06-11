@@ -3,7 +3,8 @@ import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { useCachedData } from '@/hooks/useCachedData';
-import { invalidateCache } from '@/lib/cache';
+
+
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
@@ -43,7 +44,7 @@ function PatientAvatar({ name }: { name: string }) {
   );
 }
 
-function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; slot_date?: string; has_conflict?: boolean }) {
+function StatusDot({ status, attended, minutes_late, start_time, arrival_time, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; start_time?: string; arrival_time?: string | null; slot_date?: string; has_conflict?: boolean }) {
   if (has_conflict) {
     return (
       <div className="flex items-center gap-1.5">
@@ -53,11 +54,25 @@ function StatusDot({ status, attended, minutes_late, slot_date, has_conflict }: 
     );
   }
   if (attended === true) {
+    const arrivalDisplay = (() => {
+      if (arrival_time) {
+        const timePart = arrival_time.split('T')[1]?.slice(0, 5);
+        if (timePart) return timePart;
+      }
+      if (minutes_late != null && minutes_late > 0 && start_time) {
+        const [h, m] = start_time.split(':').map(Number);
+        const totalMin = h * 60 + m + minutes_late;
+        const newH = Math.floor(totalMin / 60) % 24;
+        const newM = totalMin % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+      }
+      return null;
+    })();
     return (
       <div className="flex items-center gap-1.5">
         <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
         <span className="text-xs text-emerald-600 font-medium">
-          Attended{minutes_late ? ` (${minutes_late}m late)` : ''}
+          Attended{arrivalDisplay ? ` · arrived ${formatTime(arrivalDisplay)}` : ''}
         </span>
       </div>
     );
@@ -111,7 +126,7 @@ export function DoctorConflictsPage() {
     })();
   }, [token]);
 
-  const { data: raw, loading, error, refresh: fetchConflicts } = useCachedData(
+  const { data: raw, loading, error, refresh: fetchConflicts, backgroundRefresh } = useCachedData(
     doctorId ? `appointments:conflicts:${doctorId}` : null,
     useCallback(async () => {
       const data = await api.listAppointments({ doctor_id: doctorId! }, token);
@@ -121,9 +136,8 @@ export function DoctorConflictsPage() {
   );
   const appointments = raw ?? [];
   const refreshAll = useCallback(() => {
-    if (doctorId) invalidateCache(`appointments:conflicts:${doctorId}`);
-    fetchConflicts();
-  }, [fetchConflicts, doctorId]);
+    backgroundRefresh();
+  }, [backgroundRefresh]);
 
   const { setContainerClass } = useContentContainer();
 
@@ -156,11 +170,18 @@ export function DoctorConflictsPage() {
 
   return (
     <div className={`space-y-6 transition-[margin-right] duration-200 ${selectedAppointment ? 'lg:mr-[480px]' : ''}`}>
-      <PageHeader
-        title="Appointment Conflicts"
-        description={`${appointments.length} appointment${appointments.length !== 1 ? 's' : ''} with scheduling conflicts`}
-        icon={AlertCircleIcon}
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          title="Appointment Conflicts"
+          description={`${appointments.length} appointment${appointments.length !== 1 ? 's' : ''} with scheduling conflicts`}
+          icon={AlertCircleIcon}
+        />
+        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
+      </div>
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
@@ -226,12 +247,17 @@ export function DoctorConflictsPage() {
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-slate-900 truncate">{a.patient_name || 'Patient'}</div>
                                 <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
-                                {a.referring_doctor_id && <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />}
+                                {a.referring_doctor_id && (
+                                  <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                                    <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
+                                  </span>
+                                )}
+                                {a.referring_doctor_name && <span className="text-xs text-violet-400 ml-0.5">(ref. Dr. {a.referring_doctor_name})</span>}
                               </div>
                               {a.notes && <div className="text-xs text-slate-400 truncate mt-0.5">{a.notes}</div>}
                             </td>
                             <td className="w-[100px] py-4 border-b border-slate-100 align-top">
-                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} slot_date={a.slot_date} has_conflict={a.has_conflict} />
+                              <StatusDot status={a.status} attended={a.attended} minutes_late={a.minutes_late} start_time={a.start_time} arrival_time={a.arrival_time} slot_date={a.slot_date} has_conflict={a.has_conflict} />
                             </td>
                             <td className="pr-3 w-0 py-4 border-b border-slate-100 align-top">
                               <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity"

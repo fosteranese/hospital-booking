@@ -21,6 +21,11 @@ function formatDate(dateStr: string) {
   });
 }
 
+function nowTimeString() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
 export function ConfirmAttendanceModal({
   open,
   patientName,
@@ -37,11 +42,11 @@ export function ConfirmAttendanceModal({
   startTime: string;
   endTime: string;
   attended: boolean;
-  onConfirm: (minutesLate?: number) => void;
+  onConfirm: (arrivalTime?: string) => void;
   onCancel: () => void;
 }) {
   const [visible, setVisible] = useState(false);
-  const [minutesLate, setMinutesLate] = useState('');
+  const [arrivalTimeInput, setArrivalTimeInput] = useState('');
   const [confirming, setConfirming] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
@@ -49,7 +54,7 @@ export function ConfirmAttendanceModal({
   useEffect(() => {
     if (open) {
       setVisible(true);
-      setMinutesLate('');
+      setArrivalTimeInput(nowTimeString());
       setConfirming(false);
       const timer = setTimeout(() => {
         if (attended && inputRef.current) {
@@ -80,10 +85,15 @@ export function ConfirmAttendanceModal({
   const actionColor = attended ? 'emerald' : 'red';
   const Icon = attended ? CheckmarkCircle01Icon : Cancel01Icon;
 
-  const handleConfirm = async () => {
+  const handleConfirm = () => {
     setConfirming(true);
-    const mins = attended && minutesLate ? parseInt(minutesLate, 10) : undefined;
-    onConfirm(mins && !isNaN(mins) ? mins : undefined);
+    if (attended && arrivalTimeInput) {
+      const arrivalIso = `${slotDate}T${arrivalTimeInput}:00`;
+      onConfirm(arrivalIso);
+    } else {
+      const arrivalIso = `${slotDate}T${nowTimeString()}:00`;
+      onConfirm(arrivalIso);
+    }
   };
 
   return (
@@ -122,17 +132,17 @@ export function ConfirmAttendanceModal({
         {attended && (
           <div className="px-6 pt-4">
             <label className="text-xs font-medium text-slate-500 mb-1.5 block">
-              Minutes late <span className="text-slate-300 font-normal">(optional)</span>
+              Arrival time
             </label>
+            <div className="text-xs text-slate-400 mb-2">
+              Scheduled: {formatTime(startTime)}
+            </div>
             <input
               ref={inputRef}
-              type="number"
-              min="0"
-              max="999"
-              placeholder="0"
-              value={minutesLate}
-              onChange={e => setMinutesLate(e.target.value)}
-              className="w-full h-10 px-3.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+              type="time"
+              value={arrivalTimeInput}
+              onChange={e => setArrivalTimeInput(e.target.value)}
+              className="w-full h-10 px-3.5 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
             />
           </div>
         )}
