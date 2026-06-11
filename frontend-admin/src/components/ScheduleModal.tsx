@@ -276,7 +276,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">No available dates.</div>
               ) : (
                 <div className="relative">
-                  <div ref={stripRef} onScroll={checkScroll} className="flex gap-2 overflow-x-auto scroll-smooth no-scrollbar pb-1 overscroll-x-contain">
+                  <div ref={stripRef} onScroll={checkScroll} className="flex gap-2 overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth no-scrollbar pb-1 overscroll-x-contain">
                     {availableDates.map(d => {
                       const dt = new Date(d + 'T12:00:00');
                       return (

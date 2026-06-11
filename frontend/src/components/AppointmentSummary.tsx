@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { UserIcon, Doctor01Icon, Calendar01Icon, Clock01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AppointmentSummaryProps {
   doctorName: string;
@@ -128,7 +129,7 @@ export function AppointmentSummary({ doctorName, specialization, date, time, pat
             <Button className="w-full h-11 text-base shadow-xs" onClick={onConfirm} disabled={loading}>
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <span className="size-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <Spinner />
                   Booking...
                 </span>
               ) : (

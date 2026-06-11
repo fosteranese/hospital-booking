@@ -102,7 +102,7 @@ export function HistoryModal({ history, loading, error, onRetry, onClose, onMark
             </div>
           ) : (
             <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-muted/20 border-b border-foreground/5">

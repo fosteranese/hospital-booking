@@ -86,14 +86,17 @@ export function DoctorPastAppointmentsPage() {
   const [dateRange, setDateRange] = useState('month');
   const [dateFrom, setDateFrom] = useState(daysAgo(30));
   const [dateTo, setDateTo] = useState(yesterday);
-  const [datePanelOpen, setDatePanelOpen] = useState(true);
+  const [datePanelOpen, setDatePanelOpen] = useState(() => window.innerWidth >= 1024);
   const [datePanelVisible, setDatePanelVisible] = useState(false);
+  const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false);
+  const calendarDropdownRef = useRef<HTMLDivElement>(null);
   const [filterDate, setFilterDate] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+      if (calendarDropdownRef.current && !calendarDropdownRef.current.contains(e.target as Node)) setCalendarDropdownOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -226,21 +229,57 @@ export function DoctorPastAppointmentsPage() {
           description={currentRange ? `${currentRange.label}` : `${appointments.length} past appointment${appointments.length !== 1 ? 's' : ''}`}
           icon={TimeScheduleIcon}
         />
-        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
-            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-        </button>
-        <button
-          onClick={() => { setSelectedAppointment(null); if (datePanelOpen) { handleDatePanelClose(); } else { setDatePanelOpen(true); } }}
-          className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all mt-1.5 shrink-0 ${
-            datePanelOpen
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-              : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start pt-1">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </button>
+          <button
+            onClick={() => { setSelectedAppointment(null); if (datePanelOpen) { handleDatePanelClose(); } else { setDatePanelOpen(true); } }}
+            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+              datePanelOpen
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+          </button>
+          <div className="relative" ref={calendarDropdownRef}>
+            <button
+              onClick={() => setCalendarDropdownOpen(v => !v)}
+              className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+                filterDate || calendarDropdownOpen
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
+                  : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
+            </button>
+            {calendarDropdownOpen && (
+              <div className="fixed inset-0 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:mt-1.5 flex items-center justify-center lg:block">
+                <div className="absolute inset-0 bg-black/30 lg:hidden" onClick={() => setCalendarDropdownOpen(false)} />
+                <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-4 w-[calc(100vw-2rem)] max-w-[360px] mx-4 lg:mx-0 lg:w-auto lg:min-w-[280px]">
+                  <MiniCalendar
+                    date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
+                    selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
+                    onDateChange={(d) => {
+                      const dateStr = format(d, 'yyyy-MM-dd');
+                      setFilterDate(filterDate === dateStr ? null : dateStr);
+                      setCalendarDropdownOpen(false);
+                    }}
+                  />
+                  {filterDate && (
+                    <button onClick={() => { setFilterDate(null); setCalendarDropdownOpen(false); }}
+                      className="mt-3 w-full text-xs text-slate-500 hover:text-slate-700 py-1.5 rounded-md hover:bg-slate-50 transition-colors">
+                      Show all
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
         {error && (
           <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
@@ -249,8 +288,8 @@ export function DoctorPastAppointmentsPage() {
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
@@ -284,7 +323,7 @@ export function DoctorPastAppointmentsPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 flex-wrap shrink-0 mt-2 sm:mt-0">
           {statuses.map(s => (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
@@ -315,6 +354,7 @@ export function DoctorPastAppointmentsPage() {
                     <span className="ml-2.5 text-xs text-slate-400 font-medium">{rows.length} appointment{rows.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
+                    <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                       <tbody>
                         {rows.map(a => {
@@ -380,6 +420,7 @@ export function DoctorPastAppointmentsPage() {
                         })}
                       </tbody>
                     </table>
+                    </div>
         </div>
       
     </div>

@@ -258,17 +258,19 @@ export function DoctorTodayAppointmentsPage() {
           description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           icon={Calendar01Icon}
         />
-        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
-            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start pt-1">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <UnavailabilityConflictBanner />
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
@@ -314,7 +316,7 @@ export function DoctorTodayAppointmentsPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 flex-wrap shrink-0 mt-2 sm:mt-0">
           {statuses.map(s => (
             <button
               key={s.key}
@@ -355,6 +357,7 @@ export function DoctorTodayAppointmentsPage() {
             description="No appointments match the selected filter."
           />
         ) : (
+          <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <tbody>
               {filtered
@@ -444,6 +447,7 @@ export function DoctorTodayAppointmentsPage() {
                 })}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

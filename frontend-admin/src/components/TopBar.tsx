@@ -43,7 +43,7 @@ export function TopBar() {
           <input
             type="text"
             placeholder="Search..."
-            className="h-8 w-56 rounded-md border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
+            className="h-8 w-40 sm:w-56 rounded-md border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs text-slate-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white transition-all"
           />
         </div>
       </div>

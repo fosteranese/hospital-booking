@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon, AlertCircleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, AlertCircleIcon, UserGroupIcon, Loading02Icon } from '@hugeicons/core-free-icons';
 
 interface Props {
   appointmentId: string;
@@ -168,7 +168,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Pr
               />
               <div className="flex gap-2">
                 <Button size="sm" variant="destructive" onClick={handleCancel} disabled={saving}>
-                  {saving ? 'Cancelling...' : 'Confirm Cancel'}
+                  {saving ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Cancelling...</span></span> : 'Confirm Cancel'}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setAction('view')}>Back</Button>
               </div>
@@ -190,7 +190,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Pr
               </Select>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleChangeDoctor} disabled={!selectedDoctorId || saving}>
-                  {saving ? 'Saving...' : 'Change Doctor'}
+                  {saving ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Saving...</span></span> : 'Change Doctor'}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setAction('view')}>Back</Button>
               </div>

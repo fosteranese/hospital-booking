@@ -244,7 +244,7 @@ export function ApplicationSettingsPage() {
       ) : (
         <Card padding="none">
           {/* Tab bar — GC-inspired clean underline */}
-          <div className="flex gap-1 px-5 pt-3 border-b border-slate-100">
+          <div className="flex gap-1 px-5 pt-3 border-b border-slate-100 overflow-x-auto flex-nowrap">
             {tabs.map(tab => {
               const meta = TAB_META[tab.key] || { label: tab.key, description: '', icon: Settings01Icon };
               const isActive = activeTab === tab.key;
@@ -274,7 +274,7 @@ export function ApplicationSettingsPage() {
               {settings.length === 0 ? (
                 <div className="py-12 text-center text-sm text-slate-400">No settings found in this group.</div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-50">

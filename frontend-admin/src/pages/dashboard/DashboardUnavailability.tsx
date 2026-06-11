@@ -97,7 +97,7 @@ export function DashboardUnavailability() {
         <select
           value={selectedDoctorId}
           onChange={(e) => setSelectedDoctorId(e.target.value)}
-          className={`${inputClass} w-[300px]`}
+          className={`${inputClass} w-full sm:w-[300px]`}
         >
           <option value="">Choose a doctor</option>
           {doctors.map((d) => (
@@ -113,19 +113,19 @@ export function DashboardUnavailability() {
             <div className="flex flex-wrap gap-3 items-end">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Date *</label>
-                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={`${inputClass} w-[170px]`} />
+                <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={`${inputClass} w-full sm:w-[170px]`} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Start time</label>
-                <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-[130px]`} />
+                <input type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} className={`${inputClass} w-full sm:w-[130px]`} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">End time</label>
-                <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-[130px]`} />
+                <input type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} className={`${inputClass} w-full sm:w-[130px]`} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1.5">Reason</label>
-                <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-[180px]`} />
+                <input type="text" value={newReason} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Annual leave" className={`${inputClass} w-full sm:w-[180px]`} />
               </div>
               <Button onClick={handleCreate} loading={saving} disabled={!newDate} icon={Add01Icon}>
                 Add
@@ -153,7 +153,7 @@ export function DashboardUnavailability() {
                 description="This doctor has no blackout periods configured."
               />
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100">

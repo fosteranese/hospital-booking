@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, Loading02Icon } from '@hugeicons/core-free-icons';
 
 interface RescheduleConfirmModalProps {
   open: boolean;
@@ -103,7 +103,7 @@ export function RescheduleConfirmModal({
             disabled={confirming}
             className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {confirming ? 'Rescheduling...' : 'Confirm Reschedule'}
+            {confirming ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Rescheduling...</span></span> : 'Confirm Reschedule'}
           </button>
         </div>
       </div>

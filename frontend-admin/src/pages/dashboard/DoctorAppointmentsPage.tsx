@@ -160,9 +160,8 @@ export function DoctorAppointmentsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const [filterDate, setFilterDate] = useState<string | null>(null);
-  const [calendarOpen, setCalendarOpen] = useState(true);
-  const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false);
-  const calendarDropdownRef = useRef<HTMLDivElement>(null);
+  const [calendarOpen, setCalendarOpen] = useState(() => window.innerWidth >= 1024);
+
   const [pendingAttendance, setPendingAttendance] = useState<{
     id: string;
     attended: boolean;
@@ -200,16 +199,6 @@ export function DoctorAppointmentsPage() {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (calendarDropdownRef.current && !calendarDropdownRef.current.contains(e.target as Node)) {
-        setCalendarDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
   const requestAttendance = useCallback((id: string, attended: boolean) => {
@@ -312,18 +301,8 @@ export function DoctorAppointmentsPage() {
           </button>
           <button
             onClick={() => { setSelectedAppointment(null); setCalendarOpen(v => !v); }}
-            className={`hidden lg:flex w-12 h-12 items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
+            className={`w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
               filterDate || calendarOpen
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
-                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
-          </button>
-          <button
-            onClick={() => setCalendarDropdownOpen(v => !v)}
-            className={`lg:hidden w-12 h-12 flex items-center justify-center rounded-lg border bg-white shadow-sm transition-all ${
-              filterDate || calendarDropdownOpen
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600 shadow-emerald-100/50'
                 : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
             }`}
@@ -343,8 +322,8 @@ export function DoctorAppointmentsPage() {
 
       <UnavailabilityConflictBanner />
 
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
@@ -390,7 +369,7 @@ export function DoctorAppointmentsPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 flex-wrap shrink-0 mt-2 sm:mt-0">
           {[
             { key: 'all', label: 'All', count: filtered.length, color: '' },
             { key: 'conflicts', label: 'Conflicts', count: conflictCount, color: 'bg-red-500' },
@@ -417,27 +396,6 @@ export function DoctorAppointmentsPage() {
           ))}
         </div>
       </div>
-      {calendarDropdownOpen && (
-          <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 min-w-[280px]">
-              <MiniCalendar
-                date={filterDate ? new Date(filterDate + 'T12:00:00') : new Date()}
-                selectedDate={filterDate ? new Date(filterDate + 'T12:00:00') : null}
-                onDateChange={(d) => {
-                  const dateStr = format(d, 'yyyy-MM-dd');
-                  setFilterDate(filterDate === dateStr ? null : dateStr);
-                  setCalendarDropdownOpen(false);
-                }}
-                eventDates={eventDates}
-              />
-              {filterDate && (
-                <button onClick={() => { setFilterDate(null); setCalendarDropdownOpen(false); }}
-                  className="mt-3 w-full text-xs text-slate-500 hover:text-slate-700 py-1.5 rounded-md hover:bg-slate-50 transition-colors">
-                  Show all appointments
-                </button>
-              )}
-            </div>
-          )}
-
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
@@ -475,6 +433,7 @@ export function DoctorAppointmentsPage() {
                     </span>
                   </div>
                   <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)]">
+                  <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                     <tbody>
                       {rows.map(a => {
@@ -565,6 +524,7 @@ export function DoctorAppointmentsPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                   </div>
                 </div>
               );

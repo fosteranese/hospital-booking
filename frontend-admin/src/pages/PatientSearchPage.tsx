@@ -87,8 +87,8 @@ export function PatientSearchPage() {
       )}
 
       <Card>
-        <div className="flex gap-2">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex gap-2 flex-wrap">
+          <div className="relative flex-1 max-w-full sm:max-w-md">
             <HugeiconsIcon icon={Search01Icon} className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
             <input
               placeholder="Search patients by name, email, or phone..."
@@ -174,7 +174,7 @@ export function PatientSearchPage() {
                 description="This patient has no appointment history."
               />
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-100">

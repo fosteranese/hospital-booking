@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import { Spinner } from '@/components/ui/spinner';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { COUNTRY_CODES } from '@/lib/country-codes';
 import { api, Patient } from '@/lib/api';
@@ -212,7 +213,7 @@ export function EditProfileModal({ patient, onClose, onSaved }: EditProfileModal
             Cancel
           </Button>
           <Button className="h-11 text-sm gap-1.5" onClick={handleSave} disabled={saving}>
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-4" />
+            {saving ? <Spinner /> : <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} className="size-4" />}
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </div>

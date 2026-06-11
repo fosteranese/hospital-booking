@@ -287,8 +287,8 @@ export function DoctorUnavailabilityPage() {
       )}
 
       {/* Search bar + filter pills */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center h-12 w-full max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
           <div className="shrink-0 text-slate-400 ml-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
           </div>
@@ -308,7 +308,7 @@ export function DoctorUnavailabilityPage() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 flex-wrap shrink-0">
           {[
             { key: 'pending', label: 'Pending', color: 'bg-amber-400' },
             { key: 'conflicts', label: 'Conflicts', color: 'bg-red-500' },
@@ -364,7 +364,7 @@ export function DoctorUnavailabilityPage() {
             description={filter !== 'all' ? `No ${filter} unavailability records found.` : "You have no blackout periods set."}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <tbody>
                 {filtered.map((u) => {
@@ -526,7 +526,7 @@ export function DoctorUnavailabilityPage() {
 
             {modalStep === 1 ? (
               /* Step 1: Choose date type */
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => { setIsDateRange(false); setModalStep(2); }}

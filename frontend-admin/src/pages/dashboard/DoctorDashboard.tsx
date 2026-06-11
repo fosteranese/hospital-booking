@@ -494,11 +494,13 @@ export function DoctorDashboard() {
           description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           icon={Calendar01Icon}
         />
-        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all mt-1.5 shrink-0" title="Refresh data">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
-            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2 shrink-0 self-start pt-1">
+          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all" title="Refresh data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-slate-500">
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -511,7 +513,7 @@ export function DoctorDashboard() {
       <UnavailabilityConflictBanner />
 
       {/* Row 1: Today's stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="col-span-1">
           {loading ? (
             <div className="h-full min-h-[148px] bg-slate-100 rounded-lg animate-pulse" />
@@ -576,7 +578,7 @@ export function DoctorDashboard() {
 
       {/* Row 2: Future appointments with trends + info cards */}
       <div>
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-slate-500" />
@@ -604,7 +606,7 @@ export function DoctorDashboard() {
               <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-slate-500" />
               <h3 className="text-sm font-semibold text-slate-900">Other Info</h3>
             </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {loading ? (
                 <>
                   <div className="h-[76px] bg-slate-100 rounded-lg animate-pulse" />
@@ -698,6 +700,7 @@ export function DoctorDashboard() {
                 description="You have no appointments scheduled for today."
               />
             ) : (
+              <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                 <tbody>
                   {todayAppts
@@ -805,6 +808,7 @@ export function DoctorDashboard() {
                     })}
                 </tbody>
               </table>
+              </div>
             )}
           </Card>
       </div>

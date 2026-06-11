@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { Cancel01Icon, Loading02Icon } from '@hugeicons/core-free-icons';
 
 interface DetailEvent {
   id: string;
@@ -177,7 +177,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
                 disabled={deleting}
                 className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               >
-                {deleting ? 'Cancelling...' : 'Yes, Cancel'}
+                {deleting ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Cancelling...</span></span> : 'Yes, Cancel'}
               </button>
               <button
                 onClick={() => setShowConfirmDelete(false)}
@@ -208,7 +208,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
               disabled={!hasChanges || saving}
               className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Saving...</span></span> : 'Save Changes'}
             </button>
           </div>
         </div>

@@ -188,9 +188,9 @@ function AppointmentCard({
           type="button"
           onClick={onCancel}
           disabled={cancelling}
-          className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-2 px-1.5"
+          className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-2 px-1.5 inline-flex items-center gap-1"
         >
-          {cancelling ? 'Cancelling...' : 'Cancel'}
+          {cancelling ? <><Spinner /><span>Cancelling...</span></> : 'Cancel'}
         </button>
       </div>
     </div>
@@ -277,7 +277,7 @@ function UpcomingAppointmentsModal({
         </div>
 
         <div className="overflow-y-auto flex-1">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted/20 border-b border-foreground/5">
@@ -322,9 +322,9 @@ function UpcomingAppointmentsModal({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setPendingCancelId(appt.id); }}
                         disabled={cancellingId === appt.id}
-                        className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-1.5 px-1"
+                        className="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-1.5 px-1 inline-flex items-center gap-1"
                       >
-                        {cancellingId === appt.id ? '...' : 'Cancel'}
+                        {cancellingId === appt.id ? <><Spinner /><span>Cancelling...</span></> : 'Cancel'}
                       </button>
                     </div>
                   </td>

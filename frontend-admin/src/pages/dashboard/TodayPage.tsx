@@ -233,7 +233,7 @@ export function TodayPage() {
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {['Pending', 'Attended', 'Missed', 'Total'].map((label, i) => {
           const colors = [
             { value: pendingToday, bg: 'bg-amber-500', border: 'border-amber-700' },
@@ -275,6 +275,7 @@ export function TodayPage() {
               description={selectedDoctor ? 'This doctor has no appointments scheduled for today.' : 'There are no appointments scheduled for today.'}
             />
           ) : (
+            <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <tbody>
                 {appointments
@@ -383,6 +384,7 @@ export function TodayPage() {
                   })}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
       </div>

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Clock01Icon, Calendar01Icon } from "@hugeicons/core-free-icons";
+import { Spinner } from "@/components/ui/spinner";
 import type { UpcomingAppointmentData } from "@/components/ExistingPatientReview";
 
 interface CancelAppointmentDialogProps {
@@ -125,7 +126,7 @@ function CancelAppointmentDialog({
               <Button variant="destructive" className="h-11 text-sm gap-1.5" onClick={handleConfirm} disabled={!reason.trim() || isCancelling}>
                 {isCancelling ? (
                   <span className="flex items-center gap-2">
-                    <span className="size-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    <Spinner />
                     Cancelling...
                   </span>
                 ) : (

@@ -85,7 +85,7 @@ export function DoctorSchedulesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <PageHeader
         title="Doctor Schedules"
         description="Set per-doctor working hours"
@@ -110,7 +110,7 @@ export function DoctorSchedulesPage() {
         <select
           value={selectedDoctorId}
           onChange={(e) => setSelectedDoctorId(e.target.value)}
-          className={`${inputClass} w-[300px]`}
+          className={`${inputClass} w-full sm:w-[300px]`}
         >
           <option value="">Choose a doctor</option>
           {doctors.map((d) => (
@@ -144,19 +144,19 @@ export function DoctorSchedulesPage() {
                     </span>
                   </label>
                   {entry.enabled ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       <input
                         type="time"
                         value={entry.start_time}
                         onChange={(e) => setSchedules(prev => prev.map((s, i) => i === idx ? { ...s, start_time: e.target.value } : s))}
-                        className={`${inputClass} w-[130px]`}
+                        className={`${inputClass} w-full sm:w-[130px]`}
                       />
                       <span className="text-xs text-slate-400">to</span>
                       <input
                         type="time"
                         value={entry.end_time}
                         onChange={(e) => setSchedules(prev => prev.map((s, i) => i === idx ? { ...s, end_time: e.target.value } : s))}
-                        className={`${inputClass} w-[130px]`}
+                        className={`${inputClass} w-full sm:w-[130px]`}
                       />
                     </div>
                   ) : (

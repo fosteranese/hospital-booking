@@ -176,7 +176,7 @@ export function SchedulerDashboard() {
             description={view === 'today' ? 'There are no appointments scheduled for today.' : 'Try adjusting your filters.'}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100">

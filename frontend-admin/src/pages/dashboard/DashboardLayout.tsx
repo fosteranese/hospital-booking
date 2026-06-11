@@ -138,6 +138,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const role = (userRole in roleNav ? userRole : 'admin') as keyof typeof roleNav;
@@ -154,11 +155,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar — Google Calendar-inspired minimal nav */}
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-3 left-3 z-50 lg:hidden size-9 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-colors"
+      >
+        <HugeiconsIcon icon={Menu01Icon} className="size-4 text-slate-600" />
+      </button>
+
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* Sidebar — mobile overlay on small screens, static sidebar on desktop */}
       <aside
         className={cn(
-          'shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border/60 transition-all duration-300 z-30 select-none',
-          collapsed ? 'w-[64px]' : 'w-[220px]'
+          'flex-col bg-sidebar border-r border-sidebar-border/60 transition-all duration-300 select-none',
+          mobileOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-[220px] shadow-2xl flex'
+            : 'hidden',
+          'lg:flex lg:static lg:shadow-none lg:z-30',
+          collapsed ? 'lg:w-[64px]' : 'lg:w-[220px]'
         )}
       >
         {/* Brand — clean minimal */}
@@ -183,7 +201,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 return (
                   <button
                     key={item.href}
-                    onClick={() => navigate(item.href)}
+                    onClick={() => { navigate(item.href); setMobileOpen(false); }}
                     title={collapsed ? item.label : undefined}
                     className={cn(
                       'flex items-center w-full rounded-md text-sm transition-all duration-150 relative',

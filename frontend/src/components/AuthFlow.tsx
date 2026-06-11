@@ -240,7 +240,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                 <ErrorMessage message={error} />
               )}
               <Button className="w-full h-11 text-base shadow-xs" onClick={handleRequestOtp} disabled={loading || !identifier}>
-                {loading ? 'Sending...' : 'Send OTP'}
+                {loading ? <span className="flex items-center gap-2"><Spinner /><span>Sending...</span></span> : 'Send OTP'}
               </Button>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -348,7 +348,7 @@ export function AuthFlow({ onVerified }: AuthFlowProps) {
                       disabled={resending}
                       className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline disabled:cursor-default py-2 px-1 leading-none"
                     >
-                      {resending ? 'Sending...' : 'Resend'}
+                      {resending ? <span className="flex items-center gap-1"><Spinner /><span>Sending...</span></span> : 'Resend'}
                     </button>
                   </div>
                 )}

@@ -3,6 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
   Cancel01Icon,
+  Loading02Icon,
 } from '@hugeicons/core-free-icons';
 
 function formatTime(timeStr: string) {
@@ -166,7 +167,7 @@ export function ConfirmAttendanceModal({
             }`}
           >
             {confirming ? (
-              <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>{actionLabel === 'Attended' ? 'Confirming...' : 'Confirming...'}</span></span>
             ) : (
               `Yes, ${actionLabel}`
             )}

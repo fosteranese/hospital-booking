@@ -188,7 +188,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
               <div
                 ref={stripRef}
                 onScroll={checkScroll}
-                className="flex gap-2 overflow-x-auto scroll-smooth no-scrollbar pb-1 overscroll-x-contain"
+                className="flex gap-2 overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth no-scrollbar pb-1 overscroll-x-contain"
               >
                 {availableDates.map(d => {
                   const dt = new Date(d + 'T12:00:00');

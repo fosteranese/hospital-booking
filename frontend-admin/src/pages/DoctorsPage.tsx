@@ -197,7 +197,7 @@ export function DoctorsPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100">
