@@ -1,7 +1,7 @@
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
 import { MiniCalendar } from '@/components/MiniCalendar';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { SlidePanelShell } from '@/components/SlidePanelShell';
 
 interface DateRangeSlidePanelProps {
   open: boolean;
@@ -22,15 +22,8 @@ export function DateRangeSlidePanel({
   if (!open) return null;
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
-      <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Date Range</span>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-          <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-        </button>
-      </div>
+    <SlidePanelShell title="Date Range" slideClass={slideClass} onClose={onClose}>
       <div className="flex-1 overflow-y-auto shrink-0">
-
         <div className="px-7 py-4">
           <MiniCalendar
             variant="sidebar"
@@ -79,6 +72,6 @@ export function DateRangeSlidePanel({
           ))}
         </div>
       </div>
-    </div>
+    </SlidePanelShell>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AppointmentHistoryItem } from '@/lib/api';
+import { formatTime, formatDate } from '@/lib/helpers';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
@@ -13,16 +14,7 @@ import {
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 export function AppointmentSlidePanel({
   appointment,

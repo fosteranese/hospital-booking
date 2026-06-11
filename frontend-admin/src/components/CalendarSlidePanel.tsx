@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format, startOfWeek, endOfWeek, addWeeks, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { MiniCalendar } from '@/components/MiniCalendar';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { useSlidePanel } from '@/hooks/useSlidePanel';
+import { SlidePanelShell } from '@/components/SlidePanelShell';
 
 interface CalendarSlidePanelProps {
   open: boolean;
@@ -21,25 +22,9 @@ function dateStr(d: Date) {
 export function CalendarSlidePanel({
   open, filterDate, onFilterDate, onClose, eventDates,
 }: CalendarSlidePanelProps) {
-  const [visible, setVisible] = useState(false);
+  const { slideClass, shouldRender, handleClose } = useSlidePanel(open, onClose, 200);
 
-  useEffect(() => {
-    if (open) {
-      const frame = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(frame);
-    } else {
-      setVisible(false);
-    }
-  }, [open]);
-
-  if (!open && !visible) return null;
-
-  const slideClass = visible ? 'translate-x-0' : 'translate-x-full';
-
-  const handleClose = () => {
-    setVisible(false);
-    setTimeout(() => onClose(), 200);
-  };
+  if (!shouldRender) return null;
 
   const today = new Date();
 
@@ -82,6 +67,8 @@ export function CalendarSlidePanel({
     },
   ];
 
+  const isActive = (preset: DateRange) => filterDate === `${preset.from()}_${preset.to()}`;
+
   const handlePresetClick = (preset: DateRange) => {
     if (isActive(preset)) {
       onFilterDate(null);
@@ -90,16 +77,8 @@ export function CalendarSlidePanel({
     }
   };
 
-  const isActive = (preset: DateRange) => filterDate === `${preset.from()}_${preset.to()}`;
-
   return (
-    <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white border-l border-slate-200 z-40 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
-      <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Calendar</span>
-        <button onClick={handleClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-          <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-        </button>
-      </div>
+    <SlidePanelShell title="Calendar" slideClass={slideClass} onClose={handleClose}>
       <div className="flex-1 overflow-y-auto shrink-0 px-7 pt-4 pb-2">
         <MiniCalendar
           variant="sidebar"
@@ -120,55 +99,55 @@ export function CalendarSlidePanel({
           </div>
         )}
       </div>
-        <div className="px-7 pb-2 border-t border-slate-200">
-          <div className="pt-4">
-            <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Select</p>
-            <div className="space-y-2">
-              <button
-                onClick={() => handlePresetClick(presets[0])}
-                className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                  isActive(presets[0]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                }`}
-              >
-                {presets[0].label}
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                {presets.slice(1, 3).map(preset => (
-                  <button
-                    key={preset.key}
-                    onClick={() => handlePresetClick(preset)}
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                      isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {presets.slice(3, 5).map(preset => (
-                  <button
-                    key={preset.key}
-                    onClick={() => handlePresetClick(preset)}
-                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                      isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => handlePresetClick(presets[5])}
-                className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
-                  isActive(presets[5]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                }`}
-              >
-                {presets[5].label}
-              </button>
+      <div className="px-7 pb-2 border-t border-slate-200">
+        <div className="pt-4">
+          <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wider">Quick Select</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => handlePresetClick(presets[0])}
+              className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                isActive(presets[0]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              {presets[0].label}
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              {presets.slice(1, 3).map(preset => (
+                <button
+                  key={preset.key}
+                  onClick={() => handlePresetClick(preset)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              {presets.slice(3, 5).map(preset => (
+                <button
+                  key={preset.key}
+                  onClick={() => handlePresetClick(preset)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                    isActive(preset) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => handlePresetClick(presets[5])}
+              className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm font-medium ${
+                isActive(presets[5]) ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' : 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              {presets[5].label}
+            </button>
           </div>
         </div>
-    </div>
+      </div>
+    </SlidePanelShell>
   );
 }

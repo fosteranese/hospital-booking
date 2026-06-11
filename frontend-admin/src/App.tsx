@@ -12,14 +12,8 @@ import { DoctorUnavailabilityPage } from '@/pages/dashboard/DoctorUnavailability
 import { DoctorConflictsPage } from '@/pages/dashboard/DoctorConflictsPage';
 import { DoctorReferralsPage } from '@/pages/dashboard/DoctorReferralsPage';
 import { DoctorPastAppointmentsPage } from '@/pages/dashboard/DoctorPastAppointmentsPage';
-import { CalendarPage } from '@/pages/dashboard/CalendarPage';
 import { SchedulerDashboard } from '@/pages/dashboard/SchedulerDashboard';
-import { DashboardUnavailability } from '@/pages/dashboard/DashboardUnavailability';
-import { AdminSettings } from '@/pages/dashboard/AdminSettings';
 import { ApplicationSettingsPage } from '@/pages/dashboard/ApplicationSettingsPage';
-import { DoctorProfilePage } from '@/pages/dashboard/DoctorProfilePage';
-import { AnalyticsPage } from '@/pages/AnalyticsPage';
-import { DoctorsPage } from '@/pages/DoctorsPage';
 import { DoctorSchedulesPage } from '@/pages/DoctorSchedulesPage';
 import { PatientSearchPage } from '@/pages/PatientSearchPage';
 import { UsersPage } from '@/pages/UsersPage';
@@ -50,133 +44,31 @@ function DashboardRouter() {
   return <AdminDashboard />;
 }
 
+function dashboardRoute(path: string, page: React.ReactNode) {
+  return (
+    <Route path={path} element={<DashboardGuard><DashboardLayout>{page}</DashboardLayout></DashboardGuard>} />
+  );
+}
+
 function AppRoutes() {
   return (
     <ContentContainerProvider>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DashboardRouter />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/my-appointments"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorAppointmentsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/today-appointments"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorTodayAppointmentsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/today"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <TodayPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/my-unavailability"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorUnavailabilityPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/conflicts"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorConflictsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/referrals"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorReferralsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/past-appointments"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorPastAppointmentsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/schedules"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <DoctorSchedulesPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/patients"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <PatientSearchPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/users"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <UsersPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route
-        path="/dashboard/app-settings"
-        element={
-          <DashboardGuard>
-            <DashboardLayout>
-              <ApplicationSettingsPage />
-            </DashboardLayout>
-          </DashboardGuard>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {dashboardRoute('/dashboard', <DashboardRouter />)}
+        {dashboardRoute('/dashboard/my-appointments', <DoctorAppointmentsPage />)}
+        {dashboardRoute('/dashboard/today-appointments', <DoctorTodayAppointmentsPage />)}
+        {dashboardRoute('/dashboard/today', <TodayPage />)}
+        {dashboardRoute('/dashboard/my-unavailability', <DoctorUnavailabilityPage />)}
+        {dashboardRoute('/dashboard/conflicts', <DoctorConflictsPage />)}
+        {dashboardRoute('/dashboard/referrals', <DoctorReferralsPage />)}
+        {dashboardRoute('/dashboard/past-appointments', <DoctorPastAppointmentsPage />)}
+        {dashboardRoute('/dashboard/schedules', <DoctorSchedulesPage />)}
+        {dashboardRoute('/dashboard/patients', <PatientSearchPage />)}
+        {dashboardRoute('/dashboard/users', <UsersPage />)}
+        {dashboardRoute('/dashboard/app-settings', <ApplicationSettingsPage />)}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ContentContainerProvider>
   );
 }

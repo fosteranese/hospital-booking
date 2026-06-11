@@ -23,93 +23,12 @@ import {
   ChevronDownIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
+import { formatTime, PatientAvatar } from '@/lib/helpers';
+import { StatusDot } from '@/components/StatusDot';
 
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function PatientAvatar({ name }: { name: string }) {
-  const initials = (name || 'P')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w.charAt(0).toUpperCase())
-    .join('');
-  return (
-    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">
-      {initials}
-    </div>
-  );
-}
 
-function StatusDot({ status, attended, minutes_late, start_time, arrival_time, slot_date, has_conflict }: { status: string; attended: boolean | null; minutes_late: number | null; start_time?: string; arrival_time?: string | null; slot_date?: string; has_conflict?: boolean }) {
-  if (has_conflict) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-red-500 shrink-0" />
-        <span className="text-xs text-red-600 font-medium">Conflict</span>
-      </div>
-    );
-  }
-  if (attended === true) {
-    const arrivalDisplay = (() => {
-      if (arrival_time) {
-        const timePart = arrival_time.split('T')[1]?.slice(0, 5);
-        if (timePart) return timePart;
-      }
-      if (minutes_late != null && minutes_late > 0 && start_time) {
-        const [h, m] = start_time.split(':').map(Number);
-        const totalMin = h * 60 + m + minutes_late;
-        const newH = Math.floor(totalMin / 60) % 24;
-        const newM = totalMin % 60;
-        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
-      }
-      return null;
-    })();
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
-        <span className="text-xs text-emerald-600 font-medium">
-          Attended{arrivalDisplay ? ` · arrived ${formatTime(arrivalDisplay)}` : ''}
-        </span>
-      </div>
-    );
-  }
-  if (attended === false) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
-        <span className="text-xs text-purple-600 font-medium">Missed</span>
-      </div>
-    );
-  }
-  if (status === 'cancelled') {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-slate-300 shrink-0" />
-        <span className="text-xs text-slate-400 font-medium">Cancelled</span>
-      </div>
-    );
-  }
-  if (slot_date && (() => { const t = new Date(); t.setHours(0,0,0,0); return new Date(slot_date + 'T00:00:00') < t; })()) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div className="size-2 rounded-full bg-purple-500 shrink-0" />
-        <span className="text-xs text-purple-600 font-medium">Missed</span>
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="size-2 rounded-full bg-amber-400 shrink-0" />
-      <span className="text-xs text-amber-600 font-medium">Confirmed</span>
-    </div>
-  );
-}
 
 const filterOptions = [
   { value: 'all', label: 'All' },

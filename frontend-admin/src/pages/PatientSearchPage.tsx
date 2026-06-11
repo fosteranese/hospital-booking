@@ -15,13 +15,8 @@ import {
   Mail01Icon,
   CallIcon,
 } from '@hugeicons/core-free-icons';
+import { formatTime } from '@/lib/helpers';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
 function StatusBadge({ status, attended }: { status: string; attended: boolean | null }) {
   if (attended === true) return <Badge variant="success">Attended</Badge>;

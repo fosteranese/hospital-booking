@@ -14,31 +14,14 @@ import { MiniCalendar } from '@/components/MiniCalendar';
 import { Calendar01Icon, AlertCircleIcon, CheckmarkCircle01Icon, Cancel01Icon, ArrowRight01Icon, Search01Icon, ChevronDownIcon, TimeScheduleIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { DateRangeSlidePanel } from '@/components/DateRangeSlidePanel';
 import { useCachedData } from '@/hooks/useCachedData';
+import { useSlidePanel } from '@/hooks/useSlidePanel';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
 
-function PatientAvatar({ name }: { name: string }) {
-  const initials = (name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('');
-  return <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-[11px] font-semibold text-slate-600">{initials}</div>;
-}
 
-function StatusDot({ status, attended }: { status: string; attended: boolean | null }) {
-  if (attended === true) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-emerald-500 shrink-0" /><span className="text-xs text-emerald-600 font-medium">Attended</span></div>);
-  if (attended === false) return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-purple-500 shrink-0" /><span className="text-xs text-purple-600 font-medium">Missed</span></div>);
-  if (status === 'cancelled') return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-slate-300 shrink-0" /><span className="text-xs text-slate-400 font-medium">Cancelled</span></div>);
-  return (<div className="flex items-center gap-1.5"><div className="size-2 rounded-full bg-purple-500 shrink-0" /><span className="text-xs text-purple-600 font-medium">Missed</span></div>);
-}
 
+import { formatTime, formatDate, PatientAvatar, daysAgo, isBeforeToday } from '@/lib/helpers';
+import { StatusDot } from '@/components/StatusDot';
 const filterOptions = [
   { value: 'all', label: 'All' },
   { value: 'name', label: 'Name' },
@@ -55,11 +38,6 @@ const placeholderMap: Record<string, string> = {
   time: 'Search by time...',
 };
 
-function daysAgo(n: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-}
 
 const dateRangeOptions = [
   { key: 'yesterday', label: 'Yesterday', from: () => daysAgo(1), to: () => daysAgo(1) },
@@ -87,7 +65,6 @@ export function DoctorPastAppointmentsPage() {
   const [dateFrom, setDateFrom] = useState(daysAgo(30));
   const [dateTo, setDateTo] = useState(yesterday);
   const [datePanelOpen, setDatePanelOpen] = useState(() => window.innerWidth >= 1024);
-  const [datePanelVisible, setDatePanelVisible] = useState(false);
   const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false);
   const calendarDropdownRef = useRef<HTMLDivElement>(null);
   const [filterDate, setFilterDate] = useState<string | null>(null);
@@ -121,10 +98,7 @@ export function DoctorPastAppointmentsPage() {
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
 
-  const handleDatePanelClose = () => {
-    setDatePanelVisible(false);
-    setTimeout(() => setDatePanelOpen(false), 200);
-  };
+  const { slideClass: dateSlideClass, handleClose: handleDatePanelClose } = useSlidePanel(datePanelOpen, () => setDatePanelOpen(false), 200);
 
   const handleDateRangeChange = (key: string) => {
     const opt = dateRangeOptions.find(o => o.key === key);
@@ -158,16 +132,6 @@ export function DoctorPastAppointmentsPage() {
 
   const { setContainerClass } = useContentContainer();
   const panelOpen = datePanelOpen || !!selectedAppointment;
-  const dateSlideClass = datePanelVisible ? 'translate-x-0' : 'translate-x-full';
-
-  useEffect(() => {
-    if (datePanelOpen) {
-      const frame = requestAnimationFrame(() => setDatePanelVisible(true));
-      return () => cancelAnimationFrame(frame);
-    } else {
-      setDatePanelVisible(false);
-    }
-  }, [datePanelOpen]);
 
   useEffect(() => {
     setContainerClass(panelOpen

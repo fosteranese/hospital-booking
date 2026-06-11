@@ -18,6 +18,7 @@ import {
   Calendar01Icon, AlertCircleIcon,
   FilterIcon,
 } from '@hugeicons/core-free-icons';
+import { isBeforeToday } from '@/lib/helpers';
 
 const STATUS_COLORS: Record<string, string> = {
   attended: '#10b981',
@@ -32,10 +33,6 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-function isBeforeToday(dateStr: string): boolean {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return new Date(dateStr + 'T00:00:00') < today;
-}
 
 function appointmentStatusColor(appt: AppointmentHistoryItem): string {
   if (appt.status === 'cancelled') return STATUS_COLORS.cancelled;

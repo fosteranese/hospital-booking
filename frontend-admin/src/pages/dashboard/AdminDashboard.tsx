@@ -17,41 +17,11 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useCachedData } from '@/hooks/useCachedData';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function StatusDot({ status, attended, slot_date, has_conflict }: { status: string; attended: boolean | null; slot_date?: string; has_conflict?: boolean }) {
-  if (has_conflict) {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium">
-        <span className="size-1.5 rounded-full bg-red-600" />
-        Conflict
-      </span>
-    );
-  }
-  const map: Record<string, { label: string; color: string }> = {
-    attended:  { label: 'Attended',  color: 'bg-emerald-500' },
-    missed:    { label: 'Missed',    color: 'bg-purple-500' },
-    cancelled: { label: 'Cancelled', color: 'bg-slate-300' },
-    confirmed: { label: 'Confirmed', color: 'bg-blue-500' },
-  };
-  const isPast = slot_date && (() => { const t = new Date(); t.setHours(0,0,0,0); return new Date(slot_date + 'T00:00:00') < t; })();
-  const key = attended === true ? 'attended' : attended === false ? 'missed' : status === 'cancelled' ? 'cancelled' : isPast ? 'missed' : 'confirmed';
-  const s = map[key];
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-      <span className={`size-1.5 rounded-full ${s.color}`} />
-      {s.label}
-    </span>
-  );
-}
 
-const selectClass = "h-8 px-2.5 text-xs border border-slate-200 rounded-md bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer";
 
+import { formatTime, selectClass } from '@/lib/helpers';
+import { StatusDot } from '@/components/StatusDot';
 export function AdminDashboard() {
   const { token } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);

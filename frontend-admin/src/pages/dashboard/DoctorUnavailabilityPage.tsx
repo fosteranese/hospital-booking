@@ -19,21 +19,10 @@ import {
   Cancel01Icon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
+import { formatTime, formatDate, inputClass } from '@/lib/helpers';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-}
 
-const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
-const smallInputClass = inputClass;
 
 interface UnavailRecord {
   id: string;

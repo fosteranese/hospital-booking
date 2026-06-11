@@ -8,8 +8,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Clock01Icon, Add01Icon, Delete01Icon, AlertCircleIcon, Calendar02Icon } from '@hugeicons/core-free-icons';
 
-const inputClass = "h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all";
 
+import { inputClass } from '@/lib/helpers';
 export function DashboardUnavailability() {
   const { token, userRole } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);

@@ -10,18 +10,9 @@ import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowRight01Icon, AlertCircleIcon, Calendar01Icon, CheckmarkCircle01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
 
-function formatTime(timeStr: string) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
-}
 
-function formatDate(dateStr: string) {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-}
 
+import { formatTime, formatDate } from '@/lib/helpers';
 function getStatusLabel(a: ReferralItem): { label: string; color: string } {
   if (a.status === 'cancelled') return { label: 'Cancelled', color: 'bg-slate-300' };
   if (a.attended === true) return { label: 'Attended', color: 'bg-emerald-500' };
