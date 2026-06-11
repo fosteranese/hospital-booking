@@ -176,7 +176,7 @@ export function Calendar({ appointments, onDateClick, selectedDate }: CalendarPr
                     </div>
                   ))}
                   {dayAppointments.length > 2 && (
-                    <div className="text-xs text-slate-500 px-1.5">
+                    <div className="text-xs text-muted-foreground px-1.5">
                       +{dayAppointments.length - 2} more
                     </div>
                   )}

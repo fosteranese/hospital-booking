@@ -83,11 +83,11 @@ export function SlotPicker({
   return (
     <div>
       <div className="mb-5">
-        <label className="block text-xs font-medium text-slate-600 mb-2">Select date</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-2">Select date</label>
         {datesLoading ? (
           <div className="h-[68px] bg-slate-100 rounded-xl animate-pulse" />
         ) : dates.length === 0 ? (
-          <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">{emptyDatesMessage}</div>
+          <div className="text-sm text-muted-foreground py-3 text-center bg-muted rounded-lg">{emptyDatesMessage}</div>
         ) : (
           <div className="relative">
             <div
@@ -127,7 +127,7 @@ export function SlotPicker({
               className="absolute left-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-l-xl disabled:opacity-0 transition-opacity cursor-pointer bg-card/80 hover:bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
               aria-label="Previous dates"
             >
-              <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-slate-600" strokeWidth={2} />
+              <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
             </button>
             <button
               type="button"
@@ -136,7 +136,7 @@ export function SlotPicker({
               className="absolute right-0 top-0 bottom-1 w-10 flex items-center justify-center rounded-r-xl disabled:opacity-0 transition-opacity cursor-pointer bg-card/80 hover:bg-card shadow-[-2px_0_8px_-4px_rgba(0,0,0,0.15)] z-10"
               aria-label="Next dates"
             >
-              <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-slate-600" strokeWidth={2} />
+              <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 text-muted-foreground" strokeWidth={2} />
             </button>
           </div>
         )}
@@ -144,7 +144,7 @@ export function SlotPicker({
 
       {selectedDate && (
         <div className="mb-5">
-          <label className="block text-xs font-medium text-slate-600 mb-2">Select time</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">Select time</label>
           {slotsLoading ? (
             <div className="space-y-2">
               <div className="h-8 bg-slate-100 rounded-lg animate-pulse w-24" />
@@ -153,14 +153,14 @@ export function SlotPicker({
               </div>
             </div>
           ) : groupedSlots.length === 0 ? (
-            <div className="text-sm text-slate-400 py-3 text-center bg-slate-50 rounded-lg">{emptySlotsMessage}</div>
+            <div className="text-sm text-muted-foreground py-3 text-center bg-muted rounded-lg">{emptySlotsMessage}</div>
           ) : (
             <div className="space-y-4">
               {groupedSlots.map(({ period, slots: periodSlots }) => (
                 <div key={period} className="space-y-2">
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm font-medium text-foreground">{periodConfig[period].label}</span>
-                    <span className="text-[11px] text-slate-400">{periodConfig[period].range}</span>
+                    <span className="text-[11px] text-muted-foreground">{periodConfig[period].range}</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {periodSlots.map(slot => {

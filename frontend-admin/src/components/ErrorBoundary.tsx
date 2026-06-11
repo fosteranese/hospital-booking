@@ -38,8 +38,8 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="size-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-8 text-red-500" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">Something went wrong</h2>
-            <p className="text-sm text-slate-500 mb-6">
+            <h2 className="text-lg font-bold text-foreground mb-2">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground mb-6">
               An unexpected error occurred. Please try refreshing the page.
             </p>
             <button

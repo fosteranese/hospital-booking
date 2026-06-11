@@ -34,12 +34,12 @@ export function MiniCalendar({ date, selectedDate, onDateChange, eventDates, var
   const navBtnClass = 'w-9 h-9 flex items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors';
 
   const labelClass = isSidebar
-    ? 'text-slate-500 text-base font-medium'
-    : 'text-slate-700 text-xs font-semibold tracking-wide';
+    ? 'text-muted-foreground text-base font-medium'
+    : 'text-foreground text-xs font-semibold tracking-wide';
 
   const headClass = isSidebar
-    ? 'text-slate-400 text-xs font-semibold uppercase tracking-wider'
-    : 'text-slate-400 text-[10px] font-semibold uppercase tracking-wider';
+    ? 'text-muted-foreground text-xs font-semibold uppercase tracking-wider'
+    : 'text-muted-foreground text-[10px] font-semibold uppercase tracking-wider';
 
   return (
     <div className="select-none">

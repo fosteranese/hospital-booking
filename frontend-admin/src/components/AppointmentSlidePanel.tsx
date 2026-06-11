@@ -172,7 +172,7 @@ export function AppointmentSlidePanel({
               <div className="text-lg font-bold text-foreground truncate">{appointment.patient_name || 'Patient'}</div>
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`size-2 rounded-full ${status.dot}`} />
-                <span className="text-sm font-medium text-slate-600">{status.label}</span>
+                <span className="text-sm font-medium text-foreground">{status.label}</span>
                 {appointment.referring_doctor_id && (
                   <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
                     <HugeiconsIcon icon={UserGroupIcon} className="size-3" />
@@ -184,14 +184,14 @@ export function AppointmentSlidePanel({
             <div className="flex items-center gap-2 shrink-0">
               {((appointment.patient_phone ?? '').length > 0) && (
                 <a href={`tel:${appointment.patient_phone}`} title={appointment.patient_phone || 'No phone'}
-                  className="size-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-emerald-50 hover:text-emerald-500 transition-all"
+                  className="size-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-emerald-50 hover:text-emerald-500 transition-all"
                 >
                   <HugeiconsIcon icon={CallIcon} className="size-4" />
                 </a>
               )}
               {((appointment.patient_email ?? '').length > 0) && (
                 <a href={`mailto:${appointment.patient_email}`} title={appointment.patient_email}
-                  className="size-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-all"
+                  className="size-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:bg-blue-50 hover:text-blue-500 transition-all"
                 >
                   <HugeiconsIcon icon={Mail01Icon} className="size-4" />
                 </a>

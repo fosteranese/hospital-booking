@@ -165,8 +165,8 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-6" />
               </div>
               <div className="text-center">
-                <div className="text-base font-semibold text-slate-900">Follow-up</div>
-                <div className="text-sm text-slate-500 mt-1">Same doctor</div>
+                <div className="text-base font-semibold text-foreground">Follow-up</div>
+                <div className="text-sm text-muted-foreground mt-1">Same doctor</div>
               </div>
             </button>
             <button type="button" onClick={() => { setScheduleType('referral'); setStep(2); }}
@@ -178,8 +178,8 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                 <HugeiconsIcon icon={Calendar01Icon} className="size-5" />
               </div>
               <div className="text-center">
-                <div className="text-base font-semibold text-slate-900">Referral</div>
-                <div className="text-sm text-slate-500 mt-1">Different doctor</div>
+                <div className="text-base font-semibold text-foreground">Referral</div>
+                <div className="text-sm text-muted-foreground mt-1">Different doctor</div>
               </div>
             </button>
           </div>
@@ -188,7 +188,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 2 && (
           <div>
             {eligibleForReferral.length === 0 ? (
-              <div className="text-sm text-slate-400 py-8 text-center bg-slate-50 rounded-lg">
+              <div className="text-sm text-muted-foreground py-8 text-center bg-muted rounded-lg">
                 This patient has no history with other doctors.
               </div>
             ) : (
@@ -201,7 +201,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                         : 'border-border bg-card hover:border-emerald-300 hover:shadow-sm'
                     }`}
                   >
-                    <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 shrink-0">
+                    <div className="size-10 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
                       {d.first_name[0]}{d.last_name[0]}
                     </div>
                     <div className="min-w-0">
@@ -209,7 +209,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
                     <div className="text-xs text-muted-foreground">{d.specialization}</div>
                     </div>
                     <div className="ml-auto shrink-0">
-                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-slate-300" />
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-muted-foreground/30" />
                     </div>
                   </button>
                 ))}
@@ -221,8 +221,8 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 3 && (
           <div>
             <div className="mb-4">
-              <label className="block text-xs font-medium text-slate-600 mb-2">
-                {scheduleType === 'follow-up' ? 'Follow-up with' : 'Refer to'} <span className="font-semibold text-slate-800">
+              <label className="block text-xs font-medium text-muted-foreground mb-2">
+                {scheduleType === 'follow-up' ? 'Follow-up with' : 'Refer to'} <span className="font-semibold text-foreground">
                   Dr. {scheduleType === 'follow-up' ? currentDoctorName : knownDoctors.find(d => d.id === selectedDoctorId)?.last_name || ''}
                 </span>
               </label>
@@ -245,32 +245,32 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
 
         {step === 4 && (
           <div>
-            <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-3">
-              <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Appointment Summary</div>
+            <div className="bg-muted rounded-xl p-4 mb-5 space-y-3">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Appointment Summary</div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Patient</span>
-                <span className="font-medium text-slate-900">{patientName}</span>
+                <span className="text-muted-foreground">Patient</span>
+                <span className="font-medium text-foreground">{patientName}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Doctor</span>
-                <span className="font-medium text-slate-900">
+                <span className="text-muted-foreground">Doctor</span>
+                <span className="font-medium text-foreground">
                   Dr. {scheduleType === 'follow-up' ? currentDoctorName : knownDoctors.find(d => d.id === selectedDoctorId)?.last_name || ''}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Date</span>
-                <span className="font-medium text-slate-900">
+                <span className="text-muted-foreground">Date</span>
+                <span className="font-medium text-foreground">
                   {selectedSlotData ? new Date(selectedSlotData.slot_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Time</span>
-                <span className="font-medium text-slate-900">
+                <span className="text-muted-foreground">Time</span>
+                <span className="font-medium text-foreground">
                   {selectedSlotData ? `${selectedSlotData.start_time.slice(0, 5)} — ${selectedSlotData.end_time.slice(0, 5)}` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Type</span>
+                <span className="text-muted-foreground">Type</span>
                 <span className={`font-medium capitalize ${scheduleType === 'referral' ? 'text-sky-600' : 'text-emerald-600'}`}>
                   {scheduleType === 'referral' ? 'Referral' : 'Follow-up'}
                 </span>
@@ -278,11 +278,11 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
             </div>
 
             <div className="mb-5">
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Notes (optional)</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Notes (optional)</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)}
                 placeholder={scheduleType === 'referral' ? 'Reason for referral...' : 'Follow-up notes...'}
                 rows={3}
-                className="h-24 px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
+                className="h-24 px-3 py-2.5 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-full resize-none"
               />
             </div>
           </div>
@@ -291,7 +291,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 3 && (
           <div className="flex items-center justify-between gap-2">
             <button onClick={() => { if (scheduleType === 'follow-up') setStep(1); else setStep(2); setSelectedSlot(null); setError(''); }}
-              className="text-sm text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
             >
               ← Back
             </button>
@@ -306,7 +306,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         {step === 4 && (
           <div className="flex items-center justify-between gap-2">
             <button onClick={() => { setStep(3); setError(''); }}
-              className="text-sm text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
             >
               ← Back
             </button>
