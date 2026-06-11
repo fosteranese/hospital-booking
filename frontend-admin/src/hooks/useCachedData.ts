@@ -4,10 +4,14 @@ import { useRefresh } from '@/contexts/refresh-context';
 
 const inflight = new Map<string, Promise<any>>();
 
+function isNetworkError(message: string): boolean {
+  return message.includes('Unable to reach the server') || message.includes('Failed to fetch') || message.includes('NetworkError');
+}
+
 export function useCachedData<T>(
   cacheKey: string | null,
   fetcher: () => Promise<T>,
-  options?: { staleTime?: number; enabled?: boolean }
+  options?: { staleTime?: number; enabled?: boolean; retryCount?: number }
 ): { data: T | null; loading: boolean; refreshing: boolean; error: string; refresh: () => Promise<void>; backgroundRefresh: () => Promise<void> } {
   const cached = cacheKey ? getCached<T>(cacheKey) : null;
   const [data, setData] = useState<T | null>(cached);
@@ -19,11 +23,28 @@ export function useCachedData<T>(
   const hasCachedRef = useRef(!!cached);
   const fetcherRef = useRef(fetcher);
   const staleTimeRef = useRef(options?.staleTime);
+  const retryCountRef = useRef(options?.retryCount ?? 1);
   const { registerRefresh, unregisterRefresh } = useRefresh();
 
   keyRef.current = cacheKey;
   fetcherRef.current = fetcher;
   staleTimeRef.current = options?.staleTime;
+  retryCountRef.current = options?.retryCount ?? 1;
+
+  const fetchWithRetry = useCallback(async (key: string, silent: boolean, attempt: number): Promise<T> => {
+    try {
+      const result = await fetcherRef.current();
+      setCache(key, result, staleTimeRef.current);
+      return result;
+    } catch (e: any) {
+      if (attempt < retryCountRef.current && isNetworkError(e.message || '')) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        if (!mountedRef.current || keyRef.current !== key) throw e;
+        return fetchWithRetry(key, silent, attempt + 1);
+      }
+      throw e;
+    }
+  }, []);
 
   const fetch = useCallback((silent = false): Promise<void> => {
     if (!cacheKey) return Promise.resolve();
@@ -42,9 +63,8 @@ export function useCachedData<T>(
       registerRefresh();
     }
 
-    const promise = fetcherRef.current()
+    const promise = fetchWithRetry(key, silent, 0)
       .then(result => {
-        setCache(key, result, staleTimeRef.current);
         if (mountedRef.current && keyRef.current === key) {
           setData(result);
           setLoading(false);
@@ -67,7 +87,7 @@ export function useCachedData<T>(
 
     inflight.set(key, promise);
     return promise;
-  }, [cacheKey, registerRefresh, unregisterRefresh]);
+  }, [cacheKey, registerRefresh, unregisterRefresh, fetchWithRetry]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -80,7 +100,6 @@ export function useCachedData<T>(
 
     hasCachedRef.current = !!getCached<T>(cacheKey);
 
-    // Silent background refresh — never shows loading if we have cached data
     fetch(hasCachedRef.current);
   }, [cacheKey, options?.enabled, fetch]);
 

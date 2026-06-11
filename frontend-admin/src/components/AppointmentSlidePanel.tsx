@@ -144,11 +144,11 @@ export function AppointmentSlidePanel({
         )}
 
         {/* Referral banner */}
-        {(appointment as any).referring_doctor_id && (
+        {appointment.referring_doctor_id && (
           <div className="flex items-center gap-1.5 px-7 py-2.5 bg-violet-50 border-b border-violet-100">
             <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
             <span className="text-xs text-violet-700">
-              Referred by <strong>{(appointment as any).referring_doctor_name || 'another doctor'}</strong>
+              Referred by <strong>{appointment.referring_doctor_name || 'another doctor'}</strong>
             </span>
           </div>
         )}
@@ -173,7 +173,7 @@ export function AppointmentSlidePanel({
               <div className="flex items-center gap-2 mt-1.5">
                 <span className={`size-2 rounded-full ${status.dot}`} />
                 <span className="text-sm font-medium text-slate-600">{status.label}</span>
-                {(appointment as any).referring_doctor_id && (
+                {appointment.referring_doctor_id && (
                   <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">
                     <HugeiconsIcon icon={UserGroupIcon} className="size-3" />
                     Referred
@@ -248,7 +248,7 @@ export function AppointmentSlidePanel({
           </div>
 
           {/* Conflict details */}
-          {appointment.has_conflict && (appointment as any).conflict_slot_date && (
+          {appointment.has_conflict && appointment.conflict_slot_date && (
             <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
@@ -257,17 +257,17 @@ export function AppointmentSlidePanel({
                 <div>
                   <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Conflict — Unavailability</div>
                   <div className="text-sm font-semibold text-slate-900 mt-0.5">
-                    {formatDate((appointment as any).conflict_slot_date)}
-                    {(appointment as any).conflict_end_date && (appointment as any).conflict_end_date !== (appointment as any).conflict_slot_date && (
-                      <span> — {formatDate((appointment as any).conflict_end_date)}</span>
+                    {formatDate(appointment.conflict_slot_date)}
+                    {appointment.conflict_end_date && appointment.conflict_end_date !== appointment.conflict_slot_date && (
+                      <span> — {formatDate(appointment.conflict_end_date)}</span>
                     )}
                   </div>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    {(appointment as any).conflict_start_time ? (
-                      <>{formatTime((appointment as any).conflict_start_time)} — {formatTime((appointment as any).conflict_end_time)}</>
+                    {appointment.conflict_start_time ? (
+                      <>{formatTime(appointment.conflict_start_time!)} — {formatTime(appointment.conflict_end_time!)}</>
                     ) : 'All day'}
-                    {(appointment as any).conflict_reason && (
-                      <span className="text-slate-400 ml-1">· {(appointment as any).conflict_reason}</span>
+                    {appointment.conflict_reason && (
+                      <span className="text-slate-400 ml-1">· {appointment.conflict_reason}</span>
                     )}
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export function AppointmentSlidePanel({
           )}
 
           {/* Referral details */}
-          {(appointment as any).referring_doctor_id && (
+          {appointment.referring_doctor_id && (
             <div className="mt-5 bg-slate-50 rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
@@ -284,7 +284,7 @@ export function AppointmentSlidePanel({
                 </div>
                 <div>
                   <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Referred by</div>
-                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{(appointment as any).referring_doctor_name || 'Another doctor'}</div>
+                  <div className="text-sm font-semibold text-slate-900 mt-0.5">{appointment.referring_doctor_name || 'Another doctor'}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">

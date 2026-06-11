@@ -111,7 +111,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Pr
             <>
               {appt!.referring_doctor_id && (
                 <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg border border-violet-100">
-                  <HugeiconsIcon icon={UserGroupIcon as any} className="size-3.5 text-violet-500" />
+                  <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500" />
                   <span className="text-xs text-violet-700">Referred by another doctor</span>
                 </div>
               )}

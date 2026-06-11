@@ -35,11 +35,11 @@ export function AdminDashboard() {
   const { data: raw, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(async () => {
-      const query: any = {};
+      const query: Record<string, string> = {};
       if (doctorFilter) query.doctor_id = doctorFilter;
       if (statusFilter) query.status = statusFilter;
       if (dateFilter) query.date = dateFilter;
-      return await api.listAppointments(query as any, token);
+      return await api.listAppointments(query, token);
     }, [token, doctorFilter, statusFilter, dateFilter]),
     { enabled: !!token }
   );
@@ -58,7 +58,7 @@ export function AdminDashboard() {
     if (doctorFilter) query.doctor_id = doctorFilter;
     if (statusFilter) query.status = statusFilter;
     if (dateFilter) query.date = dateFilter;
-    api.downloadExportCsv(query as any, token);
+    api.downloadExportCsv(query, token);
   };
 
   const hasFilters = doctorFilter || statusFilter || dateFilter;

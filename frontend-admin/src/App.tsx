@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ClinicProvider } from '@/contexts/clinic-context';
 import { ToastProvider } from '@/contexts/toast-context';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardLayout, ContentContainerProvider } from '@/pages/dashboard/DashboardLayout';
 import { AdminDashboard } from '@/pages/dashboard/AdminDashboard';
@@ -90,7 +91,9 @@ export default function App() {
       <AuthProvider>
         <ClinicProvider>
           <ToastProvider>
-            <AppRoutes />
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
           </ToastProvider>
         </ClinicProvider>
       </AuthProvider>

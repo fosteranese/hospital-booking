@@ -39,7 +39,7 @@ export function SchedulerDashboard() {
       if (doctorFilter) query.doctor_id = doctorFilter;
       if (statusFilter) query.status = statusFilter;
       if (dateFilter) query.date = dateFilter;
-      return await api.listAppointments(query as any, token);
+      return await api.listAppointments(query, token);
     }, [token, view, doctorFilter, statusFilter, dateFilter, today]),
     { enabled: !!token }
   );
@@ -58,7 +58,7 @@ export function SchedulerDashboard() {
     if (doctorFilter) query.doctor_id = doctorFilter;
     if (statusFilter) query.status = statusFilter;
     if (dateFilter) query.date = dateFilter;
-    api.downloadExportCsv(query as any, token);
+    api.downloadExportCsv(query, token);
   };
 
   const hasFilters = doctorFilter || statusFilter || dateFilter;
