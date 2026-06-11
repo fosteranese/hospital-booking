@@ -124,29 +124,28 @@ export function DoctorReferralsPage() {
               <tbody>
                 {referrals.map((r) => {
                   const status = getStatusLabel(r);
+                  const borderColor = status.color.includes('emerald') ? '#10b981' : status.color.includes('purple') ? '#9333ea' : status.color.includes('amber') ? '#f59e0b' : '#cbd5e1';
                   return (
                     <tr key={r.id}
-                      className="cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 transform-gpu"
-                      style={{ transformOrigin: 'center' }}
+                      className="block sm:table-row relative cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md mb-2 sm:mb-0 rounded-lg sm:rounded-none overflow-hidden sm:overflow-visible border sm:border-0 border-slate-100 sm:border-none last:[&>td]:border-b-0"
                       onClick={() => setSelectedAppointment(referralToAppointment(r))}
+                      style={{ transformOrigin: 'center' }}
                     >
-                      <td className="py-4 border-b border-slate-100 align-top px-5 whitespace-nowrap" style={{ borderLeft: `3px solid ${status.color.includes('emerald') ? '#10b981' : status.color.includes('purple') ? '#9333ea' : status.color.includes('amber') ? '#f59e0b' : '#cbd5e1'}` }}>
+                      {/* Full-height accent bar on mobile */}
+                      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg sm:hidden" style={{ backgroundColor: borderColor }} />
+                      <td className="block sm:table-cell pt-3 sm:py-4 pb-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5 sm:border-l-[3px]" data-label="" style={{ borderLeftColor: borderColor }}>
                         <div className="text-sm font-semibold text-slate-900">{r.patient_name}</div>
-                        <div className="text-xs text-slate-400">{formatDate(r.slot_date)} · {formatTime(r.start_time)} — {formatTime(r.end_time)}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">{formatDate(r.slot_date)} · {formatTime(r.start_time)} — {formatTime(r.end_time)}</div>
                       </td>
-                      <td className="py-4 border-b border-slate-100 align-top px-5">
-                        <div className="text-sm text-slate-500">
-                          <span className="text-xs text-slate-400 uppercase tracking-wider">Referred by</span>
-                          <div className="text-sm font-medium text-slate-900">{r.referring_doctor_name}</div>
-                        </div>
+                      <td className="block sm:table-cell py-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="Referred by">
+                        <span className="sm:hidden text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">Referred by</span>
+                        <div className="text-sm font-medium text-slate-900">{r.referring_doctor_name}</div>
                       </td>
-                      <td className="py-4 border-b border-slate-100 align-top px-5">
-                        <div className="text-sm text-slate-500">
-                          <span className="text-xs text-slate-400 uppercase tracking-wider">To</span>
-                          <div className="text-sm font-medium text-slate-900">{r.doctor_name}</div>
-                        </div>
+                      <td className="block sm:table-cell py-1 sm:py-4 border-b sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="To">
+                        <span className="sm:hidden text-[10px] font-medium text-slate-400 uppercase tracking-wider block mb-0.5">To</span>
+                        <div className="text-sm font-medium text-slate-900">{r.doctor_name}</div>
                       </td>
-                      <td className="py-4 border-b border-slate-100 align-top px-5">
+                      <td className="block sm:table-cell py-2 sm:py-4 border-b-0 sm:border-b-slate-100 align-top px-3 sm:px-5" data-label="">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
                           status.color === 'bg-emerald-500' ? 'text-emerald-700 bg-emerald-50' :
                           status.color === 'bg-purple-500' ? 'text-purple-700 bg-purple-50' :
