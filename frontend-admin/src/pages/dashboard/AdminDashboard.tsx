@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, Doctor } from '@/lib/api';
+import { api, Doctor, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
 import { PageHeader } from '@/components/PageHeader';
+import { EmptyState } from '@/components/EmptyState';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { EmptyState } from '@/components/EmptyState';
+import { DataTable } from '@/components/DataTable';
 import { AppointmentDetailModal } from '@/components/AppointmentDetailModal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -15,11 +17,6 @@ import {
   ArrowRight01Icon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
-import { useCachedData } from '@/hooks/useCachedData';
-
-
-
-
 import { formatTime, selectClass } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
 export function AdminDashboard() {
@@ -122,68 +119,38 @@ export function AdminDashboard() {
 
       {/* Table */}
       <Card padding="none">
-        {loading ? (
-          <div className="p-5 space-y-2.5">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-10 bg-slate-100 rounded-md animate-pulse" />
-            ))}
-          </div>
-        ) : appointments.length === 0 ? (
-          <EmptyState
-            icon={Calendar01Icon}
-            title="No appointments found"
-            description={hasFilters ? 'Try adjusting your filters.' : 'Appointments will appear here once patients book them.'}
-            action={hasFilters ? (
-              <Button variant="secondary" size="sm" onClick={clearFilters}>Clear filters</Button>
-            ) : undefined}
-          />
-        ) : (
-          <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Date</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Time</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Doctor</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Status</th>
-                  <th className="text-left text-xs font-medium text-slate-400 px-4 py-2.5">Notes</th>
-                  <th className="w-8 px-4 py-2.5"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map(a => (
-                  <tr
-                    key={a.id}
-                    onClick={() => setSelectedAppointmentId(a.id)}
-                    className="group cursor-pointer transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md border-b border-slate-50 last:border-0"
-                    style={{ transformOrigin: 'center' }}
-                  >
-                    <td className="px-4 py-3 text-sm text-slate-900">{a.slot_date}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{formatTime(a.start_time)} – {formatTime(a.end_time)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="size-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">
-                          {a.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </div>
-                        <span className="text-sm text-slate-900">{a.doctor_name}</span>
-                        {a.referring_doctor_id && (
-                          <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
-                            <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500 shrink-0" />
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3"><StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /></td>
-                    <td className="px-4 py-3 text-sm text-slate-400 max-w-[160px] truncate">{a.notes || '—'}</td>
-                    <td className="px-4 py-3">
-                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DataTable<AppointmentHistoryItem>
+          columns={[
+            { key: 'date', header: 'Date', render: (a) => <span className="text-sm text-slate-900">{a.slot_date}</span> },
+            { key: 'time', header: 'Time', render: (a) => <span className="text-sm text-slate-500">{formatTime(a.start_time)} – {formatTime(a.end_time)}</span> },
+            {
+              key: 'doctor', header: 'Doctor', render: (a) => (
+                <div className="flex items-center gap-2.5">
+                  <div className="size-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white">
+                    {a.doctor_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <span className="text-sm text-slate-900">{a.doctor_name}</span>
+                  {a.referring_doctor_id && (
+                    <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
+                      <HugeiconsIcon icon={UserGroupIcon} className="size-3 text-violet-500 shrink-0" />
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+            { key: 'status', header: 'Status', render: (a) => <StatusDot status={a.status} attended={a.attended} slot_date={a.slot_date} has_conflict={a.has_conflict} /> },
+            { key: 'notes', header: 'Notes', render: (a) => <span className="text-sm text-slate-400 max-w-[160px] truncate block">{a.notes || '—'}</span> },
+            { key: 'arrow', header: '', className: 'w-8', render: () => <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-slate-300 group-hover:text-slate-500 transition-colors" /> },
+          ]}
+          data={appointments}
+          loading={loading}
+          emptyMessage="No appointments found"
+          emptyIcon={Calendar01Icon}
+          emptyAction={hasFilters ? <Button variant="secondary" size="sm" onClick={clearFilters}>Clear filters</Button> : undefined}
+          onRowClick={(a) => setSelectedAppointmentId(a.id)}
+          keyExtractor={(a) => a.id}
+          skeletonRows={5}
+        />
       </Card>
 
       {selectedAppointmentId && (

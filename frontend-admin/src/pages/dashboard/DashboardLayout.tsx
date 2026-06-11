@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { RefreshProvider } from '@/contexts/refresh-context';
 import { RefreshIndicator } from '@/components/RefreshIndicator';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ContentContainerContext = createContext<{
   containerClass: string;
@@ -140,6 +141,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }, [dark]);
 
   const role = (userRole in roleNav ? userRole : 'admin') as keyof typeof roleNav;
   const navGroups = roleNav[role];
@@ -295,6 +305,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
+          {/* Dark mode toggle */}
+          <div className="px-2 pb-0.5">
+            <button
+              onClick={() => setDark(!dark)}
+              className="flex items-center gap-2 w-full h-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors justify-center"
+              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {dark ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-3.5">
+                  <circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-3.5">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
           {/* Collapse toggle — subtle */}
           <div className="px-2 pb-1.5">
             <button
@@ -311,9 +340,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-y-auto bg-background">
         <RefreshProvider>
           <RefreshIndicator />
-          <div className={containerClass}>
-            {children}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className={containerClass}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </RefreshProvider>
       </main>
     </div>
