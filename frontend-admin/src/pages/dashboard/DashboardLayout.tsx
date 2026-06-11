@@ -24,6 +24,8 @@ import {
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/contexts/auth-context';
+import { RefreshProvider } from '@/contexts/refresh-context';
+import { RefreshIndicator } from '@/components/RefreshIndicator';
 import { cn } from '@/lib/utils';
 
 const ContentContainerContext = createContext<{
@@ -289,9 +291,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-background">
+        <RefreshProvider>
+          <RefreshIndicator />
           <div className={containerClass}>
-          {children}
-        </div>
+            {children}
+          </div>
+        </RefreshProvider>
       </main>
     </div>
   );

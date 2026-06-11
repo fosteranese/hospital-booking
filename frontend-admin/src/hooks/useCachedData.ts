@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCached, setCache } from '@/lib/cache';
+import { useRefresh } from '@/contexts/refresh-context';
 
 const inflight = new Map<string, Promise<any>>();
 
@@ -7,16 +8,22 @@ export function useCachedData<T>(
   cacheKey: string | null,
   fetcher: () => Promise<T>,
   options?: { staleTime?: number; enabled?: boolean }
-): { data: T | null; loading: boolean; error: string; refresh: () => Promise<void> } {
+): { data: T | null; loading: boolean; refreshing: boolean; error: string; refresh: () => Promise<void> } {
   const cached = cacheKey ? getCached<T>(cacheKey) : null;
   const [data, setData] = useState<T | null>(cached);
   const [loading, setLoading] = useState(!cached);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const mountedRef = useRef(true);
   const keyRef = useRef(cacheKey);
   const hasCachedRef = useRef(!!cached);
+  const fetcherRef = useRef(fetcher);
+  const staleTimeRef = useRef(options?.staleTime);
+  const { registerRefresh, unregisterRefresh } = useRefresh();
 
   keyRef.current = cacheKey;
+  fetcherRef.current = fetcher;
+  staleTimeRef.current = options?.staleTime;
 
   const fetch = useCallback((silent = false): Promise<void> => {
     if (!cacheKey) return Promise.resolve();
@@ -30,27 +37,37 @@ export function useCachedData<T>(
     const pending = inflight.get(key);
     if (pending) return pending.then(() => {}, () => {});
 
-    const promise = fetcher()
+    if (silent) {
+      setRefreshing(true);
+      registerRefresh();
+    }
+
+    const promise = fetcherRef.current()
       .then(result => {
-        setCache(key, result, options?.staleTime);
+        setCache(key, result, staleTimeRef.current);
         if (mountedRef.current && keyRef.current === key) {
           setData(result);
           setLoading(false);
+          setRefreshing(false);
         }
       })
       .catch(e => {
         if (mountedRef.current && keyRef.current === key) {
           setError(e.message || 'Failed to load');
           setLoading(false);
+          setRefreshing(false);
         }
       })
       .finally(() => {
         inflight.delete(key);
+        if (silent) {
+          unregisterRefresh();
+        }
       });
 
     inflight.set(key, promise);
     return promise;
-  }, [cacheKey, fetcher, options?.staleTime]);
+  }, [cacheKey, registerRefresh, unregisterRefresh]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -71,5 +88,5 @@ export function useCachedData<T>(
     return fetch(false);
   }, [fetch]);
 
-  return { data, loading, error, refresh };
+  return { data, loading, refreshing, error, refresh };
 }

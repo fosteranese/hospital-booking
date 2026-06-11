@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
 import { useCachedData } from '@/hooks/useCachedData';
 import { invalidateCache } from '@/lib/cache';
 import { PageHeader } from '@/components/PageHeader';
@@ -123,6 +124,15 @@ export function DoctorConflictsPage() {
     if (doctorId) invalidateCache(`appointments:conflicts:${doctorId}`);
     fetchConflicts();
   }, [fetchConflicts, doctorId]);
+
+  const { setContainerClass } = useContentContainer();
+
+  useEffect(() => {
+    setContainerClass(selectedAppointment
+      ? 'max-w-[2000px] lg:max-w-[calc(80rem+480px)] mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200'
+      : 'max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+    return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
+  }, [selectedAppointment, setContainerClass]);
 
   const handleResolved = () => {
     refreshAll();
