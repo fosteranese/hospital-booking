@@ -32,7 +32,6 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
     setDatesLoading(true);
     setSelectedDate('');
     setSelectedSlot(null);
-    setSlots([]);
     setError('');
     api.getAvailableDoctorDates(appointment.doctor_id, token, true)
       .then(res => {

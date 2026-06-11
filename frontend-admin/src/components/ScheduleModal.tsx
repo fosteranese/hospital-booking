@@ -55,7 +55,6 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
     setDatesLoading(true);
     setSelectedDate('');
     setSelectedSlot(null);
-    setSlots([]);
     setError('');
     api.getAvailableDoctorDates(targetDoctorId, token, false)
       .then(res => { setAvailableDates(res.dates); if (res.dates.length > 0) setSelectedDate(res.dates[0]); })
