@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCachedData } from '@/hooks/useCachedData';
+import { RefreshButton } from '@/components/RefreshButton';
+import { ErrorAlert } from '@/components/ErrorAlert';
 import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
@@ -12,7 +14,6 @@ import {
   ArrowRight01Icon,
   CheckmarkCircle01Icon,
   Cancel01Icon,
-  AlertCircleIcon,
   TimeScheduleIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
@@ -132,11 +133,7 @@ export function TodayPage() {
           description={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           icon={Calendar01Icon}
         />
-        <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all shrink-0" title="Refresh data">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
-            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-        </button>
+        <RefreshButton onClick={refreshAll} />
         <select
           value={selectedDoctor}
           onChange={e => setSelectedDoctor(e.target.value)}
@@ -149,12 +146,7 @@ export function TodayPage() {
         </select>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
-          <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <ErrorAlert message={error} variant="compact" />}
 
       {!loading && (
         <QuickActionsBar

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { api, Doctor, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
+import { RefreshButton } from '@/components/RefreshButton';
+import { ErrorAlert } from '@/components/ErrorAlert';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { Card } from '@/components/Card';
@@ -13,7 +15,6 @@ import {
   Calendar01Icon,
   Download01Icon,
   FilterIcon,
-  AlertCircleIcon,
   ArrowRight01Icon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
@@ -69,11 +70,7 @@ export function AdminDashboard() {
         icon={Calendar01Icon}
         actions={
           <div className="flex items-center gap-2">
-            <button onClick={refreshAll} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4 text-muted-foreground">
-                <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-              </svg>
-            </button>
+            <RefreshButton onClick={refreshAll} size="sm" />
             <Button variant="secondary" onClick={handleExport} icon={Download01Icon} size="sm">
               Export CSV
             </Button>
@@ -81,12 +78,7 @@ export function AdminDashboard() {
         }
       />
 
-      {error && (
-        <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 px-3.5 py-2.5 rounded-lg">
-          <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <ErrorAlert message={error} variant="compact" />}
 
       {/* Filter toolbar */}
       <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_1px_2px_-1px_rgb(0,0,0,0.04)] px-3.5 py-2">

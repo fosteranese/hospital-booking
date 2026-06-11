@@ -10,6 +10,8 @@ import { RescheduleModal } from '@/components/RescheduleModal';
 import { ScheduleModal } from '@/components/ScheduleModal';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { PageHeader } from '@/components/PageHeader';
+import { RefreshButton } from '@/components/RefreshButton';
+import { ErrorAlert } from '@/components/ErrorAlert';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -179,11 +181,7 @@ export function DoctorTodayAppointmentsPage() {
           icon={Calendar01Icon}
         />
         <div className="flex items-center gap-2 shrink-0 self-start pt-1">
-          <button onClick={refreshAll} className="w-12 h-12 flex items-center justify-center rounded-lg border border-border bg-card shadow-sm hover:bg-muted transition-all" title="Refresh data">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5 text-muted-foreground">
-              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-            </svg>
-          </button>
+          <RefreshButton onClick={refreshAll} />
         </div>
       </div>
 
@@ -254,12 +252,7 @@ export function DoctorTodayAppointmentsPage() {
         </div>
       </div>
 
-      {todayError && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
-          <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {todayError}
-        </div>
-      )}
+      {todayError && <ErrorAlert message={todayError} />}
 
       <Card padding="none">
         {todayLoading ? (
