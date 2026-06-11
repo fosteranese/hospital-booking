@@ -32,8 +32,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { formatTime, getEffectiveStatus, getWeekRange, PatientAvatar } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
-
-
+import { useToast } from '@/contexts/toast-context';
 
 
 
@@ -253,6 +252,7 @@ function InfoCard({
 
 export function DoctorDashboard() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const { token, otpIdentifier, doctorCanCreateAppointments, doctorCanRefer,
     attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
@@ -317,6 +317,7 @@ export function DoctorDashboard() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
+      addToast(pendingAttendance.attended ? 'Attendance marked' : 'Marked as missed', 'success');
       setPendingAttendance(null);
       setSelectedAppointment(null);
       refreshAll();
@@ -324,7 +325,7 @@ export function DoctorDashboard() {
       console.error('Failed to update attendance:', e);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, refreshAll]);
+  }, [pendingAttendance, token, refreshAll, addToast]);
 
   const appts = appointments ?? [];
 

@@ -25,8 +25,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { formatTime, PatientAvatar } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
-
-
+import { useToast } from '@/contexts/toast-context';
 
 
 
@@ -56,6 +55,7 @@ export function DoctorTodayAppointmentsPage() {
   const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
+  const { addToast } = useToast();
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: rawToday, loading: todayLoading, error: todayError, refresh: fetchToday, backgroundRefresh } = useCachedData(
@@ -112,6 +112,7 @@ export function DoctorTodayAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
+      addToast(pendingAttendance.attended ? 'Attendance marked' : 'Marked as missed', 'success');
       refreshAll();
       setPendingAttendance(null);
       setSelectedAppointment(null);
@@ -119,7 +120,7 @@ export function DoctorTodayAppointmentsPage() {
       console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, refreshAll]);
+  }, [pendingAttendance, token, refreshAll, addToast]);
 
   const selectedForModal = pendingAttendance
     ? todayAppts.find(a => a.id === pendingAttendance.id)

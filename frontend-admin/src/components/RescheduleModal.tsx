@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, SlotResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/contexts/toast-context';
 import { Button } from '@/components/Button';
 import { SlotPicker } from '@/components/SlotPicker';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -16,6 +17,7 @@ interface RescheduleModalProps {
 
 export function RescheduleModal({ open, appointment, onClose, onResolved }: RescheduleModalProps) {
   const { token } = useAuth();
+  const { addToast } = useToast();
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [datesLoading, setDatesLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
@@ -70,6 +72,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
         end_time: selectedSlotData.end_time,
         doctor_id: appointment.doctor_id,
       }, token);
+      addToast('Appointment rescheduled successfully', 'success');
       onResolved();
       onClose();
     } catch (e: any) {
@@ -85,7 +88,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-slate-900">Reschedule Appointment</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} data-close-modal className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>

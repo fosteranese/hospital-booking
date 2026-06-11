@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { ClinicProvider } from '@/contexts/clinic-context';
+import { ToastProvider } from '@/contexts/toast-context';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardLayout, ContentContainerProvider } from '@/pages/dashboard/DashboardLayout';
 import { AdminDashboard } from '@/pages/dashboard/AdminDashboard';
@@ -13,6 +14,11 @@ import { DoctorConflictsPage } from '@/pages/dashboard/DoctorConflictsPage';
 import { DoctorReferralsPage } from '@/pages/dashboard/DoctorReferralsPage';
 import { DoctorPastAppointmentsPage } from '@/pages/dashboard/DoctorPastAppointmentsPage';
 import { SchedulerDashboard } from '@/pages/dashboard/SchedulerDashboard';
+import { CalendarPage } from '@/pages/dashboard/CalendarPage';
+import { DashboardUnavailability } from '@/pages/dashboard/DashboardUnavailability';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { DoctorsPage } from '@/pages/DoctorsPage';
+import { AdminSettings } from '@/pages/dashboard/AdminSettings';
 import { ApplicationSettingsPage } from '@/pages/dashboard/ApplicationSettingsPage';
 import { DoctorSchedulesPage } from '@/pages/DoctorSchedulesPage';
 import { PatientSearchPage } from '@/pages/PatientSearchPage';
@@ -66,6 +72,11 @@ function AppRoutes() {
         {dashboardRoute('/dashboard/schedules', <DoctorSchedulesPage />)}
         {dashboardRoute('/dashboard/patients', <PatientSearchPage />)}
         {dashboardRoute('/dashboard/users', <UsersPage />)}
+        {dashboardRoute('/dashboard/calendar', <CalendarPage />)}
+        {dashboardRoute('/dashboard/unavailability', <DashboardUnavailability />)}
+        {dashboardRoute('/dashboard/analytics', <AnalyticsPage />)}
+        {dashboardRoute('/dashboard/doctors', <DoctorsPage />)}
+        {dashboardRoute('/dashboard/settings', <AdminSettings />)}
         {dashboardRoute('/dashboard/app-settings', <ApplicationSettingsPage />)}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -78,7 +89,9 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ClinicProvider>
-          <AppRoutes />
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
         </ClinicProvider>
       </AuthProvider>
     </BrowserRouter>

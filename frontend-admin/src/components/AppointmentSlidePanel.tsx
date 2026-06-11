@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppointmentHistoryItem } from '@/lib/api';
 import { formatTime, formatDate } from '@/lib/helpers';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   CheckmarkCircle01Icon,
@@ -43,8 +44,11 @@ export function AppointmentSlidePanel({
   missedReferralDays?: number;
   forcedScheduleType?: 'follow-up' | 'referral';
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [switching, setSwitching] = useState(false);
+
+  useFocusTrap(panelRef, visible);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
@@ -123,7 +127,7 @@ export function AppointmentSlidePanel({
   return (
     <>
       <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
-      <div className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
+      <div ref={panelRef} className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
         {/* Conflict banner */}
@@ -152,7 +156,7 @@ export function AppointmentSlidePanel({
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Appointment Details</div>
-          <button onClick={handleClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={handleClose} data-close-modal className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, Doctor, SlotResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/contexts/toast-context';
 import { Button } from '@/components/Button';
 import { SlotPicker } from '@/components/SlotPicker';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -19,6 +20,7 @@ interface ScheduleModalProps {
 
 export function ScheduleModal({ open, patientId, patientName, currentDoctorId, currentDoctorName, onClose, onScheduled, forcedType }: ScheduleModalProps) {
   const { token } = useAuth();
+  const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [scheduleType, setScheduleType] = useState<'follow-up' | 'referral'>('follow-up');
   const [knownDoctors, setKnownDoctors] = useState<Doctor[]>([]);
@@ -87,6 +89,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
         end_time: selectedSlotData.end_time,
         notes: notes || undefined,
       }, token);
+      addToast('Appointment created successfully', 'success');
       onScheduled(); onClose();
     } catch (e: any) { setError(e.message || 'Failed'); } finally { setSaving(false); }
   };
@@ -117,7 +120,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
             {forcedType === 'referral' ? 'Refer Patient' : forcedType === 'follow-up' ? 'Schedule Follow-up' : 'Create Appointment'}
           </h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} data-close-modal className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>

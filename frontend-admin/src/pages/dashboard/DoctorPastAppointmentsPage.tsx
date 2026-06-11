@@ -22,6 +22,7 @@ import { useSlidePanel } from '@/hooks/useSlidePanel';
 
 import { formatTime, formatDate, PatientAvatar, daysAgo, isBeforeToday } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
+import { useToast } from '@/contexts/toast-context';
 const filterOptions = [
   { value: 'all', label: 'All' },
   { value: 'name', label: 'Name' },
@@ -51,7 +52,7 @@ export function DoctorPastAppointmentsPage() {
     attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = daysAgo(1);
-
+  const { addToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
@@ -117,6 +118,7 @@ export function DoctorPastAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
+      addToast(pendingAttendance.attended ? 'Attendance marked' : 'Marked as missed', 'success');
       refreshAll();
       setPendingAttendance(null);
       setSelectedAppointment(null);
@@ -124,7 +126,7 @@ export function DoctorPastAppointmentsPage() {
       console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, refreshAll]);
+  }, [pendingAttendance, token, refreshAll, addToast]);
 
   const selectedForModal = pendingAttendance
     ? appointments.find(a => a.id === pendingAttendance.id)

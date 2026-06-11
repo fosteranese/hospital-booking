@@ -29,8 +29,7 @@ import {
 
 import { formatTime, formatDate, PatientAvatar, toDateOnly, isBeforeToday } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
-
-
+import { useToast } from '@/contexts/toast-context';
 
 
 
@@ -61,6 +60,7 @@ export function DoctorAppointmentsPage() {
   const forcedScheduleType = !doctorCanCreateAppointments && doctorCanRefer ? 'referral'
     : doctorCanCreateAppointments && !doctorCanRefer ? 'follow-up'
     : undefined;
+  const { addToast } = useToast();
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
@@ -116,6 +116,7 @@ export function DoctorAppointmentsPage() {
     if (!pendingAttendance) return;
     try {
       await api.markAttendance(pendingAttendance.id, { attended: pendingAttendance.attended, arrival_time: arrivalTime }, token);
+      addToast(pendingAttendance.attended ? 'Attendance marked' : 'Marked as missed', 'success');
       setPendingAttendance(null);
       setSelectedAppointment(null);
       refreshAll();
@@ -123,7 +124,7 @@ export function DoctorAppointmentsPage() {
       console.error(e.message);
       setPendingAttendance(null);
     }
-  }, [pendingAttendance, token, refreshAll]);
+  }, [pendingAttendance, token, refreshAll, addToast]);
 
   const selectedForModal = pendingAttendance
     ? (appointments as AppointmentHistoryItem[]).find(a => a.id === pendingAttendance.id)
