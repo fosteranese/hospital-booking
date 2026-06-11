@@ -468,8 +468,8 @@ export function DoctorUnavailabilityPage() {
       {/* Add Modal — Two-step wizard */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -636,8 +636,8 @@ export function DoctorUnavailabilityPage() {
       {/* Conflict Warning Modal (separate overlay) */}
       {conflictWarning && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setConflictWarning(null)}>
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
             <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
             </div>
@@ -656,8 +656,8 @@ export function DoctorUnavailabilityPage() {
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteConfirm(null)}>
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
             <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
               <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
             </div>

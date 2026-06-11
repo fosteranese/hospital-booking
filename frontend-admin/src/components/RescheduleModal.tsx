@@ -84,8 +84,8 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+      <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-foreground">Reschedule Appointment</h3>
           <button onClick={onClose} data-close-modal aria-label="Close modal" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">

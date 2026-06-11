@@ -126,7 +126,7 @@ export function AppointmentSlidePanel({
 
   return (
     <>
-      <div className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
+      <div className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-200 ease-out lg:hidden dark:bg-black/70 ${animateClass}`} onClick={handleClose} />
       <div ref={panelRef} className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-card shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 

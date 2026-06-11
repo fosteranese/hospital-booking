@@ -98,17 +98,18 @@ export function ConfirmAttendanceModal({
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-200 ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}
-      style={{ backgroundColor: visible ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0)' }}
-      onMouseDown={e => { if (e.target === e.currentTarget && !confirming) onCancel(); }}
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
-        className={`w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden transition-all duration-200 ${
+        className={`absolute inset-0 bg-black/50 dark:bg-black/70 transition-opacity duration-200 ${
+          visible ? 'opacity-100' : 'opacity-0'
+        }`}
+        onMouseDown={e => { if (!confirming) onCancel(); }}
+      />
+      <div
+        className={`relative w-full max-w-sm bg-card rounded-2xl shadow-2xl ring-1 ring-border overflow-hidden transition-all duration-200 ${
           visible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
         }`}
+        onMouseDown={e => e.stopPropagation()}
       >
         <div className="px-6 pt-6 pb-2 text-center">
           <div className={`mx-auto size-12 rounded-full flex items-center justify-center mb-4 ${
