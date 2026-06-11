@@ -176,7 +176,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile backdrop */}
       {mobileOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden dark:bg-black/70" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Sidebar — mobile overlay on small screens, static sidebar on desktop */}

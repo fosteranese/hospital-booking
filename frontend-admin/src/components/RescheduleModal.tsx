@@ -84,7 +84,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+      <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
       <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-xl mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-foreground">Reschedule Appointment</h3>
@@ -93,8 +93,8 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
           </button>
         </div>
 
-        <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50' : 'bg-muted'}`}>
-          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${appointment.has_conflict ? 'text-red-600' : 'text-muted-foreground'}`}>
+        <div className={`rounded-xl p-4 mb-5 space-y-2 ${appointment.has_conflict ? 'bg-red-50 dark:bg-red-950/40' : 'bg-muted'}`}>
+          <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${appointment.has_conflict ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
             <HugeiconsIcon icon={appointment.has_conflict ? AlertCircleIcon : Calendar01Icon} className="size-3.5" />
             {appointment.has_conflict ? 'Conflicting Appointment' : 'Reschedule Appointment'}
           </div>
@@ -112,7 +112,7 @@ export function RescheduleModal({ open, appointment, onClose, onResolved }: Resc
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50 mb-4">
+          <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-4 py-3 rounded-lg ring-1 ring-red-200/50 dark:ring-red-900/50 mb-4">
             <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
             {error}
           </div>

@@ -131,10 +131,10 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
                       className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                         active
                           ? val === true
-                            ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-300 dark:ring-emerald-700/50'
                             : val === false
-                            ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
-                            : 'bg-slate-100 text-foreground ring-1 ring-border'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 ring-1 ring-red-300 dark:ring-red-700/50'
+                            : 'bg-slate-100 dark:bg-slate-800/40 text-foreground ring-1 ring-border'
                           : 'bg-transparent text-muted-foreground hover:bg-accent ring-1 ring-border'
                       }`}
                     >
@@ -144,7 +144,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
                 })}
               </div>
               ) : (
-                <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">Attendance can only be marked on the day of the appointment.</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 rounded-lg">Attendance can only be marked on the day of the appointment.</p>
               );
             })()}
           </div>
@@ -163,7 +163,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
           {event.cancellation_reason && (
             <div>
               <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Cancellation Reason</div>
-              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{event.cancellation_reason}</div>
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg">{event.cancellation_reason}</div>
             </div>
           )}
         </div>
@@ -171,11 +171,11 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
         <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/20">
           {showConfirmDelete ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-red-600 font-medium">Cancel this appointment?</span>
+              <span className="text-sm text-red-600 dark:text-red-400 font-medium">Cancel this appointment?</span>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-medium bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-400 transition-colors disabled:opacity-50"
               >
                 {deleting ? <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>Cancelling...</span></span> : 'Yes, Cancel'}
               </button>
@@ -190,7 +190,7 @@ export function EventDetailModal({ event, open, onClose, onUpdate, onDelete }: E
             <button
               onClick={() => setShowConfirmDelete(true)}
               disabled={event.status === 'cancelled'}
-              className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel Appointment
             </button>

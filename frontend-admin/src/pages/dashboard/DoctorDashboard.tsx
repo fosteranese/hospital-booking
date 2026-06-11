@@ -593,13 +593,13 @@ export function DoctorDashboard() {
           <h3 className="text-sm font-semibold text-foreground">Today's Schedule</h3>
           <div className="ml-auto flex items-center gap-2">
             {todayConflicts.length > 0 && (
-              <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full">
                 {todayConflicts.length} conflict{todayConflicts.length !== 1 ? 's' : ''}
               </span>
             )}
             <button
               onClick={() => navigate('/dashboard/today-appointments')}
-              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2.5 py-1 rounded-lg transition-colors"
             >
               View All
               <HugeiconsIcon icon={ArrowRight01Icon} className="size-3" />
@@ -637,7 +637,7 @@ export function DoctorDashboard() {
                       return (
                         <tr
                           key={a.id}
-                          className={`cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30' : ''}`}
+                          className={`cursor-pointer transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md group last:[&>td]:border-b-0 ${a.has_conflict ? 'bg-red-50/30 dark:bg-red-950/30' : ''}`}
                           onClick={() => setSelectedAppointment(a)}
                           style={{ transformOrigin: 'center' }}
                         >
@@ -653,7 +653,7 @@ export function DoctorDashboard() {
                           <td className="min-w-0 py-4 border-b border-border align-top">
                             <div className="flex items-center gap-1.5">
                               <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
-                              {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />}
+                              {a.has_conflict && <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 dark:text-red-400 shrink-0" />}
                               {a.referring_doctor_id && (
                                 <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                                   <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />

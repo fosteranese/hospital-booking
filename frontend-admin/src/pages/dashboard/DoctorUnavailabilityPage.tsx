@@ -388,7 +388,7 @@ export function DoctorUnavailabilityPage() {
                         </td>
                         <td className="py-4 border-b border-border align-top px-5">
                           {hasConflicts ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 px-2.5 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-full">
                               <HugeiconsIcon icon={AlertCircleIcon} className="size-3" />
                               {u.conflict_count ?? 0}
                             </span>
@@ -402,10 +402,10 @@ export function DoctorUnavailabilityPage() {
                         <td className="py-4 border-b border-border align-top">
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(u.id); }}
-                            className="p-1.5 rounded-md hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors opacity-0 group-hover:opacity-100"
                             title="Delete"
                           >
-                            <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-400" />
+                            <HugeiconsIcon icon={Delete01Icon} className="size-4 text-red-400 dark:text-red-500" />
                           </button>
                         </td>
                       </tr>
@@ -426,7 +426,7 @@ export function DoctorUnavailabilityPage() {
                                   {conflicts[u.id].map(a => {
                                     return (
                                       <div key={a.id} className="flex items-center gap-3 px-8 py-2.5 border-b border-border last:border-b-0">
-                                        <div className="size-7 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-semibold text-red-600 shrink-0">
+                                        <div className="size-7 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-[10px] font-semibold text-red-600 dark:text-red-400 shrink-0">
                                           {(a.patient_name || 'P').split(' ').filter(Boolean).slice(0, 2).map(w => w.charAt(0).toUpperCase()).join('')}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -439,7 +439,7 @@ export function DoctorUnavailabilityPage() {
                                         <div className="shrink-0">
                                           <button
                                             onClick={() => setRescheduleTarget(a)}
-                                            className="text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                            className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 px-2.5 py-1.5 rounded-lg transition-colors"
                                           >
                                             <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 mr-1" />
                                             Reschedule
@@ -468,7 +468,7 @@ export function DoctorUnavailabilityPage() {
       {/* Add Modal — Two-step wizard */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowModal(false)}>
-          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
           <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-xl mx-4 p-6" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
@@ -636,10 +636,10 @@ export function DoctorUnavailabilityPage() {
       {/* Conflict Warning Modal (separate overlay) */}
       {conflictWarning && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setConflictWarning(null)}>
-          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
           <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
+            <div className="mx-auto size-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-base font-bold text-foreground mb-1">Conflicts Detected</h3>
             <p className="text-sm text-muted-foreground mb-6">
@@ -656,10 +656,10 @@ export function DoctorUnavailabilityPage() {
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setDeleteConfirm(null)}>
-          <div className="absolute inset-0 bg-black/50 dark:bg-black/70" />
+          <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm" />
           <div className="relative bg-card rounded-2xl shadow-2xl ring-1 ring-border w-full max-w-sm mx-4 p-6 text-center" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto size-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600" />
+            <div className="mx-auto size-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center mb-4">
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-base font-bold text-foreground mb-1">Delete Unavailability?</h3>
             <p className="text-sm text-muted-foreground mb-6">

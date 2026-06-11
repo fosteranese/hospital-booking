@@ -100,7 +100,7 @@ export function ConfirmAttendanceModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div
-        className={`absolute inset-0 bg-black/50 dark:bg-black/70 transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
           visible ? 'opacity-100' : 'opacity-0'
         }`}
         onMouseDown={e => { if (!confirming) onCancel(); }}
@@ -161,11 +161,11 @@ export function ConfirmAttendanceModal({
             ref={confirmBtnRef}
             onClick={handleConfirm}
             disabled={confirming}
-            className={`flex-1 h-11 text-sm font-semibold text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${
-              actionColor === 'emerald'
-                ? 'bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-400'
-                : 'bg-red-500 hover:bg-red-600 disabled:bg-red-400'
-            }`}
+              className={`flex-1 h-11 text-sm font-semibold text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 ${
+                actionColor === 'emerald'
+                  ? 'bg-emerald-500 dark:bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 disabled:bg-emerald-400 dark:disabled:bg-emerald-600'
+                  : 'bg-red-500 dark:bg-red-500 hover:bg-red-600 dark:hover:bg-red-400 disabled:bg-red-400 dark:disabled:bg-red-600'
+              }`}
           >
             {confirming ? (
               <span className="flex items-center gap-2"><HugeiconsIcon icon={Loading02Icon} className="size-4 animate-spin" /><span>{actionLabel === 'Attended' ? 'Confirming...' : 'Confirming...'}</span></span>

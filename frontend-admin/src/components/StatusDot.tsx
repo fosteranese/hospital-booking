@@ -30,10 +30,10 @@ export function StatusDot({
   if (has_conflict) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 text-xs text-red-600 font-medium"
+        className="inline-flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-medium"
         title="Conflict"
       >
-        <span className="size-1.5 rounded-full bg-red-600" />
+        <span className="size-1.5 rounded-full bg-red-600 dark:bg-red-500" />
         Conflict
       </span>
     );

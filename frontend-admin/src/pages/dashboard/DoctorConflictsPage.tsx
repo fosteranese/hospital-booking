@@ -101,7 +101,7 @@ export function DoctorConflictsPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
+        <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-4 py-3 rounded-lg ring-1 ring-red-200/50 dark:ring-red-900/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
           {error}
         </div>
@@ -164,7 +164,7 @@ export function DoctorConflictsPage() {
                             <td className="min-w-0 py-4 border-b border-border align-top">
                               <div className="flex items-center gap-1.5">
                                 <div className="text-base font-medium text-foreground truncate">{a.patient_name || 'Patient'}</div>
-                                <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
+                                <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 dark:text-red-400 shrink-0" />
                                 {a.referring_doctor_id && (
                                   <span title={a.referring_doctor_name ? `Referred by Dr. ${a.referring_doctor_name}` : 'Referred by another doctor'}>
                                     <HugeiconsIcon icon={UserGroupIcon} className="size-3.5 text-violet-500 shrink-0" />
@@ -184,7 +184,7 @@ export function DoctorConflictsPage() {
                                 {isPending && (
                                   <button
                                     onClick={() => setRescheduleTarget(a)}
-                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors"
+                                    className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 px-2.5 py-1.5 rounded-lg transition-colors"
                                   >
                                     <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5" />
                                     Reschedule

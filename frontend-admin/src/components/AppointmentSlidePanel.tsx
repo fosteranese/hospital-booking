@@ -126,18 +126,18 @@ export function AppointmentSlidePanel({
 
   return (
     <>
-      <div className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-200 ease-out lg:hidden dark:bg-black/70 ${animateClass}`} onClick={handleClose} />
+      <div className={`fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-200 ease-out lg:hidden ${animateClass}`} onClick={handleClose} />
       <div ref={panelRef} className={`fixed top-0 right-0 h-full w-full lg:w-[480px] bg-card shadow-2xl z-50 flex flex-col transition-transform duration-200 ease-out ${slideClass}`}>
         <div className={`h-1 shrink-0 ${status.bar}`} />
 
         {/* Conflict banner */}
         {appointment.has_conflict && (
-          <div className="px-7 py-2.5 bg-red-50 border-b border-red-100">
+          <div className="px-7 py-2.5 bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900/60">
             <div className="flex items-center gap-1.5">
-              <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 shrink-0" />
-              <span className="text-xs text-red-700 font-medium">Scheduling Conflict</span>
+              <HugeiconsIcon icon={AlertCircleIcon} className="size-3.5 text-red-500 dark:text-red-400 shrink-0" />
+              <span className="text-xs text-red-700 dark:text-red-400 font-medium">Scheduling Conflict</span>
             </div>
-            <p className="text-[11px] text-red-600 mt-0.5 ml-5">
+            <p className="text-[11px] text-red-600 dark:text-red-400 mt-0.5 ml-5">
               This appointment overlaps with your unavailability period. Consider rescheduling.
             </p>
           </div>
@@ -252,7 +252,7 @@ export function AppointmentSlidePanel({
             <div className="mt-5 bg-muted rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-9 rounded-lg bg-card flex items-center justify-center shadow-sm">
-                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-500" />
+                  <HugeiconsIcon icon={AlertCircleIcon} className="size-4 text-red-500 dark:text-red-400" />
                 </div>
                 <div>
                   <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Conflict — Unavailability</div>
@@ -323,7 +323,7 @@ export function AppointmentSlidePanel({
             <div className="flex gap-3 px-7">
               <button
                 onClick={() => onRequestAttendance(appointment.id, true)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-500 dark:bg-emerald-500 rounded-xl hover:bg-emerald-600 dark:hover:bg-emerald-400 transition-colors shadow-sm"
               >
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                 Attended
