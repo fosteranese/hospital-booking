@@ -156,7 +156,7 @@ export function AppointmentSlidePanel({
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-5 pb-2 shrink-0">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-[0.12em]">Appointment Details</div>
-          <button onClick={handleClose} data-close-modal className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={handleClose} data-close-modal aria-label="Close panel" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>

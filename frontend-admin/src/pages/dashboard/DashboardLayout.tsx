@@ -168,6 +168,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
+        aria-label="Open navigation menu"
         className="fixed top-3 left-3 z-50 lg:hidden size-9 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 transition-colors"
       >
         <HugeiconsIcon icon={Menu01Icon} className="size-4 text-slate-600" />

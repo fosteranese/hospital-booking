@@ -120,7 +120,7 @@ export function ScheduleModal({ open, patientId, patientName, currentDoctorId, c
             {forcedType === 'referral' ? 'Refer Patient' : forcedType === 'follow-up' ? 'Schedule Follow-up' : 'Create Appointment'}
           </h3>
           </div>
-          <button onClick={onClose} data-close-modal className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <button onClick={onClose} data-close-modal aria-label="Close modal" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
             <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
           </button>
         </div>
