@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { format, isToday } from 'date-fns';
 import { AppointmentHistoryItem } from '@/lib/api';
 import { getStatusColor, timeToPercent, durationPercent, HOUR_HEIGHT, HOURS } from './useCurrentTime';
@@ -13,6 +13,7 @@ interface DayViewProps {
 
 export function DayView({ appointments, currentDate, loading, onEventClick, onSlotClick }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const now = new Date();
 
   const dateStr = format(currentDate, 'yyyy-MM-dd');
@@ -28,6 +29,21 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
       const scrollTarget = (nowMin / 1440) * 24 * HOUR_HEIGHT - HOUR_HEIGHT * 3;
       scrollRef.current.scrollTop = Math.max(0, scrollTarget);
     }
+  }, []);
+
+  // Measure scrollbar width so header padding can match it
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const update = () => {
+      setScrollbarWidth(el.offsetWidth - el.clientWidth);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   if (loading && appointments.length === 0) {
@@ -48,8 +64,8 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
 
   return (
     <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="border-b border-border bg-card sticky top-0 z-10">
+      {/* Header — outside scroll, with padding matching scrollbar width */}
+      <div className="border-b border-border bg-card shrink-0" style={{ paddingRight: scrollbarWidth }}>
         <div className="text-center py-3">
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {format(currentDate, 'EEEE')}
@@ -68,8 +84,8 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
             {HOURS.map((h, i) => (
               <div
                 key={h}
-                className="absolute right-2 text-[10px] font-medium text-muted-foreground leading-none"
-                style={{ top: i * HOUR_HEIGHT - 4 }}
+                className="absolute right-2 text-[10px] font-medium text-muted-foreground"
+                style={{ top: i * HOUR_HEIGHT, transform: 'translateY(-50%)' }}
               >
                 {h}
               </div>
@@ -88,7 +104,9 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
                   const timeStr = `${String(h).padStart(2, '0')}:00`;
                   onSlotClick(currentDate, timeStr);
                 }}
-              />
+              >
+                <div className="h-1/2 border-b border-dashed border-border/30 pointer-events-none" />
+              </div>
             ))}
 
             {/* Events */}
@@ -99,25 +117,25 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
 
               return (
                 <div
-                  key={ev.id}
-                  onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                  className="absolute left-1 right-1 rounded-md px-2 py-1 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 shadow-sm"
-                  style={{
-                    top: `${top}%`,
-                    height: `${height}%`,
-                    minHeight: 22,
-                    backgroundColor: color + '18',
-                    borderLeft: `3px solid ${color}`,
-                  }}
-                >
-                  <div className="text-sm font-semibold text-foreground leading-tight truncate">
-                    {ev.patient_name}
+                      key={ev.id}
+                      onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                      className="absolute left-1 right-1 rounded-sm px-2 py-1.5 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 shadow-sm flex items-center gap-1.5"
+                      style={{
+                        top: `calc(${top}% + 2px)`,
+                        height: `calc(${height}% - 5px)`,
+                        minHeight: 22,
+                        backgroundColor: color + '18',
+                        borderLeft: `3px solid ${color}`,
+                      }}
+                  >
+                    <div
+                      className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold text-white leading-none"
+                      style={{ backgroundColor: color }}
+                    >
+                      {ev.patient_name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
+                    </div>
+                    <span className="text-sm font-semibold text-foreground truncate">{ev.patient_name}</span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground leading-tight truncate">
-                    {ev.start_time.slice(0, 5)}–{ev.end_time.slice(0, 5)}
-                    {ev.doctor_name ? ` · ${ev.doctor_name}` : ''}
-                  </div>
-                </div>
               );
             })}
 

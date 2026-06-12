@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import {
   startOfWeek, endOfWeek, eachDayOfInterval,
   format, isSameDay, isToday,
@@ -16,6 +16,7 @@ interface WeekViewProps {
 
 export function WeekView({ appointments, currentDate, loading, onEventClick, onSlotClick }: WeekViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollbarWidth, setScrollbarWidth] = useState(0);
   const now = new Date();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -43,6 +44,21 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
     }
   }, []);
 
+  // Measure scrollbar width so header padding can match it
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const update = () => {
+      setScrollbarWidth(el.offsetWidth - el.clientWidth);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   if (loading && appointments.length === 0) {
     return (
       <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden">
@@ -61,8 +77,8 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
 
   return (
     <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="flex border-b border-border bg-card sticky top-0 z-10">
+      {/* Header — outside scroll, with padding matching scrollbar width */}
+      <div className="flex border-b border-border bg-card shrink-0" style={{ paddingRight: scrollbarWidth }}>
         <div className="w-14 shrink-0 border-r border-border" />
         {days.map((day) => {
           const today = isToday(day);
@@ -92,8 +108,8 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
             {HOURS.map((h, i) => (
               <div
                 key={h}
-                className="absolute right-2 text-[10px] font-medium text-muted-foreground leading-none"
-                style={{ top: i * HOUR_HEIGHT - 4 }}
+                className="absolute right-2 text-[10px] font-medium text-muted-foreground"
+                style={{ top: i * HOUR_HEIGHT, transform: 'translateY(-50%)' }}
               >
                 {h}
               </div>
@@ -104,9 +120,15 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
           {days.map((day) => {
             const dateStr = format(day, 'yyyy-MM-dd');
             const dayEvents = eventsByDate.get(dateStr) || [];
+            const today = isToday(day);
 
             return (
-              <div key={day.toISOString()} className="flex-1 relative border-r border-border last:border-r-0">
+              <div
+                key={day.toISOString()}
+                className={`flex-1 relative border-r border-border last:border-r-0 ${
+                  today ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''
+                }`}
+              >
                 {/* Hour grid lines */}
                 {HOURS.map((_, i) => (
                   <div
@@ -117,7 +139,9 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
                       const timeStr = `${String(h).padStart(2, '0')}:00`;
                       onSlotClick(day, timeStr);
                     }}
-                  />
+                  >
+                    <div className="h-1/2 border-b border-dashed border-border/30 pointer-events-none" />
+                  </div>
                 ))}
 
                 {/* Events */}
@@ -130,37 +154,46 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
                     <div
                       key={ev.id}
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="absolute left-0.5 right-0.5 rounded px-1 py-0.5 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10"
+                      className="absolute left-0.5 right-0.5 rounded-sm px-1 py-1 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 flex items-center gap-1"
                       style={{
-                        top: `${top}%`,
-                        height: `${height}%`,
+                        top: `calc(${top}% + 2px)`,
+                        height: `calc(${height}% - 5px)`,
                         minHeight: 18,
                         backgroundColor: color + '20',
                         borderLeft: `2.5px solid ${color}`,
                       }}
                     >
-                      <div className="text-[11px] font-semibold text-foreground leading-tight truncate">
-                        {ev.patient_name}
+                      <div
+                        className="size-4 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold text-white leading-none"
+                        style={{ backgroundColor: color }}
+                      >
+                        {ev.patient_name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                       </div>
-                      <div className="text-[10px] text-muted-foreground leading-tight truncate">
-                        {ev.start_time.slice(0, 5)}–{ev.end_time.slice(0, 5)}
-                      </div>
+                      <span className="text-[11px] font-semibold text-foreground truncate">{ev.patient_name}</span>
                     </div>
                   );
                 })}
+
+                {/* Current time indicator — per column */}
+                <div
+                  className="absolute left-0 right-0 z-20 pointer-events-none"
+                  style={{ top: `${timeToPercent(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)}%` }}
+                >
+                  {today ? (
+                    <div className="h-0.5 bg-red-500" />
+                  ) : (
+                    <div
+                      className="h-0.5 bg-red-500 opacity-60"
+                      style={{
+                        WebkitMaskImage: 'repeating-linear-gradient(to right, black 0px, black 6px, transparent 6px, transparent 10px)',
+                        maskImage: 'repeating-linear-gradient(to right, black 0px, black 6px, transparent 6px, transparent 10px)',
+                      }}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
-
-          {/* Current time indicator — spans all days */}
-          <div
-            className="absolute left-14 right-0 z-20 pointer-events-none"
-            style={{ top: `${timeToPercent(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)}%` }}
-          >
-            <div className="relative">
-              <div className="h-0.5 bg-red-500" />
-            </div>
-          </div>
         </div>
       </div>
     </div>
