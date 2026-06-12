@@ -13,17 +13,18 @@ export function UnavailabilityConflictBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const profile = useAuth().profile;
+
   useEffect(() => {
     (async () => {
       try {
-        const profile: any = await api.getProfile(token);
-        if (!profile.doctor_id) { setLoading(false); return; }
+        if (!profile?.doctor_id) { setLoading(false); return; }
         const { total_conflicts } = await api.getUnavailabilityConflictSummary(profile.doctor_id, token);
         setTotal(total_conflicts);
       } catch { /* ignore */ }
       finally { setLoading(false); }
     })();
-  }, [token]);
+  }, [token, profile?.doctor_id]);
 
   if (loading || dismissed || total === 0) return null;
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, Doctor, DoctorUnavailability } from '@/lib/api';
+import { api, DoctorUnavailability } from '@/lib/api';
+import { useDoctors } from '@/hooks/useDoctors';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
 import { PageHeader } from '@/components/PageHeader';
@@ -13,7 +14,7 @@ import { Clock01Icon, Add01Icon, Delete01Icon, AlertCircleIcon, Calendar02Icon }
 import { inputClass } from '@/lib/helpers';
 export function DashboardUnavailability() {
   const { token, userRole } = useAuth();
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const { doctors } = useDoctors();
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [unavail, setUnavail] = useState<DoctorUnavailability[]>([]);
   const [error, setError] = useState('');
@@ -23,10 +24,6 @@ export function DashboardUnavailability() {
   const [newEnd, setNewEnd] = useState('');
   const [newReason, setNewReason] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    api.getDoctors().then(setDoctors).catch(() => {});
-  }, []);
 
   const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
     selectedDoctorId ? `unavailability:admin:${selectedDoctorId}` : null,

@@ -46,27 +46,54 @@ class TokenStore {
 
 export const tokenStore = new TokenStore();
 
+const REQUEST_TIMEOUT = 15_000;
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  const doFetch = async (signal: AbortSignal): Promise<Response> => {
+    const mergedOptions: RequestInit = {
+      ...options,
+      signal,
+      headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
+    };
+    try {
+      return await fetch(`${API_BASE}${path}`, mergedOptions);
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
+      throw new Error('Unable to reach the server. Please check your internet connection and try again.');
+    }
+  };
+
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
-    });
-  } catch {
-    throw new Error('Unable to reach the server. Please check your internet connection and try again.');
+    res = await doFetch(controller.signal);
+  } catch (e) {
+    clearTimeout(timeoutId);
+    throw e;
   }
 
   if (res.status === 401 && tokenStore.token) {
     try {
+      controller.abort();
       await tokenStore.refresh();
       const newHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) };
       newHeaders['Authorization'] = `Bearer ${tokenStore.token}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers: newHeaders });
+      const retryController = new AbortController();
+      const retryTimeout = setTimeout(() => retryController.abort(), REQUEST_TIMEOUT);
+      try {
+        res = await fetch(`${API_BASE}${path}`, { ...options, headers: newHeaders, signal: retryController.signal });
+      } finally {
+        clearTimeout(retryTimeout);
+      }
     } catch {
+      clearTimeout(timeoutId);
       throw new Error('Session expired. Please login again.');
     }
   }
+
+  clearTimeout(timeoutId);
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
@@ -291,6 +318,7 @@ export interface DashboardStats {
   tomorrow_appointments: number;
   this_week_appointments: number;
   this_month_appointments: number;
+  this_year_appointments: number;
   total_appointments: number;
 }
 
@@ -377,7 +405,7 @@ export const api = {
 
   // --- Doctors ---
   getDoctors: () =>
-    request<Doctor[]>('/doctors'),
+    request<DoctorFull[]>('/doctors'),
 
   getDoctor: (id: string, token: string) =>
     request<DoctorFull>(`/doctors/${id}`, {

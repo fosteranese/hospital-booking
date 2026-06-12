@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api, AppointmentDetail as AppointmentDetailType, Doctor, DoctorSchedule } from '@/lib/api';
+import { api, AppointmentDetail as AppointmentDetailType, DoctorSchedule } from '@/lib/api';
+import { useDoctors } from '@/hooks/useDoctors';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,8 +24,8 @@ function formatTime(timeStr: string) {
 
 export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Props) {
   const { token, userRole } = useAuth();
+  const { doctors } = useDoctors();
   const [appt, setAppt] = useState<AppointmentDetailType | null>(null);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [action, setAction] = useState<'view' | 'cancel' | 'change-doctor'>('view');
@@ -46,7 +47,6 @@ export function AppointmentDetailModal({ appointmentId, onClose, onUpdated }: Pr
 
   useEffect(() => {
     fetchAppointment();
-    api.getDoctors().then(setDoctors).catch(() => {});
   }, [appointmentId]);
 
   const handleCancel = async () => {

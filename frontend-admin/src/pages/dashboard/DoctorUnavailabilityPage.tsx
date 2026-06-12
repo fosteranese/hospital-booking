@@ -36,7 +36,7 @@ interface UnavailRecord {
 }
 
 export function DoctorUnavailabilityPage() {
-  const { token } = useAuth();
+  const { token, profile } = useAuth();
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [profileReady, setProfileReady] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -79,18 +79,13 @@ export function DoctorUnavailabilityPage() {
   const doctorIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const profile: any = await api.getProfile(token);
-        if (profile.doctor_id) {
-          doctorIdRef.current = profile.doctor_id;
-          setDoctorId(profile.doctor_id);
-          setProfileReady(true);
-        }
-      } catch { /* ignore */ }
-      finally { setProfileLoading(false); }
-    })();
-  }, [token]);
+    if (profile?.doctor_id) {
+      doctorIdRef.current = profile.doctor_id;
+      setDoctorId(profile.doctor_id);
+      setProfileReady(true);
+    }
+    setProfileLoading(false);
+  }, [profile?.doctor_id]);
 
   const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
     'unavailability:doctor',

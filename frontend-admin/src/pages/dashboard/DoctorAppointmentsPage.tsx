@@ -134,16 +134,14 @@ export function DoctorAppointmentsPage() {
   }, []);
 
 
-  const conflictCount = useMemo(() => appointments.filter(a => a.attended === null && a.has_conflict).length, [appointments]);
-
-  const filtered = appointments.filter(a => a.attended === null).filter(a => {
+  const baseFiltered = useMemo(() => appointments.filter(a => a.attended === null).filter(a => {
     if (!filterDate) return true;
     if (filterDate.includes('_')) {
       const [from, to] = filterDate.split('_');
       return a.slot_date >= from && a.slot_date <= to;
     }
     return a.slot_date === filterDate;
-  }).filter(a => !conflictFilter || a.has_conflict).filter(a => {
+  }).filter(a => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     if (searchFilter === 'name') return a.patient_name && a.patient_name.toLowerCase().includes(q);
@@ -157,20 +155,24 @@ export function DoctorAppointmentsPage() {
       (a.start_time && a.start_time.toLowerCase().includes(q)) ||
       (a.end_time && a.end_time.toLowerCase().includes(q))
     );
-  });
+  }), [appointments, filterDate, searchQuery, searchFilter]);
+
+  const filtered = useMemo(() => baseFiltered.filter(a => !conflictFilter || a.has_conflict), [baseFiltered, conflictFilter]);
+
+  const conflictCount = useMemo(() => baseFiltered.filter(a => a.has_conflict).length, [baseFiltered]);
 
   const isToday = (date: string) => date === today;
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const isTomorrow = (date: string) => date === tomorrow;
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  const groupedByDate = filtered.reduce((acc, a) => {
+  const groupedByDate = useMemo(() => filtered.reduce((acc, a) => {
     if (!acc[a.slot_date]) acc[a.slot_date] = [];
     acc[a.slot_date].push(a);
     return acc;
-  }, {} as Record<string, AppointmentHistoryItem[]>);
+  }, {} as Record<string, AppointmentHistoryItem[]>), [filtered]);
 
-  const sortedDates = Object.keys(groupedByDate).sort();
+  const sortedDates = useMemo(() => Object.keys(groupedByDate).sort(), [groupedByDate]);
 
   const eventDates = useMemo(() => {
     return new Set(appointments.filter(a => a.attended === null).map(a => a.slot_date));
@@ -220,7 +222,7 @@ export function DoctorAppointmentsPage() {
         />
         <div className="flex items-center gap-1 flex-wrap shrink-0 mt-2 sm:mt-0">
           {[
-            { key: 'all', label: 'All', count: filtered.length, color: '' },
+            { key: 'all', label: 'All', count: baseFiltered.length, color: '' },
             { key: 'conflicts', label: 'Conflicts', count: conflictCount, color: 'bg-red-500' },
           ].map(f => (
             <button

@@ -36,32 +36,21 @@ pub async fn analytics_overview(
 ) -> Result<Json<AnalyticsOverview>, AppError> {
     require_role(&auth, &["admin", "scheduler"])?;
 
-    let total_appointments: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM appointments")
-        .fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let confirmed: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments a JOIN availability_slots s ON s.id = a.slot_id WHERE a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let cancelled: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments WHERE status = 'cancelled'"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let attended: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments WHERE attended = true"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let missed: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments WHERE attended = false"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let today_total: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments a JOIN availability_slots s ON s.id = a.slot_id WHERE s.slot_date = CURRENT_DATE"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
-
-    let today_confirmed: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM appointments a JOIN availability_slots s ON s.id = a.slot_id WHERE a.status = 'confirmed' AND s.slot_date = CURRENT_DATE"
-    ).fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;
+    let (total_appointments, cancelled, attended, missed, confirmed, today_total, today_confirmed): (i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(
+        "SELECT
+            COUNT(*) AS total_appointments,
+            COUNT(*) FILTER (WHERE a.status = 'cancelled') AS cancelled,
+            COUNT(*) FILTER (WHERE a.attended = true) AS attended,
+            COUNT(*) FILTER (WHERE a.attended = false) AS missed,
+            COUNT(*) FILTER (WHERE a.status = 'confirmed' AND s.slot_date >= CURRENT_DATE) AS confirmed,
+            COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE) AS today_total,
+            COUNT(*) FILTER (WHERE a.status = 'confirmed' AND s.slot_date = CURRENT_DATE) AS today_confirmed
+         FROM appointments a
+         LEFT JOIN availability_slots s ON s.id = a.slot_id"
+    )
+    .fetch_one(&state.pool)
+    .await
+    .map_err(|e| AppError::Database(e))?;
 
     let total_patients: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM patients")
         .fetch_one(&state.pool).await.map_err(|e| AppError::Database(e))?;

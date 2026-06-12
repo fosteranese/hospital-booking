@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
@@ -29,23 +29,18 @@ import { StatusDot } from '@/components/StatusDot';
 
 
 export function DoctorConflictsPage() {
-  const { token } = useAuth();
+  const { token, profile } = useAuth();
   const doctorIdRef = useRef<string | null>(null);
   const [profileReady, setProfileReady] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const profile: any = await api.getProfile(token);
-        if (profile.doctor_id) {
-          doctorIdRef.current = profile.doctor_id;
-          setProfileReady(true);
-        }
-      } catch { /* ignore */ }
-    })();
-  }, [token]);
+    if (profile?.doctor_id) {
+      doctorIdRef.current = profile.doctor_id;
+      setProfileReady(true);
+    }
+  }, [profile?.doctor_id]);
 
   const { data: raw, loading, error, backgroundRefresh } = useCachedData(
     'appointments:conflicts',
@@ -79,15 +74,15 @@ export function DoctorConflictsPage() {
   const isToday = (date: string) => date === today;
   const isTomorrow = (date: string) => date === tomorrow;
 
-  const sorted = [...appointments].sort((a, b) => a.slot_date !== b.slot_date ? a.slot_date.localeCompare(b.slot_date) : a.start_time.localeCompare(b.start_time));
+  const sorted = useMemo(() => [...appointments].sort((a, b) => a.slot_date !== b.slot_date ? a.slot_date.localeCompare(b.slot_date) : a.start_time.localeCompare(b.start_time)), [appointments]);
 
-  const groupedByDate = sorted.reduce((acc, a) => {
+  const groupedByDate = useMemo(() => sorted.reduce((acc, a) => {
     if (!acc[a.slot_date]) acc[a.slot_date] = [];
     acc[a.slot_date].push(a);
     return acc;
-  }, {} as Record<string, AppointmentHistoryItem[]>);
+  }, {} as Record<string, AppointmentHistoryItem[]>), [sorted]);
 
-  const sortedDates = Object.keys(groupedByDate).sort();
+  const sortedDates = useMemo(() => Object.keys(groupedByDate).sort(), [groupedByDate]);
 
   return (
     <div className={`space-y-6 transition-[margin-right] duration-200 ${selectedAppointment ? 'lg:mr-[480px]' : ''}`}>

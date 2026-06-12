@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { api, ProfileResponse } from '@/lib/api';
+import { useState } from 'react';
+import { ProfileResponse } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardHeader } from '@/components/Card';
@@ -16,23 +16,10 @@ import {
 } from '@hugeicons/core-free-icons';
 
 export function DoctorProfilePage() {
-  const { token } = useAuth();
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { profile: cachedProfile } = useAuth();
+  const [profile, setProfile] = useState<ProfileResponse | null>(cachedProfile);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.getProfile(token);
-        setProfile(data);
-      } catch (e: any) {
-        setError(e.message || 'Failed to load profile');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [token]);
 
   if (loading) {
     return (

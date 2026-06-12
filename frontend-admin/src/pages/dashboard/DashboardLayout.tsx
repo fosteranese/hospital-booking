@@ -184,29 +184,52 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         className={cn(
           'flex-col bg-sidebar border-r border-sidebar-border/60 transition-all duration-300 select-none',
           mobileOpen
-            ? 'fixed inset-y-0 left-0 z-50 w-[220px] shadow-2xl flex'
+            ? 'fixed inset-y-0 left-0 z-50 w-[260px] shadow-2xl flex'
             : 'hidden',
           'lg:flex lg:static lg:shadow-none lg:z-30',
-          collapsed ? 'lg:w-[64px]' : 'lg:w-[220px]'
+          collapsed ? 'lg:w-[64px]' : 'lg:w-[260px]'
         )}
       >
-        {/* Brand — clean minimal */}
+        {/* Brand + collapse toggle */}
         <div className={cn(
-          'flex items-center shrink-0',
-          collapsed ? 'justify-center h-14' : 'h-14 px-4 gap-2.5'
+          'flex shrink-0',
+          collapsed ? 'flex-col items-center gap-1.5 py-2' : 'items-center h-14 px-4'
         )}>
           <div className="size-7 rounded-md bg-emerald-600 flex items-center justify-center shrink-0">
             <HugeiconsIcon icon={Hospital01Icon} className="size-3.5 text-white" />
           </div>
           {!collapsed && (
-            <span className="text-sm font-bold text-sidebar-foreground tracking-tight">MediPort</span>
+            <>
+              <span className="text-sm font-bold text-sidebar-foreground tracking-tight flex-1 ml-2.5">MediPort</span>
+              <button
+                onClick={() => setCollapsed(true)}
+                className="flex items-center justify-center size-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors"
+              >
+                <HugeiconsIcon icon={Menu02Icon} className="size-3.5" />
+              </button>
+            </>
+          )}
+          {collapsed && (
+            <button
+              onClick={() => setCollapsed(false)}
+              className="flex items-center justify-center size-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors"
+            >
+              <HugeiconsIcon icon={Menu01Icon} className="size-4" />
+            </button>
           )}
         </div>
 
-        {/* Navigation — compact, no group headers */}
-        <nav className="flex-1 overflow-y-auto py-1 px-2 scrollbar-none space-y-3">
+        {/* Navigation — grouped sections */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-none space-y-5">
           {navGroups.map((group, gi) => (
             <div key={gi} className="space-y-0.5">
+              {!collapsed && (
+                <div className="px-2.5 pb-1 first:pt-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/35">
+                    {group.label}
+                  </span>
+                </div>
+              )}
               {group.items.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -215,22 +238,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     onClick={() => { navigate(item.href); setMobileOpen(false); }}
                     title={collapsed ? item.label : undefined}
                     className={cn(
-                      'flex items-center w-full rounded-md text-sm transition-all duration-150 relative',
-                      collapsed ? 'justify-center h-9' : 'gap-3 h-9 px-3',
+                      'flex items-center w-full rounded-md text-sm transition-all duration-150',
+                      collapsed ? 'justify-center h-9' : 'gap-3 h-8 px-2.5',
                       isActive
-                        ? 'bg-emerald-50/70 text-emerald-700 font-medium'
+                        ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
                         : 'text-sidebar-foreground/55 hover:bg-sidebar-accent hover:text-sidebar-foreground/80'
                     )}
                   >
-                    {/* Active indicator — thin left bar like GC color dot */}
-                    {isActive && !collapsed && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-emerald-500" />
-                    )}
                     <HugeiconsIcon
                       icon={item.icon}
                       className={cn(
-                        'size-[17px] shrink-0 transition-colors',
-                        isActive ? 'text-emerald-600' : 'text-sidebar-foreground/35'
+                        'size-[18px] shrink-0 transition-colors',
+                        isActive ? 'text-sidebar-foreground/80' : 'text-sidebar-foreground/35'
                       )}
                     />
                     {!collapsed && <span className="truncate">{item.label}</span>}
@@ -241,10 +260,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        {/* Footer — profile + collapse */}
+        {/* Footer — profile */}
         <div className="border-t border-sidebar-border/60 shrink-0">
           {/* Profile */}
-          <div className="relative px-2 pt-1.5 pb-1">
+          <div className="relative px-2 pt-2 pb-1">
             <button
               onClick={() => setProfileOpen(!profileOpen)}
               className={cn(
@@ -307,10 +326,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Dark mode toggle */}
-          <div className="px-2 pb-0.5">
+          <div className="px-2 pb-1">
             <button
               onClick={() => setDark(!dark)}
-              className="flex items-center gap-2 w-full h-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors justify-center"
+              className={cn(
+                'flex items-center rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors',
+                collapsed ? 'justify-center w-full h-7' : 'gap-2.5 w-full h-7 px-2'
+              )}
               aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {dark ? (
@@ -322,16 +344,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
               )}
-            </button>
-          </div>
-
-          {/* Collapse toggle — subtle */}
-          <div className="px-2 pb-1.5">
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="flex items-center justify-center w-full h-7 rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors"
-            >
-              <HugeiconsIcon icon={collapsed ? Menu01Icon : Menu02Icon} className={collapsed ? 'size-4' : 'size-3.5'} />
+              {!collapsed && <span className="text-xs text-sidebar-foreground/35">Dark Mode</span>}
             </button>
           </div>
         </div>

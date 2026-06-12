@@ -3,6 +3,7 @@ use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::get;
 use std::sync::Mutex;
+use tower_http::compression::CompressionLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -207,6 +208,7 @@ async fn main() {
         .merge(routes::analytics::analytics_routes())
         .merge(routes::referrals::referral_routes())
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024))
+        .layer(CompressionLayer::new())
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useCachedData } from '@/hooks/useCachedData';
+import { useDoctors } from '@/hooks/useDoctors';
 import { RefreshButton } from '@/components/RefreshButton';
 import { ErrorAlert } from '@/components/ErrorAlert';
-import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
+import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
@@ -77,7 +78,7 @@ export function TodayPage() {
   const today = new Date().toISOString().slice(0, 10);
   const now = new Date();
 
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const { doctors } = useDoctors();
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [latenessInput, setLatenessInput] = useState<{ id: string; arrivalTime: string } | null>(null);
@@ -95,16 +96,6 @@ export function TodayPage() {
   );
   const appointments = raw ?? [];
 
-  const fetchDoctors = useCallback(async () => {
-    try {
-      const data = await api.getDoctors();
-      setDoctors(data);
-    } catch {
-    }
-  }, []);
-
-  useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
-
   const refreshAll = useCallback(() => {
     backgroundRefresh();
   }, [backgroundRefresh]);
@@ -120,10 +111,11 @@ export function TodayPage() {
     }
   }, [token, fetchAppointments, today]);
 
-  const pendingToday = appointments.filter(a => getEffectiveStatus(a) === 'confirmed').length;
-  const attendedToday = appointments.filter(a => getEffectiveStatus(a) === 'attended').length;
-  const missedToday = appointments.filter(a => getEffectiveStatus(a) === 'missed').length;
+  const pendingToday = useMemo(() => appointments.filter(a => getEffectiveStatus(a) === 'confirmed').length, [appointments]);
+  const attendedToday = useMemo(() => appointments.filter(a => getEffectiveStatus(a) === 'attended').length, [appointments]);
+  const missedToday = useMemo(() => appointments.filter(a => getEffectiveStatus(a) === 'missed').length, [appointments]);
   const totalToday = pendingToday + attendedToday + missedToday;
+  const sortedAppointments = useMemo(() => [...appointments].sort((a, b) => a.start_time.localeCompare(b.start_time)), [appointments]);
 
   return (
     <div className="space-y-6">
@@ -204,9 +196,7 @@ export function TodayPage() {
             <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
               <tbody>
-                {appointments
-                  .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                  .map(a => {
+                {sortedAppointments.map(a => {
                     const effective = getEffectiveStatus(a);
                     const isAttended = effective === 'attended';
                     const isMissed = effective === 'missed';

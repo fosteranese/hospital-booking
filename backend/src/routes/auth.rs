@@ -1166,6 +1166,7 @@ pub struct DashboardStatsResponse {
     pub tomorrow_appointments: i64,
     pub this_week_appointments: i64,
     pub this_month_appointments: i64,
+    pub this_year_appointments: i64,
     pub total_appointments: i64,
 }
 
@@ -1173,166 +1174,65 @@ pub async fn dashboard_stats_handler(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<DashboardStatsResponse>, AppError> {
-    // Resolve doctor_id for doctor role
     let doctor_id = if auth.role == "doctor" {
-        let doc = sqlx::query_scalar::<_, Uuid>(
+        Some(sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM doctors WHERE email = $1"
         )
         .bind(&auth.sub)
         .fetch_optional(&state.pool)
         .await
         .map_err(|e| AppError::Database(e))?
-        .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?;
-        Some(doc)
+        .ok_or_else(|| AppError::Unauthorized("Doctor profile not found".to_string()))?)
     } else {
         None
     };
 
-    // Build WHERE clause for doctor filtering
-    let doctor_filter = if doctor_id.is_some() {
-        "AND a.doctor_id = $1"
-    } else {
-        ""
-    };
+    let (today_appointments, missed_today, tomorrow_appointments, this_week_appointments, this_month_appointments, this_year_appointments) =
+        if let Some(did) = doctor_id {
+            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64)>(
+                "SELECT
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.attended = false),
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE + 1 AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled')
+                 FROM appointments a
+                 JOIN availability_slots s ON a.slot_id = s.id
+                 WHERE a.doctor_id = $1"
+            )
+            .bind(did)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+        } else {
+            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64)>(
+                "SELECT
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.attended = false),
+                    COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE + 1 AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled')
+                 FROM appointments a
+                 JOIN availability_slots s ON a.slot_id = s.id"
+            )
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
+        };
 
-    // Today's appointments
-    let today_appointments: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled' {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    } else {
-        sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled'"
-        )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    };
-
-    // Missed today
-    let missed_today: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE AND a.attended = false {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    } else {
-        sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE AND a.attended = false"
-        )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    };
-
-    // Tomorrow's appointments
-    let tomorrow_appointments: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE + INTERVAL '1 day' AND a.status != 'cancelled' {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    } else {
-        sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE s.slot_date = CURRENT_DATE + INTERVAL '1 day' AND a.status != 'cancelled'"
-        )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    };
-
-    // This week's appointments (ISO week: Monday to Sunday)
-    let this_week_appointments: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) \
-               AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) \
-               AND a.status != 'cancelled' {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    } else {
-        sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) \
-               AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) \
-               AND a.status != 'cancelled'"
-        )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    };
-
-    // This month's appointments
-    let this_month_appointments: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) \
-               AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) \
-               AND a.status != 'cancelled' {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    } else {
-        sqlx::query_scalar(
-            "SELECT COUNT(*) FROM appointments a \
-             JOIN availability_slots s ON a.slot_id = s.id \
-             WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) \
-               AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) \
-               AND a.status != 'cancelled'"
-        )
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
-    };
-
-    // Total appointments (all time)
-    let total_appointments: i64 = if doctor_id.is_some() {
-        sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM appointments a WHERE 1=1 {}",
-            doctor_filter
-        ))
-        .bind(doctor_id.unwrap())
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
+    let total_appointments: i64 = if let Some(did) = doctor_id {
+        sqlx::query_scalar("SELECT COUNT(*) FROM appointments WHERE doctor_id = $1")
+            .bind(did)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
     } else {
         sqlx::query_scalar("SELECT COUNT(*) FROM appointments")
-        .fetch_one(&state.pool)
-        .await
-        .map_err(|e| AppError::Database(e))?
+            .fetch_one(&state.pool)
+            .await
+            .map_err(|e| AppError::Database(e))?
     };
 
     Ok(Json(DashboardStatsResponse {
@@ -1341,6 +1241,7 @@ pub async fn dashboard_stats_handler(
         tomorrow_appointments,
         this_week_appointments,
         this_month_appointments,
+        this_year_appointments,
         total_appointments,
     }))
 }

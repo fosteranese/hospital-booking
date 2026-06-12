@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api, AppointmentHistoryItem, Doctor } from '@/lib/api';
+import { useState, useCallback } from 'react';
+import { api, AppointmentHistoryItem } from '@/lib/api';
+import { useDoctors } from '@/hooks/useDoctors';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
 import { RefreshButton } from '@/components/RefreshButton';
@@ -20,7 +21,7 @@ import { formatTime, inputClass } from '@/lib/helpers';
 import { StatusDot } from '@/components/StatusDot';
 export function SchedulerDashboard() {
   const { token } = useAuth();
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const { doctors } = useDoctors();
   const [view, setView] = useState<'today' | 'all'>('today');
   const [doctorFilter, setDoctorFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -49,10 +50,6 @@ export function SchedulerDashboard() {
   const refreshAll = useCallback(() => {
     backgroundRefresh();
   }, [backgroundRefresh]);
-
-  useEffect(() => {
-    api.getDoctors().then(setDoctors).catch(() => {});
-  }, []);
 
   const handleExport = () => {
     const query: Record<string, string> = {};

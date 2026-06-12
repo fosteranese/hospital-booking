@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { tokenStore, api } from '@/lib/api';
+import { tokenStore, api, type ProfileResponse } from '@/lib/api';
 import { invalidateCache } from '@/lib/cache';
 
 interface AuthState {
@@ -11,6 +11,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   setAll: (token: string, role: string, identifier: string) => void;
   clearAuth: () => void;
+  profile: ProfileResponse | null;
   doctorCanCreateAppointments: boolean;
   doctorCanRefer: boolean;
   attendedFollowUpDays: number;
@@ -57,6 +58,7 @@ function parseIntVal(settings: Array<{ name: string; value: string | null }>, na
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(loadFromStorage);
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [doctorCanCreateAppointments, setCanCreate] = useState(true);
   const [doctorCanRefer, setCanRefer] = useState(true);
   const [attendedFollowUpDays, setAttendedFollowUpDays] = useState(30);
@@ -65,7 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [missedReferralDays, setMissedReferralDays] = useState(7);
 
   useEffect(() => {
-    if (!state.token) return;
+    if (!state.token) {
+      setProfile(null);
+      return;
+    }
     api.getSettingsGroup('appointment')
       .then(settings => {
         setCanCreate(parseBool(settings, 'doctor_can_create_appointments', true));
@@ -76,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setMissedReferralDays(parseIntVal(settings, 'missed_referral_days', 7));
       })
       .catch(() => {});
+    api.getProfile(state.token)
+      .then(setProfile)
+      .catch(() => setProfile(null));
   }, [state.token]);
 
   useEffect(() => {
@@ -94,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearAuth = useCallback(() => {
     invalidateCache();
     setState({ token: '', userRole: '', otpIdentifier: '' });
+    setProfile(null);
     setCanCreate(true);
     setCanRefer(true);
     setAttendedFollowUpDays(30);
@@ -104,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      ...state, setAll, clearAuth,
+      ...state, setAll, clearAuth, profile,
       doctorCanCreateAppointments, doctorCanRefer,
       attendedFollowUpDays, attendedReferralDays,
       missedRescheduleDays, missedReferralDays,

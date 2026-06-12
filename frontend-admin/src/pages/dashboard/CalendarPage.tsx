@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Scheduler, type CalendarEvent as CKEvent } from 'calendarkit-pro';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 import { useCachedData } from '@/hooks/useCachedData';
 
 
@@ -90,11 +90,26 @@ export function CalendarPage() {
   const schedulerCloseRef = useRef<(() => void) | null>(null);
   const schedulerHandledRef = useRef(false);
 
-  const cacheKey = `appointments:calendar:${statusFilter || 'all'}`;
+  const dateRange = useMemo(() => {
+    const d = currentDate;
+    if (currentView === 'month') {
+      const start = startOfMonth(d);
+      const end = endOfMonth(d);
+      return { from: format(start, 'yyyy-MM-dd'), to: format(end, 'yyyy-MM-dd') };
+    } else if (currentView === 'week') {
+      const start = startOfWeek(d, { weekStartsOn: 0 });
+      const end = endOfWeek(d, { weekStartsOn: 0 });
+      return { from: format(start, 'yyyy-MM-dd'), to: format(end, 'yyyy-MM-dd') };
+    }
+    const day = format(d, 'yyyy-MM-dd');
+    return { from: day, to: day };
+  }, [currentDate, currentView]);
+
+  const cacheKey = `appointments:calendar:${statusFilter || 'all'}:${dateRange.from}:${dateRange.to}`;
 
   const { data: rawAppointments, loading, error, refresh: fetchAppointments, backgroundRefresh } = useCachedData(
     cacheKey,
-    useCallback(() => api.listAppointments({ status: statusFilter || undefined }, token), [token, statusFilter]),
+    useCallback(() => api.listAppointments({ status: statusFilter || undefined, from: dateRange.from, to: dateRange.to }, token), [token, statusFilter, dateRange.from, dateRange.to]),
     { enabled: !!token }
   );
   const appointments = rawAppointments ?? [];

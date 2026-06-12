@@ -296,7 +296,7 @@ export function LoginPage() {
   const isForgotFlow = step.startsWith('forgot-');
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-white">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-card">
       {/* Background layer */}
       <img
         src="https://mediportfertilityservices.com/_nuxt/slider-1.FULWOga4.jpg"
@@ -317,7 +317,7 @@ export function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl shadow-black/15 ring-1 ring-black/[0.04]">
+        <div className="bg-card rounded-2xl shadow-2xl shadow-black/15 ring-1 ring-black/[0.04]">
           {/* Header with step indicator */}
           <div className="px-8 pt-7 pb-0">
             <div className="flex items-center justify-between mb-5">
@@ -355,8 +355,8 @@ export function LoginPage() {
               </div>
             )}
             {message && step !== 'forgot-success' && !isForgotFlow && (
-              <div className="flex items-start gap-2.5 text-sm text-emerald-700 bg-emerald-50 px-3.5 py-2.5 rounded-xl mb-5 ring-1 ring-emerald-200/60 animate-in fade-in slide-in-from-top-1 duration-200">
-                <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0 mt-0.5 text-emerald-500" />
+              <div className="flex items-start gap-2.5 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-2.5 rounded-xl mb-5 ring-1 ring-emerald-200/60 dark:ring-emerald-900/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" />
                 <span>{message}</span>
               </div>
             )}
@@ -479,7 +479,7 @@ export function LoginPage() {
               <div className="space-y-5 animate-in fade-in slide-in-from-right-1 duration-300">
                 <div className="text-center space-y-3">
                   <div className={`inline-flex size-12 items-center justify-center rounded-xl ${
-                    selectedMethod === 'authenticator' ? 'bg-amber-50 text-amber-600' : 'bg-primary/8 text-primary'
+                    selectedMethod === 'authenticator' ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400' : 'bg-primary/8 text-primary'
                   }`}>
                     <HugeiconsIcon icon={MFA_OPTIONS[selectedMethod]?.icon || Mail01Icon} className="size-5" />
                   </div>
@@ -526,7 +526,7 @@ export function LoginPage() {
             {step === 'forgot-email' && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-1 duration-300">
                 <div className="text-center space-y-2 mb-1">
-                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 mb-1">
+                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-1">
                     <HugeiconsIcon icon={Key01Icon} className="size-5" />
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -603,10 +603,10 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <div className="bg-amber-50 rounded-xl p-3.5 ring-1 ring-amber-200/60">
+                <div className="bg-amber-50 dark:bg-amber-950/40 rounded-xl p-3.5 ring-1 ring-amber-200/60 dark:ring-amber-900/60">
                   <div className="flex items-start gap-2.5">
-                    <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-800 leading-relaxed">
+                    <HugeiconsIcon icon={InformationCircleIcon} className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
                       You have <strong>{forgotMethods.length} verification methods</strong> available:{' '}
                       {forgotMethods.map((m, i) => (
                         <span key={m}>
@@ -675,8 +675,8 @@ export function LoginPage() {
                 </div>
 
                 {message && (
-                  <div className="flex items-start gap-2.5 text-sm text-emerald-700 bg-emerald-50 px-3.5 py-2.5 rounded-xl ring-1 ring-emerald-200/60 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 shrink-0 mt-0.5 text-emerald-500" />
+                  <div className="flex items-start gap-2.5 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-2.5 rounded-xl ring-1 ring-emerald-200/60 dark:ring-emerald-900/60 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 shrink-0 mt-0.5 text-emerald-500 dark:text-emerald-400" />
                     <span>{message}</span>
                   </div>
                 )}
@@ -763,7 +763,7 @@ export function LoginPage() {
                 <ForgotProgressBar currentStep={2} totalSteps={4} />
 
                 <div className="text-center space-y-3">
-                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60">
+                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200/60 dark:ring-emerald-900/60">
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-6" />
                   </div>
                   <div>
@@ -827,7 +827,7 @@ export function LoginPage() {
                 <ForgotProgressBar currentStep={4} totalSteps={4} />
 
                 <div className="text-center space-y-2 mb-1">
-                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60 mb-1">
+                  <div className="inline-flex size-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200/60 dark:ring-emerald-900/60 mb-1">
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-5" />
                   </div>
                   <p className="text-sm font-medium text-foreground">Identity Verified</p>
@@ -893,7 +893,7 @@ export function LoginPage() {
             {/* Step: Forgot Success */}
             {step === 'forgot-success' && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-1 duration-300 text-center">
-                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/60">
+                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200/60 dark:ring-emerald-900/60">
                   <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-7" />
                 </div>
                 <div className="space-y-1">

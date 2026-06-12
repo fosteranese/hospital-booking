@@ -1,0 +1,1 @@
+import{B as a,i as s}from"./index-YJxKow0c.js";import{u as r}from"./useCachedData-C6sQBkT-.js";function i(){const{data:o,loading:t}=r("doctors",a.useCallback(()=>s.getDoctors(),[]),{staleTime:3e5});return{doctors:o??[],loading:t}}export{i as u};

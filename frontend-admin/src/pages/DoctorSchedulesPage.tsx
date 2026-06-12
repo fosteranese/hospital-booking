@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { api, Doctor, DoctorSchedule } from '@/lib/api';
+import { useState, useEffect, useCallback } from 'react';
+import { api, DoctorSchedule } from '@/lib/api';
+import { useDoctors } from '@/hooks/useDoctors';
+import { useCachedData } from '@/hooks/useCachedData';
 import { useAuth } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardHeader } from '@/components/Card';
@@ -20,27 +22,18 @@ interface DayEntry {
 
 export function DoctorSchedulesPage() {
   const { token } = useAuth();
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const { doctors } = useDoctors();
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
-  const [schedules, setSchedules] = useState<DayEntry[]>(
-    DAY_NAMES.map((_, i) => ({ day_of_week: i, start_time: '09:00', end_time: '17:00', enabled: i < 5 }))
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    api.getDoctors().then(setDoctors).catch(() => {});
-  }, []);
+  const [saveError, setSaveError] = useState('');
 
-  const fetchSchedules = async () => {
-    if (!selectedDoctorId) return;
-    setLoading(true);
-    setError('');
-    try {
+  const { data: cachedSchedules, loading, error, backgroundRefresh } = useCachedData(
+    selectedDoctorId ? `schedules:${selectedDoctorId}` : null,
+    useCallback(async () => {
       const data = await api.getDoctorSchedules(selectedDoctorId, token);
-      const entries: DayEntry[] = DAY_NAMES.map((_, i) => {
+      return DAY_NAMES.map((_, i) => {
         const found = data.find(s => s.day_of_week === i);
         return {
           day_of_week: i,
@@ -49,20 +42,22 @@ export function DoctorSchedulesPage() {
           enabled: !!found,
         };
       });
-      setSchedules(entries);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, [selectedDoctorId, token]),
+    { enabled: !!selectedDoctorId, staleTime: 300_000 }
+  );
 
-  useEffect(() => { fetchSchedules(); }, [selectedDoctorId]);
+  const [schedules, setSchedules] = useState<DayEntry[]>(
+    () => cachedSchedules ?? DAY_NAMES.map((_, i) => ({ day_of_week: i, start_time: '09:00', end_time: '17:00', enabled: i < 5 }))
+  );
+
+  useEffect(() => {
+    if (cachedSchedules) setSchedules(cachedSchedules);
+  }, [cachedSchedules]);
 
   const handleSave = async () => {
     if (!selectedDoctorId) return;
     setSaving(true);
-    setError('');
+    setSaveError('');
     setSuccess('');
     try {
       const active = schedules.filter(s => s.enabled).map(s => ({
@@ -73,8 +68,9 @@ export function DoctorSchedulesPage() {
       await api.setDoctorSchedules(selectedDoctorId, active, token);
       setSuccess('Schedules saved successfully');
       setTimeout(() => setSuccess(''), 3000);
+      backgroundRefresh();
     } catch (e: any) {
-      setError(e.message);
+      setSaveError(e.message);
     } finally {
       setSaving(false);
     }
@@ -92,10 +88,10 @@ export function DoctorSchedulesPage() {
         icon={TimeScheduleIcon}
       />
 
-      {error && (
+      {(error || saveError) && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {error}
+          {error || saveError}
         </div>
       )}
       {success && (

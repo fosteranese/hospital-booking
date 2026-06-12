@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getCached, setCache } from '@/lib/cache';
+import { getCached, setCache, invalidateCache } from '@/lib/cache';
 import { useRefresh } from '@/contexts/refresh-context';
 
 const inflight = new Map<string, Promise<any>>();
 
-function isNetworkError(message: string): boolean {
-  return message.includes('Unable to reach the server') || message.includes('Failed to fetch') || message.includes('NetworkError');
+function isRetryableError(message: string): boolean {
+  return message.includes('Unable to reach the server') || message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('500') || message.includes('502') || message.includes('503');
 }
 
 export function useCachedData<T>(
@@ -38,7 +38,7 @@ export function useCachedData<T>(
       setCache(key, result, staleTimeRef.current);
       return result;
     } catch (e: any) {
-      if (attempt < retryCountRef.current && isNetworkError(e.message || '')) {
+      if (attempt < retryCountRef.current && isRetryableError(e.message || '')) {
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         if (!mountedRef.current || keyRef.current !== key) throw e;
         return fetchWithRetry(key, silent, attempt + 1);
@@ -90,10 +90,26 @@ export function useCachedData<T>(
     return promise;
   }, [cacheKey, registerRefresh, unregisterRefresh, fetchWithRetry]);
 
+  const visibilityHandledRef = useRef(false);
+
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && cacheKey && options?.enabled !== false) {
+        if (!visibilityHandledRef.current) {
+          visibilityHandledRef.current = true;
+          return;
+        }
+        fetch(true);
+      }
+    };
+    visibilityHandledRef.current = false;
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      mountedRef.current = false;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [cacheKey, options?.enabled, fetch]);
 
   useEffect(() => {
     if (options?.enabled === false) return;
@@ -113,12 +129,22 @@ export function useCachedData<T>(
   }, [cacheKey, options?.enabled, fetch]);
 
   const refresh = useCallback(() => {
+    if (cacheKey) {
+      if (cacheKey.startsWith('appointments')) invalidateCache('appointments');
+      else if (cacheKey.startsWith('dashboard')) invalidateCache('dashboard');
+      else if (cacheKey.startsWith('unavailability')) invalidateCache('unavailability');
+    }
     return fetch(false);
-  }, [fetch]);
+  }, [cacheKey, fetch]);
 
   const backgroundRefresh = useCallback(() => {
+    if (cacheKey) {
+      if (cacheKey.startsWith('appointments')) invalidateCache('appointments');
+      else if (cacheKey.startsWith('dashboard')) invalidateCache('dashboard');
+      else if (cacheKey.startsWith('unavailability')) invalidateCache('unavailability');
+    }
     return fetch(true);
-  }, [fetch]);
+  }, [cacheKey, fetch]);
 
   return { data, loading, refreshing, error, refresh, backgroundRefresh };
 }

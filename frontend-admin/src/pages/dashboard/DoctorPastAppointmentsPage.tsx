@@ -149,7 +149,7 @@ export function DoctorPastAppointmentsPage() {
     { key: 'cancelled', label: 'Cancelled', color: 'bg-slate-300' },
   ];
 
-  const filtered = appointments.filter(a => {
+  const filtered = useMemo(() => appointments.filter(a => {
     if (statusFilter === 'all') return true;
     if (statusFilter === 'attended') return a.attended === true;
     if (statusFilter === 'missed') return a.attended === false;
@@ -169,15 +169,15 @@ export function DoctorPastAppointmentsPage() {
       (a.start_time && a.start_time.toLowerCase().includes(q)) ||
       (a.end_time && a.end_time.toLowerCase().includes(q))
     );
-  });
+  }), [appointments, statusFilter, filterDate, searchQuery, searchFilter]);
 
-  const groupedByDate = filtered.reduce((acc, a) => {
+  const groupedByDate = useMemo(() => filtered.reduce((acc, a) => {
     if (!acc[a.slot_date]) acc[a.slot_date] = [];
     acc[a.slot_date].push(a);
     return acc;
-  }, {} as Record<string, AppointmentHistoryItem[]>);
+  }, {} as Record<string, AppointmentHistoryItem[]>), [filtered]);
 
-  const sortedDates = Object.keys(groupedByDate).sort().reverse();
+  const sortedDates = useMemo(() => Object.keys(groupedByDate).sort().reverse(), [groupedByDate]);
 
   const currentRange = dateRangeOptions.find(o => o.key === dateRange);
 

@@ -31,10 +31,7 @@ export function DoctorsPage() {
     setLoading(true);
     try {
       const data = await api.getDoctors();
-      const full: DoctorFull[] = await Promise.all(
-        data.map(d => api.getDoctor(d.id, token).catch(() => ({ ...d, email: '', phone: null, created_at: '' } as DoctorFull)))
-      );
-      setDoctors(full);
+      setDoctors(data);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -112,55 +109,55 @@ export function DoctorsPage() {
             title={editing ? 'Edit Doctor' : 'New Doctor'}
             description={editing ? 'Update doctor information' : 'Add a new doctor to the clinic'}
             action={
-              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-                <HugeiconsIcon icon={Cancel01Icon} className="size-4 text-slate-400" />
+              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4 text-muted-foreground" />
               </button>
             }
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">First Name *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">First Name *</label>
               <input
                 value={form.first_name}
                 onChange={(e) => setForm(f => ({ ...f, first_name: e.target.value }))}
-                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 placeholder="Enter first name"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Last Name *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Last Name *</label>
               <input
                 value={form.last_name}
                 onChange={(e) => setForm(f => ({ ...f, last_name: e.target.value }))}
-                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 placeholder="Enter last name"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Specialization *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Specialization *</label>
               <input
                 value={form.specialization}
                 onChange={(e) => setForm(f => ({ ...f, specialization: e.target.value }))}
-                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 placeholder="e.g., Cardiology"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Email *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Email *</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 placeholder="doctor@hospital.com"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Phone</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Phone</label>
               <input
                 value={form.phone}
                 onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
-                className="w-full h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full h-9 px-3 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 placeholder="+1 (555) 000-0000"
               />
             </div>
@@ -179,7 +176,7 @@ export function DoctorsPage() {
           <div className="p-8">
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-14 bg-slate-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-14 bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
           </div>
@@ -200,36 +197,36 @@ export function DoctorsPage() {
           <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Doctor</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Specialization</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Contact</th>
+                <tr className="border-b border-border">
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Doctor</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Specialization</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Contact</th>
                   {userRole === 'admin' && <th className="w-24 px-5 py-3"></th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-border">
                 {doctors.map((d) => (
-                  <tr key={d.id} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
+                  <tr key={d.id} className="transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="size-9 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold text-emerald-700">
                           {d.first_name[0]}{d.last_name[0]}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-slate-900">Dr. {d.first_name} {d.last_name}</p>
-                          <p className="text-xs text-slate-400">{d.email}</p>
+                          <p className="text-sm font-medium text-foreground">Dr. {d.first_name} {d.last_name}</p>
+                          <p className="text-xs text-muted-foreground">{d.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{d.specialization}</td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground">{d.specialization}</td>
                     <td className="px-5 py-3.5">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <HugeiconsIcon icon={Mail01Icon} className="size-3" />
                           {d.email}
                         </div>
                         {d.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <HugeiconsIcon icon={CallIcon} className="size-3" />
                             {d.phone}
                           </div>
@@ -241,9 +238,9 @@ export function DoctorsPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => openEdit(d)}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
                           >
-                            <HugeiconsIcon icon={Edit01Icon} className="size-4 text-slate-500" />
+                            <HugeiconsIcon icon={Edit01Icon} className="size-4 text-muted-foreground" />
                           </button>
                           <button
                             onClick={() => handleDelete(d.id)}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, AppointmentHistoryItem, DoctorUnavailability, ReferralItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
@@ -32,7 +32,8 @@ import {
   InformationCircleIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
-import { formatTime, getEffectiveStatus, getWeekRange, PatientAvatar } from '@/lib/helpers';
+import { formatTime, getEffectiveStatus, PatientAvatar } from '@/lib/helpers';
+import { prefetchCache } from '@/lib/cache';
 import { StatusDot } from '@/components/StatusDot';
 import { useToast } from '@/contexts/toast-context';
 
@@ -255,7 +256,7 @@ function InfoCard({
 export function DoctorDashboard() {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { token, otpIdentifier, doctorCanCreateAppointments, doctorCanRefer,
+  const { token, otpIdentifier, profile, doctorCanCreateAppointments, doctorCanRefer,
     attendedFollowUpDays, attendedReferralDays, missedRescheduleDays, missedReferralDays } = useAuth();
   const canSchedule = doctorCanCreateAppointments || doctorCanRefer;
   const scheduleLabel = !doctorCanCreateAppointments && doctorCanRefer ? 'Refer Patient'
@@ -274,30 +275,39 @@ export function DoctorDashboard() {
   const [scheduleTarget, setScheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [unavailability, setUnavailability] = useState<DoctorUnavailability[]>([]);
-  const [totalConflicts, setTotalConflicts] = useState(0);
   const [referrals, setReferrals] = useState<ReferralItem[]>([]);
 
-  const { data: appointments, loading, error, refresh: refreshAppointments, backgroundRefresh } = useCachedData(
-    'appointments',
-    useCallback(() => api.listAppointments({}, token), [token]),
-    { enabled: !!token }
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: dashboardStats, loading: statsLoading, error: statsError, backgroundRefresh } = useCachedData(
+    'dashboard:stats',
+    useCallback(() => api.getDashboardStats(token), [token]),
+    { enabled: !!token, staleTime: 60_000 }
   );
+
+  const { data: todayApptsData, loading: todayLoading, error: todayError } = useCachedData(
+    `dashboard:today:${today}`,
+    useCallback(() => api.listAppointments({ date: today }, token), [token, today]),
+    { enabled: !!token, staleTime: 30_000 }
+  );
+
+  const todayAppts = todayApptsData ?? [];
 
   const refreshAll = useCallback(() => {
     backgroundRefresh();
   }, [backgroundRefresh]);
 
+  const loading = statsLoading || todayLoading;
+  const error = statsError || todayError;
+
   useEffect(() => {
     if (!token) return;
-    api.getProfile(token).then(profile => {
-      if (profile.doctor_id) {
-        setDoctorId(profile.doctor_id);
-        api.getDoctorUnavailability(profile.doctor_id, token).then(setUnavailability);
-        api.getUnavailabilityConflictSummary(profile.doctor_id, token).then(s => setTotalConflicts(s.total_conflicts));
-      }
-    });
+    if (profile?.doctor_id) {
+      setDoctorId(profile.doctor_id);
+      api.getDoctorUnavailability(profile.doctor_id, token).then(setUnavailability);
+    }
     api.getReferrals(token).then(setReferrals);
-  }, [token]);
+  }, [token, profile?.doctor_id]);
 
   const handleConfirmAttend = useCallback(async (id: string, attended: boolean, arrivalTime?: string | null) => {
     try {
@@ -329,10 +339,8 @@ export function DoctorDashboard() {
     }
   }, [pendingAttendance, token, refreshAll, addToast]);
 
-  const appts = appointments ?? [];
-
   const selectedForModal = pendingAttendance
-    ? appts.find(a => a.id === pendingAttendance.id)
+    ? todayAppts.find(a => a.id === pendingAttendance.id)
     : null;
 
   const { setContainerClass } = useContentContainer();
@@ -344,45 +352,18 @@ export function DoctorDashboard() {
     return () => setContainerClass('max-w-7xl mx-auto p-6 lg:p-8 space-y-5 transition-all duration-200');
   }, [selectedAppointment, setContainerClass]);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const weekRange = getWeekRange(new Date());
-  const prevWeekStart = new Date(new Date(weekRange.start).getTime() - 7 * 86400000).toISOString().slice(0, 10);
-  const prevWeekEnd = new Date(new Date(weekRange.end).getTime() - 7 * 86400000).toISOString().slice(0, 10);
-  const now = new Date();
-  const monthStart = today.slice(0, 7) + '-01';
-  const monthEnd = today.slice(0, 7) + '-' + String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0');
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
-  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
-  const yearStart = now.getFullYear() + '-01-01';
-  const yearEnd = now.getFullYear() + '-12-31';
-  const prevYearStart = (now.getFullYear() - 1) + '-01-01';
-  const prevYearEnd = (now.getFullYear() - 1) + '-12-31';
-
-  const todayAppts = appts.filter(a => a.slot_date === today);
-  const conflictAppts = appts.filter(a => a.has_conflict);
-  const todayConflicts = todayAppts.filter(a => a.has_conflict);
-
   const pendingToday = todayAppts.filter(a => getEffectiveStatus(a) === 'confirmed').length;
   const attendedToday = todayAppts.filter(a => getEffectiveStatus(a) === 'attended').length;
   const missedToday = todayAppts.filter(a => getEffectiveStatus(a) === 'missed').length;
   const totalToday = pendingToday + attendedToday + missedToday;
+  const todayConflicts = useMemo(() => todayAppts.filter(a => a.has_conflict), [todayAppts]);
+  const sortedTodayAppts = useMemo(() => [...todayAppts].sort((a, b) => a.start_time.localeCompare(b.start_time)), [todayAppts]);
+  const now = new Date();
 
-  const tomorrowTotal = appts.filter(a => a.slot_date === tomorrow && a.status !== 'cancelled').length;
-  const todayNonCancelled = appts.filter(a => a.slot_date === today && a.status !== 'cancelled').length;
-  const tomorrowTrend = todayNonCancelled > 0 ? Math.round(((tomorrowTotal - todayNonCancelled) / todayNonCancelled) * 100) : null;
-
-  const thisWeekTotal = appts.filter(a => a.slot_date >= weekRange.start && a.slot_date <= weekRange.end && a.status !== 'cancelled').length;
-  const prevWeekTotal = appts.filter(a => a.slot_date >= prevWeekStart && a.slot_date <= prevWeekEnd && a.status !== 'cancelled').length;
-  const weekTrend = prevWeekTotal > 0 ? Math.round(((thisWeekTotal - prevWeekTotal) / prevWeekTotal) * 100) : null;
-
-  const thisMonthTotal = appts.filter(a => a.slot_date >= monthStart && a.slot_date <= monthEnd && a.status !== 'cancelled').length;
-  const prevMonthTotal = appts.filter(a => a.slot_date >= prevMonthStart && a.slot_date <= prevMonthEnd && a.status !== 'cancelled').length;
-  const monthTrend = prevMonthTotal > 0 ? Math.round(((thisMonthTotal - prevMonthTotal) / prevMonthTotal) * 100) : null;
-
-  const thisYearTotal = appts.filter(a => a.slot_date >= yearStart && a.slot_date <= yearEnd && a.status !== 'cancelled').length;
-  const prevYearTotal = appts.filter(a => a.slot_date >= prevYearStart && a.slot_date <= prevYearEnd && a.status !== 'cancelled').length;
-  const yearTrend = prevYearTotal > 0 ? Math.round(((thisYearTotal - prevYearTotal) / prevYearTotal) * 100) : null;
+  const tomorrowTotal = dashboardStats?.tomorrow_appointments ?? 0;
+  const thisWeekTotal = dashboardStats?.this_week_appointments ?? 0;
+  const thisMonthTotal = dashboardStats?.this_month_appointments ?? 0;
+  const thisYearTotal = dashboardStats?.this_year_appointments ?? 0;
 
   const unavailabilityCount = unavailability.reduce((sum, u) => {
     const start = new Date(u.slot_date + 'T00:00:00');
@@ -403,6 +384,10 @@ export function DoctorDashboard() {
     : '';
   const outgoingReferrals = referrals.filter(r => r.referring_doctor_id === doctorId && r.attended === null && r.status !== 'cancelled').length;
   const incomingReferrals = referrals.filter(r => r.doctor_id === doctorId && r.referring_doctor_id !== null && r.referring_doctor_id !== doctorId && r.attended === null && r.status !== 'cancelled').length;
+
+  const prefetchToday = useCallback(() => {
+    prefetchCache(`appointments:today:${today}:all`, () => api.listAppointments({ date: today }, token), 60_000);
+  }, [today, token]);
 
   return (
     <div className={`space-y-7 transition-[margin-right] duration-200 ${
@@ -504,10 +489,10 @@ export function DoctorDashboard() {
               </>
             ) : (
               <>
-                <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={tomorrowTrend} icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
-                <FutureStatCard label="This Week" value={thisWeekTotal} trend={weekTrend} icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
-                <FutureStatCard label="This Month" value={thisMonthTotal} trend={monthTrend} icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
-                <FutureStatCard label="This Year" value={thisYearTotal} trend={yearTrend} icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
+                <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={null} icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
+                <FutureStatCard label="This Week" value={thisWeekTotal} trend={null} icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
+                <FutureStatCard label="This Month" value={thisMonthTotal} trend={null} icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
+                <FutureStatCard label="This Year" value={thisYearTotal} trend={null} icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
               </>
             )}
           </div>
@@ -592,6 +577,7 @@ export function DoctorDashboard() {
             )}
             <button
               onClick={() => navigate('/dashboard/today-appointments')}
+              onMouseEnter={prefetchToday}
               className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2.5 py-1 rounded-lg transition-colors"
             >
               View All
@@ -614,9 +600,7 @@ export function DoctorDashboard() {
               <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                 <tbody>
-                  {todayAppts
-                    .sort((a, b) => a.start_time.localeCompare(b.start_time))
-                    .map(a => {
+                  {sortedTodayAppts.map(a => {
                       const effective = getEffectiveStatus(a);
                       const isAttended = effective === 'attended';
                       const isMissed = effective === 'missed';

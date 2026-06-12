@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::error::{AppError, validate_length};
 use crate::middleware::auth::{AuthUser, require_role};
-use crate::models::{AvailabilitySlot, DoctorUnavailability, DoctorWithName};
+use crate::models::{AvailabilitySlot, DoctorUnavailability};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -100,9 +100,9 @@ fn is_unavailable(slot_time: chrono::NaiveTime, unavailability: &[DoctorUnavaila
 
 pub async fn list_doctors(
     State(state): State<AppState>,
-) -> Result<Json<Vec<DoctorWithName>>, AppError> {
-    let doctors = sqlx::query_as::<_, DoctorWithName>(
-        "SELECT id, first_name, last_name, specialization FROM doctors ORDER BY first_name"
+) -> Result<Json<Vec<DoctorFull>>, AppError> {
+    let doctors = sqlx::query_as::<_, DoctorFull>(
+        "SELECT id, first_name, last_name, specialization, email, phone, created_at FROM doctors ORDER BY first_name"
     )
     .fetch_all(&state.pool)
     .await

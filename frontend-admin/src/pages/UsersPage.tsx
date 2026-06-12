@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { api, User } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useCachedData } from '@/hooks/useCachedData';
 import { PageHeader } from '@/components/PageHeader';
 import { Card } from '@/components/Card';
 import { Badge } from '@/components/Badge';
@@ -19,33 +20,23 @@ const roleBadgeVariant: Record<string, 'default' | 'success' | 'warning' | 'dang
 
 export function UsersPage() {
   const { token } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: usersData, loading, error, backgroundRefresh } = useCachedData(
+    'users',
+    useCallback(() => api.getUsers(token), [token]),
+    { enabled: !!token, staleTime: 120_000 }
+  );
+  const users = usersData ?? [];
   const [savingId, setSavingId] = useState<string | null>(null);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getUsers(token);
-      setUsers(data);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchUsers(); }, [token]);
+  const [mutationError, setMutationError] = useState('');
 
   const handleRoleChange = async (identifier: string, role: string) => {
     setSavingId(identifier);
-    setError('');
+    setMutationError('');
     try {
-      const updated = await api.updateUserRole(identifier, role, token);
-      setUsers(prev => prev.map(u => u.identifier === identifier ? updated : u));
+      await api.updateUserRole(identifier, role, token);
+      backgroundRefresh();
     } catch (e: any) {
-      setError(e.message);
+      setMutationError(e.message);
     } finally {
       setSavingId(null);
     }
@@ -59,10 +50,10 @@ export function UsersPage() {
         icon={UserGroupIcon}
       />
 
-      {error && (
+      {(error || mutationError) && (
         <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg ring-1 ring-red-200/50">
           <HugeiconsIcon icon={AlertCircleIcon} className="size-4 shrink-0" />
-          {error}
+          {error || mutationError}
         </div>
       )}
 
@@ -71,7 +62,7 @@ export function UsersPage() {
           <div className="p-8">
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
           </div>
@@ -85,22 +76,22 @@ export function UsersPage() {
           <div className="overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">User</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Role</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Change Role</th>
-                  <th className="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Registered</th>
+                <tr className="border-b border-border">
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">User</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Role</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Change Role</th>
+                  <th className="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-5 py-3">Registered</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-border">
                 {users.map((u) => (
-                  <tr key={u.identifier} className="transition-all duration-150 hover:bg-slate-50/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
+                  <tr key={u.identifier} className="transition-all duration-150 hover:bg-muted/80 hover:scale-[1.02] hover:shadow-md" style={{ transformOrigin: 'center' }}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                        <div className="size-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
                           {u.identifier.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-slate-900 font-mono">{u.identifier}</span>
+                        <span className="text-sm font-medium text-foreground font-mono">{u.identifier}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
@@ -113,14 +104,14 @@ export function UsersPage() {
                         value={u.role}
                         onChange={(e) => handleRoleChange(u.identifier, e.target.value)}
                         disabled={savingId === u.identifier}
-                        className="h-8 px-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-50"
+                        className="h-8 px-3 text-sm border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all disabled:opacity-50"
                       >
                         {ROLES.map((r) => (
                           <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground">
                       {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                   </tr>

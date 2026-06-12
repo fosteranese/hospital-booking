@@ -64,27 +64,54 @@ function hasBearerToken(headers?: HeadersInit): boolean {
   return !!h['Authorization']?.startsWith('Bearer ');
 }
 
+const REQUEST_TIMEOUT = 15_000;
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  const doFetch = async (signal: AbortSignal): Promise<Response> => {
+    const mergedOptions: RequestInit = {
+      ...options,
+      signal,
+      headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
+    };
+    try {
+      return await fetch(`${API_BASE}${path}`, mergedOptions);
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw new Error('Request timed out. Please try again.');
+      throw new Error('Unable to reach the server. Please check your internet connection and try again.');
+    }
+  };
+
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) },
-    });
-  } catch {
-    throw new Error('Unable to reach the server. Please check your internet connection and try again.');
+    res = await doFetch(controller.signal);
+  } catch (e) {
+    clearTimeout(timeoutId);
+    throw e;
   }
 
   if (res.status === 401 && hasBearerToken(options?.headers) && tokenStore.token) {
     try {
+      controller.abort();
       await tokenStore.refresh();
       const newHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string>) };
       newHeaders['Authorization'] = `Bearer ${tokenStore.token}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers: newHeaders });
+      const retryController = new AbortController();
+      const retryTimeout = setTimeout(() => retryController.abort(), REQUEST_TIMEOUT);
+      try {
+        res = await fetch(`${API_BASE}${path}`, { ...options, headers: newHeaders, signal: retryController.signal });
+      } finally {
+        clearTimeout(retryTimeout);
+      }
     } catch {
+      clearTimeout(timeoutId);
       throw new Error('Session expired. Please login again.');
     }
   }
+
+  clearTimeout(timeoutId);
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
@@ -221,8 +248,17 @@ export const api = {
   getAvailableDates: (doctorId?: string) =>
     request<AvailableDatesResponse>(`/availability/dates${doctorId ? `?doctor_id=${doctorId}` : ''}`),
 
-  getDoctors: () =>
-    request<Doctor[]>('/doctors'),
+  getDoctors: (() => {
+    let cached: { data: Doctor[]; expiry: number } | null = null;
+    const TTL = 300_000;
+    return () => {
+      if (cached && cached.expiry > Date.now()) return Promise.resolve(cached.data);
+      return request<Doctor[]>('/doctors').then(data => {
+        cached = { data, expiry: Date.now() + TTL };
+        return data;
+      });
+    };
+  })(),
 
   getAvailability: (doctorId: string, date: string, patientId?: string) => {
     let url = `/doctors/${doctorId}/availability?date=${date}`;

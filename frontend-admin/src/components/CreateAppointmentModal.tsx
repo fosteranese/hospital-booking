@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons';
+import { useDoctors } from '@/hooks/useDoctors';
 import { api } from '../lib/api';
 
 interface CreateAppointmentModalProps {
@@ -33,17 +34,21 @@ interface PatientResult {
 }
 
 export function CreateAppointmentModal({ open, onClose, onCreate, selectedDate, selectedStartTime, token }: CreateAppointmentModalProps) {
+  const { doctors: doctorList } = useDoctors();
   const [patientQuery, setPatientQuery] = useState('');
   const [patientResults, setPatientResults] = useState<PatientResult[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientResult | null>(null);
   const [searching, setSearching] = useState(false);
-  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [date, setDate] = useState(selectedDate ? selectedDate.toISOString().split('T')[0] : '');
   const [startTime, setStartTime] = useState(selectedStartTime || '');
   const [endTime, setEndTime] = useState('');
   const [notes, setNotes] = useState('');
   const [creating, setCreating] = useState(false);
+
+  const doctors = doctorList.map(d => ({
+    id: d.id, name: `${d.first_name} ${d.last_name}`, specialization: d.specialization || '',
+  }));
 
   const [showPatientSearch, setShowPatientSearch] = useState(true);
 
@@ -62,17 +67,6 @@ export function CreateAppointmentModal({ open, onClose, onCreate, selectedDate, 
     }
   };
 
-  const loadDoctors = async () => {
-    try {
-      const res = await api.getDoctors();
-      setDoctors(res.map((d: { id: string; first_name: string; last_name: string; specialization: string }) => ({
-        id: d.id, name: `${d.first_name} ${d.last_name}`, specialization: d.specialization || '',
-      })));
-    } catch {
-      setDoctors([]);
-    }
-  };
-
   const handleOpen = async () => {
     setSelectedPatient(null);
     setPatientQuery('');
@@ -83,7 +77,6 @@ export function CreateAppointmentModal({ open, onClose, onCreate, selectedDate, 
     setShowPatientSearch(true);
     if (selectedDate) setDate(selectedDate.toISOString().split('T')[0]);
     if (selectedStartTime) setStartTime(selectedStartTime);
-    await loadDoctors();
   };
 
   if (!open) return null;
