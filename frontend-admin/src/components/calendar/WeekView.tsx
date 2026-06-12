@@ -1,13 +1,14 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
 import {
   startOfWeek, endOfWeek, eachDayOfInterval,
-  format, isSameDay, isToday,
+  format, isToday,
 } from 'date-fns';
 import { AppointmentHistoryItem } from '@/lib/api';
 import {
   getStatusColor, timeToPercent, durationPercent,
   HOUR_HEIGHT, HOURS, HOUR_LABEL_WIDTH, DAY_TOTAL_HEIGHT,
   CALENDAR_SCROLL_MAXH, HOUR_GAP_PX, useCurrentTime, layoutOverlappingEvents,
+  LayoutEvent,
 } from './useCurrentTime';
 
 interface WeekViewProps {
@@ -32,11 +33,15 @@ export function WeekView({ appointments, currentDate, loading, refreshing, onEve
   [weekStart, weekEnd]);
 
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, AppointmentHistoryItem[]>();
+    const raw = new Map<string, AppointmentHistoryItem[]>();
     for (const a of appointments) {
-      const existing = map.get(a.slot_date);
+      const existing = raw.get(a.slot_date);
       if (existing) existing.push(a);
-      else map.set(a.slot_date, [a]);
+      else raw.set(a.slot_date, [a]);
+    }
+    const map = new Map<string, (AppointmentHistoryItem & LayoutEvent)[]>();
+    for (const [date, evs] of raw) {
+      map.set(date, layoutOverlappingEvents(evs));
     }
     return map;
   }, [appointments]);
@@ -124,7 +129,6 @@ export function WeekView({ appointments, currentDate, loading, refreshing, onEve
             const dateStr = format(day, 'yyyy-MM-dd');
             const dayEvents = eventsByDate.get(dateStr) || [];
             const today = isToday(day);
-            const laidOutEvents = layoutOverlappingEvents(dayEvents);
 
             return (
               <div
@@ -137,7 +141,8 @@ export function WeekView({ appointments, currentDate, loading, refreshing, onEve
                 {HOURS.map((_, i) => (
                   <div
                     key={i}
-                    className="h-[60px] border-b border-border"
+                    className="border-b border-border"
+                    style={{ height: HOUR_HEIGHT }}
                     onClick={() => {
                       const h = i;
                       const timeStr = `${String(h).padStart(2, '0')}:00`;
@@ -149,7 +154,7 @@ export function WeekView({ appointments, currentDate, loading, refreshing, onEve
                 ))}
 
                 {/* Events */}
-                {laidOutEvents.map((ev) => {
+                {dayEvents.map((ev) => {
                   const top = timeToPercent(ev.start_time);
                   const height = Math.max(durationPercent(ev.start_time, ev.end_time), 1.4);
                   const color = getStatusColor(ev);

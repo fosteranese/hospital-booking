@@ -105,7 +105,8 @@ export function DayView({ appointments, currentDate, loading, refreshing, onEven
             {HOURS.map((_, i) => (
               <div
                 key={i}
-                className="h-[60px] border-b border-border"
+                className="border-b border-border"
+                style={{ height: HOUR_HEIGHT }}
                 onClick={() => {
                   const h = i;
                   const timeStr = `${String(h).padStart(2, '0')}:00`;

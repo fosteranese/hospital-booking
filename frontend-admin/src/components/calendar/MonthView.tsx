@@ -85,7 +85,7 @@ export function MonthView({ appointments, currentDate, loading, refreshing, onEv
   }
 
   return (
-    <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden relative">
+    <div className="bg-card rounded-xl ring-1 ring-border relative">
       <div className="grid grid-cols-7 border-b border-border">
         {dayHeaders.map(d => (
           <div key={d} className="text-center py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{d}</div>
@@ -179,7 +179,7 @@ export function MonthView({ appointments, currentDate, loading, refreshing, onEv
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             {format(new Date(overflowTarget.date + 'T12:00:00'), 'MMM d')}
           </div>
-          <div className="space-y-1 max-h-[200px] overflow-y-auto">
+          <div className="space-y-1 max-h-[260px] overflow-y-auto">
             {overflowTarget.events.map(ev => (
               <div
                 key={ev.id}
