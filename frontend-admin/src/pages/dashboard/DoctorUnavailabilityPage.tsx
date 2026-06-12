@@ -40,7 +40,6 @@ export function DoctorUnavailabilityPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [profileReady, setProfileReady] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<string>('pending');
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +99,8 @@ export function DoctorUnavailabilityPage() {
     }, [token]),
     { enabled: profileReady }
   );
+
+  const [unavail, setUnavail] = useState<UnavailRecord[]>(cachedUnavail ?? []);
 
   useEffect(() => {
     if (cachedUnavail) setUnavail(cachedUnavail);
