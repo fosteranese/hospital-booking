@@ -121,8 +121,8 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                       className="absolute left-1 right-1 rounded-sm px-2 py-1.5 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 shadow-sm flex items-center gap-1.5"
                       style={{
-                        top: `calc(${top}% + 2px)`,
-                        height: `calc(${height}% - 5px)`,
+                        top: `calc(${top}% + 1px)`,
+                        height: `calc(${height}% - 3px)`,
                         minHeight: 22,
                         backgroundColor: color + '18',
                         borderLeft: `3px solid ${color}`,

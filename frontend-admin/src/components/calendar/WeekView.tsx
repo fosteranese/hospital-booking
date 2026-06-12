@@ -156,8 +156,8 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                       className="absolute left-0.5 right-0.5 rounded-sm px-1 py-1 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 flex items-center gap-1"
                       style={{
-                        top: `calc(${top}% + 2px)`,
-                        height: `calc(${height}% - 5px)`,
+                        top: `calc(${top}% + 1px)`,
+                        height: `calc(${height}% - 3px)`,
                         minHeight: 18,
                         backgroundColor: color + '20',
                         borderLeft: `2.5px solid ${color}`,
