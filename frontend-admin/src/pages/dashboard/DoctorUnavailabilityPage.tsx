@@ -212,22 +212,7 @@ export function DoctorUnavailabilityPage() {
     backgroundRefresh();
   };
 
-  if (profileLoading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="My Unavailability" description="Manage your time off and blackout periods" icon={Clock01Icon} />
-        <div className="bg-card rounded-xl border border-border/80 p-8">
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!doctorId) {
+  if (!doctorId && !profileLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="My Unavailability" description="Manage your time off and blackout periods" icon={Clock01Icon} />
