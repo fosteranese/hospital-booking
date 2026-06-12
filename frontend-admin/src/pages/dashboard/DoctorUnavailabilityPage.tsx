@@ -94,7 +94,7 @@ export function DoctorUnavailabilityPage() {
   }, [token]);
 
   const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
-    profileReady ? 'unavailability:doctor' : null,
+    'unavailability:doctor',
     useCallback(async () => {
       return await api.getDoctorUnavailability(doctorIdRef.current!, token);
     }, [token]),

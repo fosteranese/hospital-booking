@@ -48,7 +48,7 @@ export function DoctorConflictsPage() {
   }, [token]);
 
   const { data: raw, loading, error, backgroundRefresh } = useCachedData(
-    profileReady ? 'appointments:conflicts' : null,
+    'appointments:conflicts',
     useCallback(async () => {
       const data = await api.listAppointments({ doctor_id: doctorIdRef.current! }, token);
       return data.filter(a => a.has_conflict);
