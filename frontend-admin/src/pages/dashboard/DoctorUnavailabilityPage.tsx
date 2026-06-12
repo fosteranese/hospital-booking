@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useCachedData } from '@/hooks/useCachedData';
@@ -38,6 +38,7 @@ interface UnavailRecord {
 export function DoctorUnavailabilityPage() {
   const { token } = useAuth();
   const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [profileReady, setProfileReady] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [unavail, setUnavail] = useState<UnavailRecord[]>([]);
   const [error, setError] = useState('');
@@ -76,22 +77,28 @@ export function DoctorUnavailabilityPage() {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  const doctorIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     (async () => {
       try {
         const profile: any = await api.getProfile(token);
-        if (profile.doctor_id) setDoctorId(profile.doctor_id);
+        if (profile.doctor_id) {
+          doctorIdRef.current = profile.doctor_id;
+          setDoctorId(profile.doctor_id);
+          setProfileReady(true);
+        }
       } catch { /* ignore */ }
       finally { setProfileLoading(false); }
     })();
   }, [token]);
 
   const { data: cachedUnavail, loading, error: fetchError, backgroundRefresh } = useCachedData(
-    doctorId ? `unavailability:doctor:${doctorId}` : null,
+    profileReady ? 'unavailability:doctor' : null,
     useCallback(async () => {
-      return await api.getDoctorUnavailability(doctorId!, token);
-    }, [doctorId, token]),
-    { enabled: !!doctorId }
+      return await api.getDoctorUnavailability(doctorIdRef.current!, token);
+    }, [token]),
+    { enabled: profileReady }
   );
 
   useEffect(() => {

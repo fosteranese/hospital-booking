@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
@@ -30,7 +30,8 @@ import { StatusDot } from '@/components/StatusDot';
 
 export function DoctorConflictsPage() {
   const { token } = useAuth();
-  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const doctorIdRef = useRef<string | null>(null);
+  const [profileReady, setProfileReady] = useState(false);
   const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentHistoryItem | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
 
@@ -38,18 +39,21 @@ export function DoctorConflictsPage() {
     (async () => {
       try {
         const profile: any = await api.getProfile(token);
-        if (profile.doctor_id) setDoctorId(profile.doctor_id);
+        if (profile.doctor_id) {
+          doctorIdRef.current = profile.doctor_id;
+          setProfileReady(true);
+        }
       } catch { /* ignore */ }
     })();
   }, [token]);
 
-  const { data: raw, loading, error, refresh: fetchConflicts, backgroundRefresh } = useCachedData(
-    doctorId ? `appointments:conflicts:${doctorId}` : null,
+  const { data: raw, loading, error, backgroundRefresh } = useCachedData(
+    profileReady ? 'appointments:conflicts' : null,
     useCallback(async () => {
-      const data = await api.listAppointments({ doctor_id: doctorId! }, token);
+      const data = await api.listAppointments({ doctor_id: doctorIdRef.current! }, token);
       return data.filter(a => a.has_conflict);
-    }, [doctorId, token]),
-    { enabled: !!doctorId }
+    }, [token]),
+    { enabled: profileReady }
   );
   const appointments = raw ?? [];
   const refreshAll = useCallback(() => {
