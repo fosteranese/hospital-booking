@@ -236,7 +236,7 @@ export function CalendarPage() {
     <div className={`space-y-6 transition-[margin-right] duration-200 ${
       panelOpen ? 'lg:mr-[480px]' : ''
     }`}>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
         <PageHeader
           title="Calendar"
           description={viewHeader ? `${viewHeader} view · ${appointments.length} appointment${appointments.length !== 1 ? 's' : ''}` : `${appointments.length} appointments`}
@@ -318,7 +318,7 @@ export function CalendarPage() {
                     <path d="M15 18l-6-6 6-6" />
                   </svg>
                 </button>
-                <span className="text-sm font-semibold text-foreground min-w-[160px] text-center select-none" aria-live="polite">
+                <span className="text-sm font-semibold text-foreground min-w-[120px] sm:min-w-[160px] text-center select-none" aria-live="polite">
                   {dateLabel}
                 </span>
                 <button
