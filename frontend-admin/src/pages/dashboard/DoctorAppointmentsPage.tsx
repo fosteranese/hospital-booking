@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, AppointmentHistoryItem } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useContentContainer } from '@/pages/dashboard/DashboardLayout';
@@ -11,6 +11,7 @@ import { RefreshButton } from '@/components/RefreshButton';
 import { ErrorAlert } from '@/components/ErrorAlert';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
+import { SearchFilterBar } from '@/components/SearchFilterBar';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { format } from 'date-fns';
 import { useCachedData } from '@/hooks/useCachedData';
@@ -24,8 +25,6 @@ import {
   CheckmarkCircle01Icon,
   Cancel01Icon,
   ArrowRight01Icon,
-  Search01Icon,
-  ChevronDownIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 
@@ -66,8 +65,6 @@ export function DoctorAppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('all');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
   const [filterDate, setFilterDate] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(() => window.innerWidth >= 1024);
 
@@ -99,16 +96,6 @@ export function DoctorAppointmentsPage() {
   const refreshAll = useCallback(() => {
     backgroundRefresh();
   }, [backgroundRefresh]);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const requestAttendance = useCallback((id: string, attended: boolean) => {
     setPendingAttendance({ id, attended });
@@ -172,7 +159,6 @@ export function DoctorAppointmentsPage() {
     );
   });
 
-  const currentFilter = filterOptions.find(o => o.value === searchFilter);
   const isToday = (date: string) => date === today;
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const isTomorrow = (date: string) => date === tomorrow;
@@ -224,52 +210,14 @@ export function DoctorAppointmentsPage() {
       <UnavailabilityConflictBanner />
 
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div className="flex items-center h-12 w-full max-w-full sm:max-w-[340px] rounded-lg border border-border bg-card focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm">
-          <div className="shrink-0 text-muted-foreground ml-3">
-            <HugeiconsIcon icon={Search01Icon} className="size-4" />
-          </div>
-          <input
-            type="text"
-            placeholder={placeholderMap[searchFilter]}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 h-full pl-3 pr-3 text-sm bg-transparent focus:outline-none min-w-0 placeholder:text-muted-foreground"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="shrink-0 mr-1.5 p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-            </button>
-          )}
-          <div className="relative p-1.5" ref={filterRef}>
-            <button
-              onClick={() => setFilterOpen(v => !v)}
-              className="flex items-center gap-1.5 h-full rounded-md py-1.5 px-2.5 text-xs font-medium text-muted-foreground bg-muted hover:bg-slate-300 active:bg-muted transition-all whitespace-nowrap"
-            >
-              {currentFilter?.label}
-              <HugeiconsIcon icon={ChevronDownIcon} className={`size-3 transition-transform duration-150 ${filterOpen ? 'rotate-180' : ''}`} strokeWidth={2} />
-            </button>
-            {filterOpen && (
-              <div className="absolute right-0 top-full mt-1.5 min-w-[8rem] bg-card border border-border rounded-xl shadow-xl z-20 py-1.5 overflow-hidden">
-                {filterOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    onMouseDown={e => { e.preventDefault(); setSearchFilter(opt.value); setFilterOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-xs transition-colors ${
-                      opt.value === searchFilter
-                        ? 'bg-emerald-50 text-emerald-600 font-semibold'
-                        : 'text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <SearchFilterBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          filterValue={searchFilter}
+          onFilterChange={setSearchFilter}
+          placeholderMap={placeholderMap}
+          filterOptions={filterOptions}
+        />
         <div className="flex items-center gap-1 flex-wrap shrink-0 mt-2 sm:mt-0">
           {[
             { key: 'all', label: 'All', count: filtered.length, color: '' },
