@@ -1,2 +1,2 @@
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_appointments_referring_doctor
+CREATE INDEX IF NOT EXISTS idx_appointments_referring_doctor
 ON appointments(referring_doctor_id);

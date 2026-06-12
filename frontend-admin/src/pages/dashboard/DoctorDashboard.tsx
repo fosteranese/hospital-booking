@@ -478,7 +478,7 @@ export function DoctorDashboard() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <HugeiconsIcon icon={Calendar01Icon} className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Future Appointments</h3>
+              <h3 className="text-sm font-semibold text-foreground">Appointment Overview</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
             {loading ? (

@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -141,15 +141,30 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [dark, setDark] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    if (typeof window === 'undefined') return 'system';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    return 'system';
   });
 
+  const applyTheme = useCallback((t: 'light' | 'dark' | 'system') => {
+    const isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+  }, []);
+
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme, applyTheme]);
+
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => applyTheme('system');
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme, applyTheme]);
 
   const role = (userRole in roleNav ? userRole : 'admin') as keyof typeof roleNav;
   const navGroups = roleNav[role];
@@ -260,7 +275,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        {/* Footer — profile */}
+        {/* Footer — profile + theme */}
         <div className="border-t border-sidebar-border/60 shrink-0">
           {/* Profile */}
           <div className="relative px-2 pt-2 pb-1">
@@ -325,28 +340,46 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {/* Dark mode toggle */}
-          <div className="px-2 pb-1">
-            <button
-              onClick={() => setDark(!dark)}
-              className={cn(
-                'flex items-center rounded-md text-sidebar-foreground/25 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors',
-                collapsed ? 'justify-center w-full h-7' : 'gap-2.5 w-full h-7 px-2'
-              )}
-              aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {dark ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-3.5">
-                  <circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-3.5">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
-              {!collapsed && <span className="text-xs text-sidebar-foreground/35">Dark Mode</span>}
-            </button>
-          </div>
+          {/* Theme mode — bottom of sidebar */}
+          {!collapsed && (
+            <div className="border-t border-sidebar-border/40 px-2 py-1.5">
+              <div className="flex items-center justify-center gap-0.5">
+                {([['light', '☀️'], ['system', '🖥️'], ['dark', '🌙']] as const).map(([mode, icon]) => (
+                  <button
+                    key={mode}
+                    onClick={() => setTheme(mode)}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1 py-1 rounded-md text-xs font-medium transition-all',
+                      theme === mode
+                        ? 'bg-sidebar-accent text-sidebar-foreground/80 shadow-sm'
+                        : 'text-sidebar-foreground/30 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent/50'
+                    )}
+                    aria-label={`${mode} mode`}
+                  >
+                    <span className="text-[11px]">{icon}</span>
+                    <span className="capitalize">{mode}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {collapsed && (
+            <div className="px-2 py-1.5 flex justify-center">
+              <button
+                onClick={() => {
+                  const modes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+                  const idx = modes.indexOf(theme);
+                  setTheme(modes[(idx + 1) % 3]);
+                }}
+                className="size-7 rounded-md flex items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground/50 hover:bg-sidebar-accent transition-colors"
+                aria-label={`Current: ${theme} mode. Click to change.`}
+              >
+                <span className="text-xs">
+                  {theme === 'light' ? '☀️' : theme === 'dark' ? '🌙' : '🖥️'}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
