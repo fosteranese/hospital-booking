@@ -327,7 +327,10 @@ pub async fn login_handler(
     .bind(&email)
     .fetch_optional(&state.pool)
     .await
-    .map_err(|_| AppError::Internal("Failed to look up user".to_string()))?;
+    .map_err(|e| {
+        tracing::error!("Failed to look up user: {:?}", e);
+        AppError::Internal("Failed to look up user".to_string())
+    })?;
 
     let (identifier, role, password_hash, mfa_methods_str, _phone) = match user_row {
         Some(u) => u,

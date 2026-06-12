@@ -3,7 +3,6 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/figtree";
 @custom-variant dark (&:is(.dark, .dark *));
-@source "../node_modules/calendarkit-pro";
 
 @theme inline {
   --font-sans: "Figtree Variable", sans-serif;

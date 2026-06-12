@@ -63,10 +63,15 @@ async fn main() {
         std::process::exit(1);
     }
 
-    if let Err(e) = generate_slots(&pool, &settings).await {
-        tracing::error!("Failed to generate slots: {:?}", e);
-        std::process::exit(1);
-    }
+    // Generate slots in background so server starts immediately
+    let init_pool = pool.clone();
+    let init_settings = settings.clone();
+    tokio::spawn(async move {
+        match generate_slots(&init_pool, &init_settings).await {
+            Ok(_) => tracing::info!("Initial slot generation complete"),
+            Err(e) => tracing::error!("Initial slot generation failed: {:?}", e),
+        }
+    });
 
     // Seed admin user from environment variable
     if let Ok(admin_identifier) = std::env::var("ADMIN_IDENTIFIER") {
@@ -113,10 +118,29 @@ async fn main() {
         }
     });
 
-    let smtp_host = settings.get("smtp", "host").await.ok().flatten();
-    let smtp_user = settings.get("smtp", "user").await.ok().flatten();
-    let smtp_pass = settings.get("smtp", "pass").await.ok().flatten();
-    let from_email = settings.get("smtp", "from_email").await.ok().flatten()
+    // Batch-load settings: 3 group queries instead of 10 individual queries
+    let smtp_map: std::collections::HashMap<String, String> = settings.get_group("smtp").await
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|s| s.value.map(|v| (s.name, v)))
+        .collect();
+
+    let appt_map: std::collections::HashMap<String, String> = settings.get_group("appointment").await
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|s| s.value.map(|v| (s.name, v)))
+        .collect();
+
+    let clinic_map: std::collections::HashMap<String, String> = settings.get_group("clinic").await
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|s| s.value.map(|v| (s.name, v)))
+        .collect();
+
+    let smtp_host = smtp_map.get("host").cloned();
+    let smtp_user = smtp_map.get("user").cloned();
+    let smtp_pass = smtp_map.get("pass").cloned();
+    let from_email = smtp_map.get("from_email").cloned()
         .unwrap_or_else(|| "noreply@hospital.com".to_string());
 
     let email_service = EmailService::new(smtp_host, smtp_user, smtp_pass, from_email);
@@ -136,22 +160,22 @@ async fn main() {
         }
     };
 
-    let min_gap_minutes: i64 = settings.get("appointment", "min_gap_minutes").await.ok().flatten()
+    let min_gap_minutes: i64 = appt_map.get("min_gap_minutes")
         .and_then(|v| v.parse().ok())
         .unwrap_or(180);
 
-    let min_advance_days: i64 = settings.get("appointment", "min_advance_days").await.ok().flatten()
+    let min_advance_days: i64 = appt_map.get("min_advance_days")
         .and_then(|v| v.parse().ok())
         .unwrap_or(7);
 
-    let max_upcoming_appointments: i64 = settings.get("appointment", "max_upcoming_appointments").await.ok().flatten()
+    let max_upcoming_appointments: i64 = appt_map.get("max_upcoming_appointments")
         .and_then(|v| v.parse().ok())
         .unwrap_or(3);
 
-    let clinic_name = settings.get("clinic", "clinic_name").await.ok().flatten()
+    let clinic_name = clinic_map.get("clinic_name").cloned()
         .unwrap_or_else(|| "MEDIPORT FERTILITY SERVICES".to_string());
 
-    let clinic_address = settings.get("clinic", "clinic_address").await.ok().flatten()
+    let clinic_address = clinic_map.get("clinic_address").cloned()
         .unwrap_or_else(|| "Bissau Avenue, East-Legon, Accra, Ghana".to_string());
 
     let notification_email = std::env::var("CLINIC_NOTIFICATION_EMAIL").ok();
