@@ -24,6 +24,7 @@ export function useCachedData<T>(
   const fetcherRef = useRef(fetcher);
   const staleTimeRef = useRef(options?.staleTime);
   const retryCountRef = useRef(options?.retryCount ?? 1);
+  const servedKeyRef = useRef<string | null>(null);
   const { registerRefresh, unregisterRefresh } = useRefresh();
 
   keyRef.current = cacheKey;
@@ -98,9 +99,17 @@ export function useCachedData<T>(
     if (options?.enabled === false) return;
     if (!cacheKey) return;
 
-    hasCachedRef.current = !!getCached<T>(cacheKey);
+    const cached = getCached<T>(cacheKey);
+    hasCachedRef.current = !!cached;
 
-    fetch(hasCachedRef.current);
+    if (cached && servedKeyRef.current !== cacheKey) {
+      servedKeyRef.current = cacheKey;
+      setData(cached);
+      setLoading(false);
+      fetch(true);
+    } else {
+      fetch(hasCachedRef.current);
+    }
   }, [cacheKey, options?.enabled, fetch]);
 
   const refresh = useCallback(() => {
