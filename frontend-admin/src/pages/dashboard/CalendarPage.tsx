@@ -9,10 +9,9 @@ import { PageHeader } from '@/components/PageHeader';
 import { UnavailabilityConflictBanner } from '@/components/UnavailabilityConflictBanner';
 import { RefreshButton } from '@/components/RefreshButton';
 import { ErrorAlert } from '@/components/ErrorAlert';
-import { EventDetailModal } from '@/components/EventDetailModal';
-import { CreateAppointmentModal } from '@/components/CreateAppointmentModal';
 import { AppointmentSlidePanel } from '@/components/AppointmentSlidePanel';
 import { ConfirmAttendanceModal } from '@/components/ConfirmAttendanceModal';
+import { CreateAppointmentModal } from '@/components/CreateAppointmentModal';
 import { RescheduleModal } from '@/components/RescheduleModal';
 import { ScheduleModal } from '@/components/ScheduleModal';
 import { CalendarSlidePanel } from '@/components/CalendarSlidePanel';
@@ -51,7 +50,6 @@ export function CalendarPage() {
   const [calendarOpen, setCalendarOpen] = useState(() => window.innerWidth >= 1024);
 
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentHistoryItem | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<Date | null>(null);
   const [createStartTime, setCreateStartTime] = useState('');
@@ -81,7 +79,7 @@ export function CalendarPage() {
 
   const cacheKey = `appointments:calendar:${dateRange.from}:${dateRange.to}:${displayMode}`;
 
-  const { data: rawAppointments, loading, error, backgroundRefresh } = useCachedData(
+  const { data: rawAppointments, loading, refreshing, error, backgroundRefresh } = useCachedData(
     cacheKey,
     useCallback(() => api.listAppointments({ from: dateRange.from, to: dateRange.to }, token), [token, dateRange.from, dateRange.to]),
     { enabled: !!token }
@@ -170,7 +168,6 @@ export function CalendarPage() {
 
   const handleEventClick = useCallback((appt: AppointmentHistoryItem) => {
     setSelectedAppointment(appt);
-    setDetailOpen(true);
   }, []);
 
   const handleSlotClick = useCallback((date: Date, startTime?: string) => {
@@ -214,26 +211,7 @@ export function CalendarPage() {
     }
   }, [pendingAttendance, token, refreshAll, addToast]);
 
-  /* ── EventDetailModal handlers ── */
-
-  const handleUpdateEvent = useCallback(async (data: { attended?: boolean | null; notes?: string }) => {
-    if (!selectedAppointment) return;
-    if (data.notes !== undefined) {
-      await api.updateAppointment(selectedAppointment.id, { notes: data.notes }, token);
-    }
-    if (data.attended !== selectedAppointment.attended && data.attended !== undefined && data.attended !== null) {
-      await api.markAttendance(selectedAppointment.id, { attended: data.attended }, token);
-    }
-    await backgroundRefresh();
-  }, [selectedAppointment, token, backgroundRefresh]);
-
-  const handleDeleteEvent = useCallback(async () => {
-    if (!selectedAppointment) return;
-    await api.cancelAppointment(selectedAppointment.id, { cancellation_reason: 'Cancelled by staff' }, token);
-    setDetailOpen(false);
-    setSelectedAppointment(null);
-    await backgroundRefresh();
-  }, [selectedAppointment, token, backgroundRefresh]);
+  /* ── Modal handlers ── */
 
   const handleCreateAppointment = useCallback(async (data: {
     patient_id: string; doctor_id: string; slot_date: string;
@@ -332,32 +310,33 @@ export function CalendarPage() {
           {displayMode === 'calendar' && (
             <div className="flex items-center gap-1">
               <button
-                onClick={handlePrev}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Previous"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-              <span className="text-sm font-semibold text-foreground min-w-[160px] text-center select-none">
-                {dateLabel}
-              </span>
-              <button
-                onClick={handleNext}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Next"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-              <button
-                onClick={handleToday}
-                className="ml-1 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors border border-border"
-              >
-                Today
-              </button>
+                  onClick={handlePrev}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Previous"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <span className="text-sm font-semibold text-foreground min-w-[160px] text-center select-none" aria-live="polite">
+                  {dateLabel}
+                </span>
+                <button
+                  onClick={handleNext}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Next"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-4">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleToday}
+                  className="ml-1 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors border border-border"
+                  aria-label="Go to today"
+                >
+                  Today
+                </button>
             </div>
           )}
 
@@ -365,18 +344,20 @@ export function CalendarPage() {
           {displayMode === 'calendar' && (
             <div className="flex items-center gap-1 ml-auto">
               {VIEWS.map(v => (
-                <button
-                  key={v}
-                  onClick={() => setCurrentView(v)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                    currentView === v
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {v.charAt(0).toUpperCase() + v.slice(1)}
-                </button>
-              ))}
+                  <button
+                    key={v}
+                    onClick={() => setCurrentView(v)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                      currentView === v
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                    aria-label={`${v} view`}
+                    aria-pressed={currentView === v}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                ))}
             </div>
           )}
         </div>
@@ -390,6 +371,7 @@ export function CalendarPage() {
               appointments={appointments}
               currentDate={currentDate}
               loading={loading}
+              refreshing={refreshing}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
             />
@@ -399,6 +381,7 @@ export function CalendarPage() {
               appointments={appointments}
               currentDate={currentDate}
               loading={loading}
+              refreshing={refreshing}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
             />
@@ -408,6 +391,7 @@ export function CalendarPage() {
               appointments={appointments}
               currentDate={currentDate}
               loading={loading}
+              refreshing={refreshing}
               onEventClick={handleEventClick}
               onDayClick={handleDayClick}
             />
@@ -417,6 +401,7 @@ export function CalendarPage() {
               appointments={appointments}
               currentDate={currentDate}
               loading={loading}
+              refreshing={refreshing}
               onMonthClick={handleMonthClick}
             />
           )}
@@ -425,30 +410,11 @@ export function CalendarPage() {
         <CalendarListView
           appointments={appointments}
           loading={loading}
+          refreshing={refreshing}
           onSelectAppointment={handleSelectAppointment}
           onRequestAttendance={requestAttendance}
         />
       )}
-
-      {/* Modals — Calendar mode */}
-      <EventDetailModal
-        event={selectedAppointment ? {
-          id: selectedAppointment.id,
-          patient_name: selectedAppointment.patient_name,
-          doctor_name: selectedAppointment.doctor_name,
-          specialization: selectedAppointment.specialization,
-          start: new Date(selectedAppointment.slot_date + 'T' + selectedAppointment.start_time),
-          end: new Date(selectedAppointment.slot_date + 'T' + selectedAppointment.end_time),
-          status: selectedAppointment.status,
-          attended: selectedAppointment.attended,
-          notes: selectedAppointment.notes || '',
-          cancellation_reason: selectedAppointment.cancellation_reason || '',
-        } : null}
-        open={detailOpen}
-        onClose={() => { setDetailOpen(false); setSelectedAppointment(null); }}
-        onUpdate={handleUpdateEvent}
-        onDelete={handleDeleteEvent}
-      />
 
       <CreateAppointmentModal
         open={createOpen}
@@ -459,8 +425,7 @@ export function CalendarPage() {
         token={token}
       />
 
-      {/* Modals — List mode */}
-      {selectedAppointment && displayMode === 'list' && (
+      {selectedAppointment && (
         <AppointmentSlidePanel
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}

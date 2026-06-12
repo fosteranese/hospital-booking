@@ -1,20 +1,25 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
 import { format, isToday } from 'date-fns';
 import { AppointmentHistoryItem } from '@/lib/api';
-import { getStatusColor, timeToPercent, durationPercent, HOUR_HEIGHT, HOURS } from './useCurrentTime';
+import {
+  getStatusColor, timeToPercent, durationPercent,
+  HOUR_HEIGHT, HOURS, HOUR_LABEL_WIDTH, DAY_TOTAL_HEIGHT,
+  CALENDAR_SCROLL_MAXH, HOUR_GAP_PX, useCurrentTime, layoutOverlappingEvents,
+} from './useCurrentTime';
 
 interface DayViewProps {
   appointments: AppointmentHistoryItem[];
   currentDate: Date;
   loading: boolean;
+  refreshing?: boolean;
   onEventClick: (appointment: AppointmentHistoryItem) => void;
   onSlotClick: (date: Date, startTime: string) => void;
 }
 
-export function DayView({ appointments, currentDate, loading, onEventClick, onSlotClick }: DayViewProps) {
+export function DayView({ appointments, currentDate, loading, refreshing, onEventClick, onSlotClick }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
-  const now = new Date();
+  const now = useCurrentTime();
 
   const dateStr = format(currentDate, 'yyyy-MM-dd');
   const dayEvents = useMemo(
@@ -22,6 +27,11 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
     [appointments, dateStr]
   );
   const isDayToday = isToday(currentDate);
+
+  const laidOutEvents = useMemo(
+    () => layoutOverlappingEvents(dayEvents),
+    [dayEvents]
+  );
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -31,7 +41,6 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
     }
   }, []);
 
-  // Measure scrollbar width so header padding can match it
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -60,8 +69,6 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
     );
   }
 
-  const DAY_TOTAL_HEIGHT = HOUR_HEIGHT * 24;
-
   return (
     <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden flex flex-col">
       {/* Header — outside scroll, with padding matching scrollbar width */}
@@ -77,10 +84,10 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
       </div>
 
       {/* Scrollable body */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ maxHeight: CALENDAR_SCROLL_MAXH }}>
         <div className="flex" style={{ minHeight: DAY_TOTAL_HEIGHT }}>
           {/* Hour labels */}
-          <div className="w-14 shrink-0 border-r border-border relative">
+          <div className="relative shrink-0 border-r border-border" style={{ width: HOUR_LABEL_WIDTH }}>
             {HOURS.map((h, i) => (
               <div
                 key={h}
@@ -110,32 +117,40 @@ export function DayView({ appointments, currentDate, loading, onEventClick, onSl
             ))}
 
             {/* Events */}
-            {dayEvents.map((ev) => {
+            {laidOutEvents.map((ev) => {
               const top = timeToPercent(ev.start_time);
               const height = Math.max(durationPercent(ev.start_time, ev.end_time), 1.4);
               const color = getStatusColor(ev);
+              const leftPct = (ev.lane / ev.totalLanes) * 100;
+              const widthPct = (1 / ev.totalLanes) * 100;
 
               return (
                 <div
-                      key={ev.id}
-                      onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="absolute left-1 right-1 rounded-sm px-2 py-1.5 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 shadow-sm flex items-center gap-1.5"
-                      style={{
-                        top: `calc(${top}% + 1px)`,
-                        height: `calc(${height}% - 3px)`,
-                        minHeight: 22,
-                        backgroundColor: color + '18',
-                        borderLeft: `3px solid ${color}`,
-                      }}
+                  key={ev.id}
+                  onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onEventClick(ev); } }}
+                  aria-label={`Appointment: ${ev.patient_name}, ${ev.start_time}–${ev.end_time}`}
+                  className="absolute rounded-sm px-2 py-1.5 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 shadow-sm flex items-center gap-1.5"
+                  style={{
+                    left: `calc(${leftPct}% + 4px)`,
+                    width: `calc(${widthPct}% - 8px)`,
+                    top: `calc(${top}% + ${HOUR_GAP_PX}px)`,
+                    height: `calc(${height}% - ${HOUR_GAP_PX * 3}px)`,
+                    minHeight: 22,
+                    backgroundColor: color + '18',
+                    borderLeft: `3px solid ${color}`,
+                  }}
+                >
+                  <div
+                    className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold text-white leading-none"
+                    style={{ backgroundColor: color }}
                   >
-                    <div
-                      className="size-5 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold text-white leading-none"
-                      style={{ backgroundColor: color }}
-                    >
-                      {ev.patient_name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
-                    </div>
-                    <span className="text-sm font-semibold text-foreground truncate">{ev.patient_name}</span>
+                    {ev.patient_name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                   </div>
+                  <span className="text-sm font-semibold text-foreground truncate">{ev.patient_name}</span>
+                </div>
               );
             })}
 

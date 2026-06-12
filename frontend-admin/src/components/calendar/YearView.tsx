@@ -11,6 +11,7 @@ interface YearViewProps {
   appointments: AppointmentHistoryItem[];
   currentDate: Date;
   loading: boolean;
+  refreshing?: boolean;
   onMonthClick: (date: Date) => void;
 }
 
@@ -95,7 +96,7 @@ function MiniMonth({
   );
 }
 
-export function YearView({ appointments, currentDate, loading, onMonthClick }: YearViewProps) {
+export function YearView({ appointments, currentDate, loading, refreshing, onMonthClick }: YearViewProps) {
   const year = currentDate.getFullYear();
 
   const eventsByDate = useMemo(() => {

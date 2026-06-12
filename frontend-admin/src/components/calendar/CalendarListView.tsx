@@ -12,11 +12,12 @@ import { EmptyState } from '@/components/EmptyState';
 interface CalendarListViewProps {
   appointments: AppointmentHistoryItem[];
   loading: boolean;
+  refreshing?: boolean;
   onSelectAppointment: (appointment: AppointmentHistoryItem) => void;
   onRequestAttendance: (id: string, attended: boolean) => void;
 }
 
-export function CalendarListView({ appointments, loading, onSelectAppointment, onRequestAttendance }: CalendarListViewProps) {
+export function CalendarListView({ appointments, loading, refreshing, onSelectAppointment, onRequestAttendance }: CalendarListViewProps) {
   const today = new Date().toISOString().slice(0, 10);
 
   const groupedByDate = useMemo(() => {

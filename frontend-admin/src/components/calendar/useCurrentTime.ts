@@ -40,6 +40,11 @@ export function getStatusColor(appt: {
 }
 
 export const HOUR_HEIGHT = 60;
+export const HOUR_LABEL_WIDTH = 56; // w-14
+export const DAY_TOTAL_HEIGHT = HOUR_HEIGHT * 24;
+export const MAX_VISIBLE_EVENTS = 3;
+export const CALENDAR_SCROLL_MAXH = 'calc(100vh - 320px)';
+export const HOUR_GAP_PX = 1;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const period = i >= 12 ? 'PM' : 'AM';
@@ -47,3 +52,30 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return `${h}${period}`;
 });
 export { HOURS };
+
+export interface LayoutEvent {
+  lane: number;
+  totalLanes: number;
+}
+
+export function layoutOverlappingEvents<T extends { start_time: string; end_time: string }>(
+  events: T[]
+): (T & LayoutEvent)[] {
+  const sorted = [...events].sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const lanes: number[] = [];
+
+  return sorted.map((ev) => {
+    const [sh, sm] = ev.start_time.split(':').map(Number);
+    const [eh, em] = ev.end_time.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+
+    let lane = lanes.findIndex((end) => end <= startMin);
+    if (lane === -1) {
+      lane = lanes.length;
+      lanes.push(0);
+    }
+    lanes[lane] = eh * 60 + em;
+
+    return { ...ev, lane, totalLanes: lanes.length };
+  });
+}

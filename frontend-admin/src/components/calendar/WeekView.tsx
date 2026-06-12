@@ -4,20 +4,25 @@ import {
   format, isSameDay, isToday,
 } from 'date-fns';
 import { AppointmentHistoryItem } from '@/lib/api';
-import { getStatusColor, timeToPercent, durationPercent, HOUR_HEIGHT, HOURS } from './useCurrentTime';
+import {
+  getStatusColor, timeToPercent, durationPercent,
+  HOUR_HEIGHT, HOURS, HOUR_LABEL_WIDTH, DAY_TOTAL_HEIGHT,
+  CALENDAR_SCROLL_MAXH, HOUR_GAP_PX, useCurrentTime, layoutOverlappingEvents,
+} from './useCurrentTime';
 
 interface WeekViewProps {
   appointments: AppointmentHistoryItem[];
   currentDate: Date;
   loading: boolean;
+  refreshing?: boolean;
   onEventClick: (appointment: AppointmentHistoryItem) => void;
   onSlotClick: (date: Date, startTime: string) => void;
 }
 
-export function WeekView({ appointments, currentDate, loading, onEventClick, onSlotClick }: WeekViewProps) {
+export function WeekView({ appointments, currentDate, loading, refreshing, onEventClick, onSlotClick }: WeekViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
-  const now = new Date();
+  const now = useCurrentTime();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -73,13 +78,11 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
     );
   }
 
-  const DAY_TOTAL_HEIGHT = HOUR_HEIGHT * 24;
-
   return (
     <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden flex flex-col">
       {/* Header — outside scroll, with padding matching scrollbar width */}
       <div className="flex border-b border-border bg-card shrink-0" style={{ paddingRight: scrollbarWidth }}>
-        <div className="w-14 shrink-0 border-r border-border" />
+        <div className="shrink-0 border-r border-border" style={{ width: HOUR_LABEL_WIDTH }} />
         {days.map((day) => {
           const today = isToday(day);
           return (
@@ -101,10 +104,10 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
       </div>
 
       {/* Scrollable body */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ maxHeight: CALENDAR_SCROLL_MAXH }}>
         <div className="flex relative" style={{ minHeight: DAY_TOTAL_HEIGHT }}>
           {/* Hour labels */}
-          <div className="w-14 shrink-0 border-r border-border relative">
+          <div className="relative shrink-0 border-r border-border" style={{ width: HOUR_LABEL_WIDTH }}>
             {HOURS.map((h, i) => (
               <div
                 key={h}
@@ -121,6 +124,7 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
             const dateStr = format(day, 'yyyy-MM-dd');
             const dayEvents = eventsByDate.get(dateStr) || [];
             const today = isToday(day);
+            const laidOutEvents = layoutOverlappingEvents(dayEvents);
 
             return (
               <div
@@ -145,19 +149,27 @@ export function WeekView({ appointments, currentDate, loading, onEventClick, onS
                 ))}
 
                 {/* Events */}
-                {dayEvents.map((ev) => {
+                {laidOutEvents.map((ev) => {
                   const top = timeToPercent(ev.start_time);
                   const height = Math.max(durationPercent(ev.start_time, ev.end_time), 1.4);
                   const color = getStatusColor(ev);
+                  const leftPct = (ev.lane / ev.totalLanes) * 100;
+                  const widthPct = (1 / ev.totalLanes) * 100;
 
                   return (
                     <div
                       key={ev.id}
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      className="absolute left-0.5 right-0.5 rounded-sm px-1 py-1 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 flex items-center gap-1"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onEventClick(ev); } }}
+                      aria-label={`Appointment: ${ev.patient_name}, ${ev.start_time}–${ev.end_time}`}
+                      className="absolute rounded-sm px-1 py-1 overflow-hidden cursor-pointer hover:opacity-85 transition-opacity z-10 flex items-center gap-1"
                       style={{
-                        top: `calc(${top}% + 1px)`,
-                        height: `calc(${height}% - 3px)`,
+                        left: `calc(${leftPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                        top: `calc(${top}% + ${HOUR_GAP_PX}px)`,
+                        height: `calc(${height}% - ${HOUR_GAP_PX * 3}px)`,
                         minHeight: 18,
                         backgroundColor: color + '20',
                         borderLeft: `2.5px solid ${color}`,

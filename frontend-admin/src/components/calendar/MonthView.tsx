@@ -1,21 +1,22 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameMonth, isSameDay, isToday,
   format,
 } from 'date-fns';
 import { AppointmentHistoryItem } from '@/lib/api';
-import { getStatusColor } from './useCurrentTime';
+import { getStatusColor, MAX_VISIBLE_EVENTS } from './useCurrentTime';
 
 interface MonthViewProps {
   appointments: AppointmentHistoryItem[];
   currentDate: Date;
   loading: boolean;
+  refreshing?: boolean;
   onEventClick: (appointment: AppointmentHistoryItem) => void;
   onDayClick: (date: Date) => void;
 }
 
-export function MonthView({ appointments, currentDate, loading, onEventClick, onDayClick }: MonthViewProps) {
+export function MonthView({ appointments, currentDate, loading, refreshing, onEventClick, onDayClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
 
@@ -45,6 +46,25 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
     return result;
   }, [days]);
 
+  const [overflowTarget, setOverflowTarget] = useState<{ date: string; events: AppointmentHistoryItem[]; el: HTMLElement } | null>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  const handleOverflowClick = useCallback((dateStr: string, events: AppointmentHistoryItem[], e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOverflowTarget({ date: dateStr, events, el: e.currentTarget as HTMLElement });
+  }, []);
+
+  useEffect(() => {
+    if (!overflowTarget) return;
+    const handler = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowTarget(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [overflowTarget]);
+
   if (loading && appointments.length === 0) {
     return (
       <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden">
@@ -65,7 +85,7 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
   }
 
   return (
-    <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden">
+    <div className="bg-card rounded-xl ring-1 ring-border overflow-hidden relative">
       <div className="grid grid-cols-7 border-b border-border">
         {dayHeaders.map(d => (
           <div key={d} className="text-center py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{d}</div>
@@ -80,8 +100,8 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
               const today = isToday(day);
               const selected = isSameDay(day, currentDate);
               const dayEvents = eventsByDate.get(dateStr) || [];
-              const visible = dayEvents.slice(0, 3);
-              const overflow = dayEvents.length - 3;
+              const visible = dayEvents.slice(0, MAX_VISIBLE_EVENTS);
+              const overflow = dayEvents.length - MAX_VISIBLE_EVENTS;
 
               return (
                 <div
@@ -90,6 +110,10 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
                   className={`aspect-square p-1.5 border-b border-r border-border cursor-pointer transition-colors hover:bg-muted/50 ${
                     !sameMonth ? 'bg-muted/30' : ''
                   } ${today ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') onDayClick(day); }}
+                  aria-label={`${format(day, 'EEEE, MMMM d, yyyy')}${sameMonth ? `, ${dayEvents.length} appointments` : ''}`}
                 >
                   <div className="flex items-center justify-between mb-0.5">
                     <span
@@ -106,7 +130,16 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
                       {format(day, 'd')}
                     </span>
                     {overflow > 0 && (
-                      <span className="text-[10px] font-medium text-muted-foreground">+{overflow}</span>
+                      <span
+                        className="text-[10px] font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors relative"
+                        onClick={(e) => handleOverflowClick(dateStr, dayEvents.slice(MAX_VISIBLE_EVENTS), e)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleOverflowClick(dateStr, dayEvents.slice(MAX_VISIBLE_EVENTS), e as any); }}
+                        aria-label={`${overflow} more appointments`}
+                      >
+                        +{overflow}
+                      </span>
                     )}
                   </div>
                   <div className="space-y-0.5">
@@ -114,6 +147,10 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
                       <div
                         key={ev.id}
                         onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onEventClick(ev); } }}
+                        aria-label={`${ev.patient_name}, ${ev.start_time}–${ev.end_time}`}
                         className="flex items-center gap-1 px-1 py-0.5 rounded text-[11px] font-medium truncate cursor-pointer hover:opacity-80 transition-opacity"
                         style={{ backgroundColor: getStatusColor(ev) + '20', color: getStatusColor(ev), borderLeft: `2px solid ${getStatusColor(ev)}` }}
                       >
@@ -127,6 +164,39 @@ export function MonthView({ appointments, currentDate, loading, onEventClick, on
           </div>
         ))}
       </div>
+
+      {/* Overflow popover */}
+      {overflowTarget && (
+        <div
+          ref={overflowRef}
+          className="absolute z-50 bg-card border border-border rounded-xl shadow-lg p-3 min-w-[200px] max-w-[280px]"
+          style={{
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            {format(new Date(overflowTarget.date + 'T12:00:00'), 'MMM d')}
+          </div>
+          <div className="space-y-1 max-h-[200px] overflow-y-auto">
+            {overflowTarget.events.map(ev => (
+              <div
+                key={ev.id}
+                onClick={() => { onEventClick(ev); setOverflowTarget(null); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') { onEventClick(ev); setOverflowTarget(null); } }}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-muted transition-colors"
+              >
+                <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: getStatusColor(ev) }} />
+                <span className="text-xs text-muted-foreground shrink-0">{ev.start_time.slice(0, 5)}</span>
+                <span className="font-medium text-foreground truncate">{ev.patient_name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
