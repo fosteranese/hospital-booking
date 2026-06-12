@@ -1165,8 +1165,11 @@ pub struct DashboardStatsResponse {
     pub missed_today: i64,
     pub tomorrow_appointments: i64,
     pub this_week_appointments: i64,
+    pub last_week_appointments: i64,
     pub this_month_appointments: i64,
+    pub last_month_appointments: i64,
     pub this_year_appointments: i64,
+    pub last_year_appointments: i64,
     pub total_appointments: i64,
 }
 
@@ -1187,16 +1190,19 @@ pub async fn dashboard_stats_handler(
         None
     };
 
-    let (today_appointments, missed_today, tomorrow_appointments, this_week_appointments, this_month_appointments, this_year_appointments) =
+    let (today_appointments, missed_today, tomorrow_appointments, this_week_appointments, last_week_appointments, this_month_appointments, last_month_appointments, this_year_appointments, last_year_appointments) =
         if let Some(did) = doctor_id {
-            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64)>(
+            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64, i64, i64, i64)>(
                 "SELECT
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.attended = false),
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE + 1 AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE - INTERVAL '7 days') AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE - INTERVAL '7 days') AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND a.status != 'cancelled'),
-                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled')
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE - INTERVAL '1 month') AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE - INTERVAL '1 month') AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) - 1 AND a.status != 'cancelled')
                  FROM appointments a
                  JOIN availability_slots s ON a.slot_id = s.id
                  WHERE a.doctor_id = $1"
@@ -1206,14 +1212,17 @@ pub async fn dashboard_stats_handler(
             .await
             .map_err(|e| AppError::Database(e))?
         } else {
-            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64)>(
+            sqlx::query_as::<_, (i64, i64, i64, i64, i64, i64, i64, i64, i64)>(
                 "SELECT
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE AND a.attended = false),
                     COUNT(*) FILTER (WHERE s.slot_date = CURRENT_DATE + 1 AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE - INTERVAL '7 days') AND EXTRACT(WEEK FROM s.slot_date) = EXTRACT(WEEK FROM CURRENT_DATE - INTERVAL '7 days') AND a.status != 'cancelled'),
                     COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND a.status != 'cancelled'),
-                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled')
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE - INTERVAL '1 month') AND EXTRACT(MONTH FROM s.slot_date) = EXTRACT(MONTH FROM CURRENT_DATE - INTERVAL '1 month') AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) AND a.status != 'cancelled'),
+                    COUNT(*) FILTER (WHERE EXTRACT(YEAR FROM s.slot_date) = EXTRACT(YEAR FROM CURRENT_DATE) - 1 AND a.status != 'cancelled')
                  FROM appointments a
                  JOIN availability_slots s ON a.slot_id = s.id"
             )
@@ -1240,8 +1249,11 @@ pub async fn dashboard_stats_handler(
         missed_today,
         tomorrow_appointments,
         this_week_appointments,
+        last_week_appointments,
         this_month_appointments,
+        last_month_appointments,
         this_year_appointments,
+        last_year_appointments,
         total_appointments,
     }))
 }

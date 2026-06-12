@@ -317,8 +317,11 @@ export interface DashboardStats {
   missed_today: number;
   tomorrow_appointments: number;
   this_week_appointments: number;
+  last_week_appointments: number;
   this_month_appointments: number;
+  last_month_appointments: number;
   this_year_appointments: number;
+  last_year_appointments: number;
   total_appointments: number;
 }
 

@@ -20,20 +20,19 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Calendar01Icon,
   ArrowRight01Icon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
   Calendar02Icon,
   CheckmarkCircle01Icon,
   Cancel01Icon,
   AlertCircleIcon,
   TimeScheduleIcon,
   Calendar03Icon,
-  ArrowUp01Icon,
-  ArrowDown01Icon,
   Share08Icon,
   InformationCircleIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
 import { formatTime, getEffectiveStatus, PatientAvatar } from '@/lib/helpers';
-import { prefetchCache } from '@/lib/cache';
 import { StatusDot } from '@/components/StatusDot';
 import { useToast } from '@/contexts/toast-context';
 
@@ -158,13 +157,7 @@ function TodayStatCard({
 /* ── Row 2 stat card with trend ── */
 
 function TrendBadge({ value, label }: { value: number | null; label: string }) {
-  if (value === null) {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
-        —<span className="text-muted-foreground ml-0.5">{label}</span>
-      </span>
-    );
-  }
+  if (value === null || value === undefined) return null;
   const isUp = value > 0;
   const isNeutral = value === 0;
   return (
@@ -178,11 +171,11 @@ function TrendBadge({ value, label }: { value: number | null; label: string }) {
   );
 }
 
-
 function FutureStatCard({
   label,
   value,
   trend,
+  trendLabel,
   icon,
   accentClass,
   borderClass,
@@ -190,6 +183,7 @@ function FutureStatCard({
   label: string;
   value: number;
   trend: number | null;
+  trendLabel: string;
   icon: any;
   accentClass: string;
   borderClass: string;
@@ -205,7 +199,7 @@ function FutureStatCard({
             <div className="text-xs text-muted-foreground font-medium">{label}</div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xl font-bold text-foreground">{value}</span>
-              <TrendBadge value={trend} label="vs prev" />
+              <TrendBadge value={trend} label={trendLabel} />
             </div>
           </div>
         </div>
@@ -362,8 +356,15 @@ export function DoctorDashboard() {
 
   const tomorrowTotal = dashboardStats?.tomorrow_appointments ?? 0;
   const thisWeekTotal = dashboardStats?.this_week_appointments ?? 0;
+  const thisWeekPrev = dashboardStats?.last_week_appointments ?? 0;
   const thisMonthTotal = dashboardStats?.this_month_appointments ?? 0;
+  const thisMonthPrev = dashboardStats?.last_month_appointments ?? 0;
   const thisYearTotal = dashboardStats?.this_year_appointments ?? 0;
+  const thisYearPrev = dashboardStats?.last_year_appointments ?? 0;
+
+  const weekTrend = thisWeekPrev ? Math.round(((thisWeekTotal - thisWeekPrev) / thisWeekPrev) * 100) : null;
+  const monthTrend = thisMonthPrev ? Math.round(((thisMonthTotal - thisMonthPrev) / thisMonthPrev) * 100) : null;
+  const yearTrend = thisYearPrev ? Math.round(((thisYearTotal - thisYearPrev) / thisYearPrev) * 100) : null;
 
   const unavailabilityCount = unavailability.reduce((sum, u) => {
     const start = new Date(u.slot_date + 'T00:00:00');
@@ -384,10 +385,6 @@ export function DoctorDashboard() {
     : '';
   const outgoingReferrals = referrals.filter(r => r.referring_doctor_id === doctorId && r.attended === null && r.status !== 'cancelled').length;
   const incomingReferrals = referrals.filter(r => r.doctor_id === doctorId && r.referring_doctor_id !== null && r.referring_doctor_id !== doctorId && r.attended === null && r.status !== 'cancelled').length;
-
-  const prefetchToday = useCallback(() => {
-    prefetchCache(`appointments:today:${today}:all`, () => api.listAppointments({ date: today }, token), 60_000);
-  }, [today, token]);
 
   return (
     <div className={`space-y-7 transition-[margin-right] duration-200 ${
@@ -489,10 +486,10 @@ export function DoctorDashboard() {
               </>
             ) : (
               <>
-                <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={null} icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
-                <FutureStatCard label="This Week" value={thisWeekTotal} trend={null} icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
-                <FutureStatCard label="This Month" value={thisMonthTotal} trend={null} icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
-                <FutureStatCard label="This Year" value={thisYearTotal} trend={null} icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
+                <FutureStatCard label="Tomorrow" value={tomorrowTotal} trend={null} trendLabel="" icon={Calendar02Icon} accentClass="bg-sky-500" borderClass="border-sky-200" />
+                <FutureStatCard label="This Week" value={thisWeekTotal} trend={weekTrend} trendLabel="vs last week" icon={Calendar01Icon} accentClass="bg-violet-500" borderClass="border-violet-200" />
+                <FutureStatCard label="This Month" value={thisMonthTotal} trend={monthTrend} trendLabel="vs last month" icon={Calendar03Icon} accentClass="bg-teal-500" borderClass="border-teal-200" />
+                <FutureStatCard label="This Year" value={thisYearTotal} trend={yearTrend} trendLabel="vs last year" icon={Calendar01Icon} accentClass="bg-indigo-500" borderClass="border-indigo-200" />
               </>
             )}
           </div>
@@ -577,7 +574,6 @@ export function DoctorDashboard() {
             )}
             <button
               onClick={() => navigate('/dashboard/today-appointments')}
-              onMouseEnter={prefetchToday}
               className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-2.5 py-1 rounded-lg transition-colors"
             >
               View All
