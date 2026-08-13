@@ -11,7 +11,14 @@ function toIcsDatetime(date: string, time: string): string {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number]
   const [hh, mm] = time.split(':').map(Number) as [number, number]
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${y}${pad(m)}${pad(d)}T${pad(hh)}${pad(mm)}00`
+  // Trailing Z (UTC), not a floating local time: the clinic (Accra, Ghana)
+  // sits in Ghana Standard Time, UTC+0 year-round with no DST, so the
+  // stored wall-clock appointment time already *is* the UTC instant.
+  // Without the Z this is an RFC 5545 "floating" time, which every
+  // calendar app (Google, Outlook, Apple) resolves using the *importing
+  // device's* local timezone instead of Ghana's -- silently shifting the
+  // appointment on the patient's calendar for anyone not on GMT+0.
+  return `${y}${pad(m)}${pad(d)}T${pad(hh)}${pad(mm)}00Z`
 }
 
 export function generateIcsContent(event: CalendarEvent): string {
