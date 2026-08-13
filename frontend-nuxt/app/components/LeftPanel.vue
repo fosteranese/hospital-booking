@@ -76,7 +76,7 @@ function stepStatus(i: number): 'completed' | 'current' | 'upcoming' {
 
         <div class="flex-1 flex items-center">
           <div v-if="step === 'identify'" class="space-y-5">
-            <h1 class="text-4xl font-extrabold text-white leading-tight">
+            <h1 class="font-heading text-4xl font-semibold text-white leading-tight">
               Fertility &amp; Wellness<br />
               <span class="text-emerald-400">Services</span>
             </h1>
@@ -90,7 +90,7 @@ function stepStatus(i: number): 'completed' | 'current' | 'upcoming' {
             </div>
           </div>
           <div v-else class="space-y-5">
-            <h1 class="text-4xl font-extrabold text-white leading-tight">
+            <h1 class="font-heading text-4xl font-semibold text-white leading-tight">
               Appointment<br />
               <span class="text-emerald-400">Confirmed</span>
             </h1>

@@ -2,10 +2,14 @@
 @import "tw-animate-css";
 @import "./shadcn-variants.css";
 @import "@fontsource-variable/figtree";
+@import "@fontsource-variable/fraunces";
 
 @theme inline {
   --font-sans: "Figtree Variable", sans-serif;
-  --font-heading: var(--font-sans);
+  /* A warmer, more human display face for headlines — the clinic's own
+     content (fertility/wellness) calls for something with more character
+     than the body sans, used only where a screen's main headline lives. */
+  --font-heading: "Fraunces Variable", serif;
 
   --color-background: oklch(var(--background));
   --color-foreground: oklch(var(--foreground));

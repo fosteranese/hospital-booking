@@ -86,7 +86,7 @@ function switchMethod() {
           <HugeIcon :icon="Hospital01Icon" :stroke-width="2" class="size-4" />
           Mediport
         </div>
-        <h1 class="text-2xl font-semibold tracking-tight text-foreground">Welcome to Mediport</h1>
+        <h1 class="font-heading text-3xl font-semibold text-foreground">Welcome to Mediport</h1>
         <p class="text-sm text-muted-foreground max-w-sm mx-auto">
           {{ method === 'phone' ? "Enter your phone number to get started" : "Enter your email to get started" }}
         </p>

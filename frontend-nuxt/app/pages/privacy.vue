@@ -27,7 +27,7 @@ onMounted(() => { clinic.load() })
         {{ clinic.clinicName || 'Mediport' }}
       </div>
 
-      <h1 class="text-3xl font-semibold tracking-tight text-foreground mb-2">Privacy &amp; how we handle your information</h1>
+      <h1 class="font-heading text-3xl font-semibold text-foreground mb-2">Privacy &amp; how we handle your information</h1>
       <p class="text-sm text-muted-foreground/70 mb-10">
         This is a plain-language summary, not a substitute for a full legal privacy policy — ask us directly if anything here isn't clear.
       </p>

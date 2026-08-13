@@ -7,7 +7,7 @@ const props = defineProps<{ class?: string }>()
 <template>
   <div
     data-slot="card-title"
-    :class="cn('font-heading text-base leading-normal font-medium group-data-[size=sm]/card:text-sm', props.class)"
+    :class="cn('font-heading text-lg leading-normal font-semibold group-data-[size=sm]/card:text-sm', props.class)"
   >
     <slot />
   </div>

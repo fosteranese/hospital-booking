@@ -43,7 +43,7 @@ const formattedTime = computed(() => {
       </motion.div>
 
       <div class="text-center space-y-2">
-        <h2 class="text-2xl font-bold text-foreground">{{ isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!' }}</h2>
+        <h2 class="font-heading text-3xl font-semibold text-foreground">{{ isReschedule ? 'Appointment Rescheduled!' : 'Appointment Booked!' }}</h2>
         <p class="text-sm text-muted-foreground/70 max-w-xs mx-auto">
           {{ isReschedule ? 'Your appointment has been rescheduled. We look forward to seeing you.' : 'Your appointment is all set. We look forward to seeing you.' }}
         </p>
