@@ -37,7 +37,15 @@ function groupSlotsByPeriod(slots: TimeSlot[]): { period: Period; slots: TimeSlo
 
 const date = ref(props.defaultDate)
 const slots = ref<TimeSlot[]>([])
-const loading = ref(false)
+// Starts true, not false: `date` gets its initial value asynchronously (see
+// the dates watcher below), and Vue re-renders the instant that assignment
+// happens -- one tick before the slots watcher below actually runs and would
+// otherwise set loading itself. In that gap, `!date` is false but slots are
+// still empty, so the empty-state branch ("No open times on this date")
+// flashed before the real skeleton ever showed. Starting true closes that
+// window; it's a no-op display-wise since the `!date` branch is checked
+// first anyway while date is still empty.
+const loading = ref(true)
 const selectedSlot = ref<string | null>(null)
 const availableDates = ref<string[]>([])
 const canScrollLeft = ref(false)

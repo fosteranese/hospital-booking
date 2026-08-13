@@ -328,10 +328,16 @@ export const useBookingStore = defineStore('booking', () => {
   function fetchUpcoming() {
     if (!existingPatient.value || !auth.token || fetchingRef) return
     const api = useApi()
+    // Cached, stale-while-revalidate: if we already have appointments on
+    // screen (e.g. re-entering 'review' after a modal, or a completed
+    // reschedule re-triggers this watcher), don't blank the screen with a
+    // spinner just to confirm what's already showing is still correct --
+    // keep the cached cards visible and refresh quietly in the background.
+    const hasCached = upcomingAppointments.value.length > 0
 
     const doFetch = (useToken: string) => {
       fetchingRef = true
-      upcomingLoading.value = true
+      if (!hasCached) upcomingLoading.value = true
       upcomingError.value = ''
       api
         .getUpcomingAppointments(existingPatient.value!.id, useToken)
@@ -343,12 +349,17 @@ export const useBookingStore = defineStore('booking', () => {
         })
         .catch((err: Error) => {
           if (step.value !== 'review') return
-          upcomingAppointments.value = []
           if (err.message.includes('expired') || err.message.includes('Invalid')) {
             resetAll()
             return
           }
-          upcomingError.value = err.message
+          // A background revalidation failing shouldn't wipe out
+          // appointments the patient can already see -- only clear on a
+          // genuine first load, and only surface the error banner then too.
+          if (!hasCached) {
+            upcomingAppointments.value = []
+            upcomingError.value = err.message
+          }
         })
         .finally(() => {
           if (step.value === 'review') upcomingLoading.value = false

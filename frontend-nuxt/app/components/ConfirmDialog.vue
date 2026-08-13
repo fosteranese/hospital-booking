@@ -9,6 +9,7 @@
 // icon floating alone above a disconnected paragraph — the first version of
 // this component had exactly that disconnect and read as unfinished.
 import { motion } from 'motion-v'
+import { cn } from '@/lib/utils'
 
 // @hugeicons/core-free-icons doesn't export this type — reconstructed here
 // to match structurally, same as HugeIcon.vue does for the same reason.
@@ -26,8 +27,9 @@ withDefaults(
     icon?: IconSvgObject
     variant?: 'default' | 'destructive'
     loading?: boolean
+    hideCancel?: boolean
   }>(),
-  { confirmLabel: 'Confirm', cancelLabel: 'Cancel', variant: 'default', loading: false }
+  { confirmLabel: 'Confirm', cancelLabel: 'Cancel', variant: 'default', loading: false, hideCancel: false }
 )
 const emit = defineEmits<{ 'update:open': [open: boolean]; confirm: [] }>()
 
@@ -75,8 +77,8 @@ function close() {
     </div>
 
     <template #footer>
-      <Button variant="outline" class="h-11 text-sm" :disabled="loading" @click="close">{{ cancelLabel }}</Button>
-      <Button :variant="variant === 'destructive' ? 'destructive' : 'default'" class="h-11 text-sm gap-1.5" :disabled="loading" @click="emit('confirm')">
+      <Button v-if="!hideCancel" variant="outline" class="h-11 text-sm" :disabled="loading" @click="close">{{ cancelLabel }}</Button>
+      <Button :variant="variant === 'destructive' ? 'destructive' : 'default'" :class="cn('h-11 text-sm gap-1.5', hideCancel && 'w-full')" :disabled="loading" @click="emit('confirm')">
         <span v-if="loading" class="flex items-center gap-2"><Spinner />Please wait...</span>
         <template v-else>{{ confirmLabel }}</template>
       </Button>

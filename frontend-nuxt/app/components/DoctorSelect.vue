@@ -3,6 +3,8 @@ import { motion } from 'motion-v'
 import type { Doctor } from '@/lib/api'
 import { getAvatarGradient } from '@/lib/avatar'
 import { formatDateShort } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { CalendarBlock02Icon } from '@hugeicons/core-free-icons'
 
 const props = defineProps<{ excludeDoctorId?: string }>()
 const emit = defineEmits<{ select: [doctorId: string | null, doctorName?: string] }>()
@@ -14,6 +16,18 @@ const loading = ref(true)
 // and there isn't one, string = the date. A secondary, non-blocking fetch —
 // the doctor list itself never waits on this.
 const nextAvailable = ref<Record<string, string | null>>({})
+const unavailableDoctor = ref<Doctor | null>(null)
+
+function handleDoctorClick(doc: Doctor) {
+  // Only block on a *confirmed* empty slot list (null) -- if the
+  // secondary next-available fetch hasn't resolved yet (undefined), don't
+  // make the patient wait on it just to pick a doctor.
+  if (nextAvailable.value[doc.id] === null) {
+    unavailableDoctor.value = doc
+    return
+  }
+  emit('select', doc.id, `Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization})`)
+}
 
 function loadNextAvailable(list: Doctor[]) {
   for (const doc of list) {
@@ -104,12 +118,17 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
           >
             <Button
               variant="outline"
-              class="w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 bg-white"
-              @click="emit('select', doc.id, `Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization})`)"
+              :class="cn(
+                'w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm transition-all duration-200 bg-white',
+                nextAvailable[doc.id] === null
+                  ? 'opacity-60 hover:opacity-80'
+                  : 'hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5'
+              )"
+              @click="handleDoctorClick(doc)"
             >
               <div class="flex items-center gap-3.5 w-full min-w-0">
                 <div
-                  :class="`size-14 sm:size-16 rounded-2xl shrink-0 flex items-center justify-center text-white font-semibold text-base shadow-sm bg-gradient-to-br ${getAvatarGradient(`${doc.first_name} ${doc.last_name}`)}`"
+                  :class="`size-14 sm:size-16 rounded-2xl shrink-0 flex items-center justify-center text-white font-semibold text-base shadow-sm bg-gradient-to-br ${getAvatarGradient(`${doc.first_name} ${doc.last_name}`)} ${nextAvailable[doc.id] === null ? 'grayscale' : ''}`"
                 >
                   {{ doc.first_name[0] }}{{ doc.last_name[0] }}
                 </div>
@@ -118,7 +137,7 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
                   <p class="text-sm text-muted-foreground">{{ doc.specialization }}</p>
                   <div class="h-4 mt-1">
                     <div v-if="nextAvailable[doc.id] === undefined" class="h-3 w-24 rounded bg-muted animate-skeleton" />
-                    <p v-else-if="nextAvailable[doc.id]" class="text-xs font-semibold text-gold-foreground">
+                    <p v-else-if="nextAvailable[doc.id]" class="text-xs font-semibold text-primary">
                       Next available {{ formatDateShort(nextAvailable[doc.id]!) }}
                     </p>
                     <p v-else class="text-xs text-muted-foreground/50">No upcoming availability</p>
@@ -131,4 +150,15 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
       </div>
     </CardContent>
   </Card>
+
+  <ConfirmDialog
+    :open="unavailableDoctor !== null"
+    :title="unavailableDoctor ? `Dr. ${unavailableDoctor.first_name} ${unavailableDoctor.last_name} isn't taking bookings right now` : ''"
+    description="They have no upcoming open slots. Please pick another doctor, or let us auto-assign one for you."
+    :icon="CalendarBlock02Icon"
+    confirm-label="Choose another doctor"
+    hide-cancel
+    @update:open="(v) => { if (!v) unavailableDoctor = null }"
+    @confirm="unavailableDoctor = null"
+  />
 </template>
