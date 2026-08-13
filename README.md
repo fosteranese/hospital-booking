@@ -24,6 +24,8 @@ HospitalBooking is a self-service appointment booking system for healthcare faci
 | Email/SMS | SMTP via lettre, mock SMS |
 | Hosting | Dev — localhost:5173 (Vite) → localhost:3000 (Axum) |
 
+`frontend-nuxt/` is a feature-complete Nuxt 4 (Vue 3, SSR) rewrite of the patient portal, built as a parallel app alongside `frontend/` — not yet the default. It also includes a UX-audit-driven change `frontend/` doesn't have: new patients can browse doctors and times before verifying their identity (an unauthenticated existence check decides the path); returning patients still verify first, unchanged. See `frontend-nuxt/README.md`.
+
 ## Prerequisites
 
 - Rust toolchain (latest stable)
@@ -46,9 +48,12 @@ cd frontend && npm install && npm run dev
 
 # In another terminal, start staff dashboard (runs on :5174, proxies /api to :3000)
 cd frontend-admin && npm install && npm run dev
+
+# Optional: try the Nuxt patient-portal rewrite instead (runs on :5176, proxies /api to :3000)
+cd frontend-nuxt && npm install && npm run dev
 ```
 
-Or use `make dev` to run patient portal + backend concurrently.
+Or use `make dev` to run patient portal + backend concurrently, or `make dev-web-nuxt` to run the Nuxt rewrite's dev server on its own.
 
 Open http://localhost:5173 (patient) or http://localhost:5174 (staff dashboard) in your browser.
 
@@ -78,10 +83,12 @@ SETTINGS_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef01234567
 |--------|-------------|
 | `make dev-api` | Start backend server |
 | `make dev-web` | Start frontend dev server |
+| `make dev-web-nuxt` | Start the Nuxt patient-portal rewrite's dev server |
 | `make dev` | Run both backend and frontend concurrently |
 | `make db-migrate` | Run SQLx database migrations |
 | `make build` | Build both backend and frontend |
 | `make lint` | Run Clippy and ESLint |
+| `make test-web-nuxt` | Run frontend-nuxt's Playwright e2e suite |
 
 ## Project Structure
 
@@ -97,7 +104,7 @@ hospital-booking/
 │   │   ├── models/             # Database models
 │   │   └── state.rs            # App state (DB pool)
 │   └── Cargo.toml
-├── frontend/                   # React + Vite + shadcn/ui
+├── frontend/                   # React + Vite + shadcn/ui (current patient portal)
 │   ├── src/
 │   │   ├── components/         # UI components (AuthFlow, PatientForm, etc.)
 │   │   ├── pages/              # Route pages (BookAppointment)
@@ -106,6 +113,14 @@ hospital-booking/
 │   │   └── index.css           # Global styles, theme variables
 │   ├── components.json         # shadcn/ui configuration
 │   └── vite.config.ts          # Vite config with /api proxy
+├── frontend-nuxt/               # Nuxt 4 + Vue 3 (SSR) rewrite of the patient portal — parallel build, not cut over
+│   ├── app/
+│   │   ├── components/          # UI components (IdentifyStep, VerifyStep, PatientForm, etc.)
+│   │   ├── pages/                # index.vue — the whole booking wizard
+│   │   ├── stores/                # Pinia stores (booking, auth, clinic)
+│   │   └── lib/                    # Utilities, API client
+│   ├── server/routes/               # Nitro server routes (e.g. cached clinic-config)
+│   └── e2e/                          # Playwright suite
 ├── Makefile                    # Dev orchestration
 └── README.md
 ```
@@ -133,6 +148,7 @@ All routes are prefixed with `/api`.
 | Service | URL |
 |---------|-----|
 | Patient Portal (Vite) | http://localhost:5173 |
+| Patient Portal — Nuxt rewrite (SSR) | http://localhost:5176 |
 | Staff Dashboard (Vite) | http://localhost:5174 |
 | Backend API (Axum) | http://localhost:3000 |
 

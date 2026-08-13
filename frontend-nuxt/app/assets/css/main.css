@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./shadcn-variants.css";
+@import "@fontsource-variable/figtree";
+
+@theme inline {
+  --font-sans: "Figtree Variable", sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-background: oklch(var(--background));
+  --color-foreground: oklch(var(--foreground));
+  --color-card: oklch(var(--card));
+  --color-card-foreground: oklch(var(--card-foreground));
+  --color-popover: oklch(var(--popover));
+  --color-popover-foreground: oklch(var(--popover-foreground));
+  --color-primary: oklch(var(--primary));
+  --color-primary-foreground: oklch(var(--primary-foreground));
+  --color-secondary: oklch(var(--secondary));
+  --color-secondary-foreground: oklch(var(--secondary-foreground));
+  --color-muted: oklch(var(--muted));
+  --color-muted-foreground: oklch(var(--muted-foreground));
+  --color-accent: oklch(var(--accent));
+  --color-accent-foreground: oklch(var(--accent-foreground));
+  --color-destructive: oklch(var(--destructive));
+  --color-destructive-foreground: oklch(var(--destructive-foreground));
+  --color-border: oklch(var(--border));
+  --color-input: oklch(var(--input));
+  --color-ring: oklch(var(--ring));
+  --color-chart-1: oklch(var(--chart-1));
+  --color-chart-2: oklch(var(--chart-2));
+  --color-chart-3: oklch(var(--chart-3));
+  --color-chart-4: oklch(var(--chart-4));
+  --color-chart-5: oklch(var(--chart-5));
+  --color-sidebar: oklch(var(--sidebar));
+  --color-sidebar-foreground: oklch(var(--sidebar-foreground));
+  --color-sidebar-primary: oklch(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: oklch(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: oklch(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: oklch(var(--sidebar-accent-foreground));
+  --color-sidebar-border: oklch(var(--sidebar-border));
+  --color-sidebar-ring: oklch(var(--sidebar-ring));
+  --radius: 0.75rem;
+}
+
+:root {
+  --background: 0.985 0.005 75;
+  --foreground: 0.18 0.008 75;
+  --card: 1 0 0;
+  --card-foreground: 0.18 0.008 75;
+  --popover: 1 0 0;
+  --popover-foreground: 0.18 0.008 75;
+  --primary: 0.63 0.17 155;
+  --primary-foreground: 0.985 0 0;
+  --secondary: 0.965 0.015 145;
+  --secondary-foreground: 0.28 0.08 150;
+  --muted: 0.965 0.008 75;
+  --muted-foreground: 0.5 0.015 75;
+  --accent: 0.94 0.035 150;
+  --accent-foreground: 0.28 0.08 150;
+  --destructive: 0.58 0.2 30;
+  --destructive-foreground: 0.985 0 0;
+  --border: 0.88 0.015 75;
+  --input: 0.88 0.015 75;
+  --ring: 0.63 0.17 155;
+  --chart-1: 0.63 0.17 155;
+  --chart-2: 0.55 0.16 150;
+  --chart-3: 0.7 0.14 145;
+  --chart-4: 0.5 0.2 150;
+  --chart-5: 0.45 0.15 145;
+  --sidebar: 0.985 0 0;
+  --sidebar-foreground: 0.18 0.008 75;
+  --sidebar-primary: 0.63 0.17 155;
+  --sidebar-primary-foreground: 0.985 0 0;
+  --sidebar-accent: 0.94 0.035 150;
+  --sidebar-accent-foreground: 0.28 0.08 150;
+  --sidebar-border: 0.88 0.015 75;
+  --sidebar-ring: 0.63 0.17 155;
+}
+
+@layer base {
+  * {
+    scrollbar-color: oklch(0.8 0.01 75) transparent;
+  }
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground;
+  font-family: "Figtree Variable", sans-serif;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes checkmark-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
