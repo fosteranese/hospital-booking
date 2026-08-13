@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { CheckmarkCircle02Icon } from '@hugeicons/core-free-icons'
 import { COUNTRY_CODES } from '@/lib/country-codes'
+import { normalizePhone } from '@/lib/phone'
 import type { Patient } from '@/lib/api'
 
 const props = defineProps<{ patient: Patient }>()
@@ -31,7 +32,7 @@ async function handleSave() {
   }
   saving.value = true
   error.value = ''
-  const phone = phoneNumber.value ? `${countryCode.value}${phoneNumber.value.replace(/\D/g, '')}` : ''
+  const phone = phoneNumber.value ? normalizePhone(countryCode.value, phoneNumber.value) : ''
   try {
     const updated = await api.updatePatient(
       props.patient.id,

@@ -105,7 +105,11 @@ function stepStatus(i: number): 'completed' | 'current' | 'upcoming' {
           </div>
         </div>
 
-        <div class="text-sm text-white/50 shrink-0">&copy; 2026 {{ clinic.clinicName || 'Mediport Fertility Services' }}</div>
+        <div class="flex items-center gap-3 text-sm text-white/50 shrink-0">
+          <span>&copy; 2026 {{ clinic.clinicName || 'Mediport Fertility Services' }}</span>
+          <span class="text-white/20">&middot;</span>
+          <NuxtLink to="/privacy" target="_blank" class="hover:text-white/80 hover:underline underline-offset-2 transition-colors">Privacy</NuxtLink>
+        </div>
       </template>
 
       <template v-else>
@@ -161,7 +165,11 @@ function stepStatus(i: number): 'completed' | 'current' | 'upcoming' {
           </div>
         </div>
 
-        <div class="text-sm text-white/50 shrink-0">&copy; 2026 {{ clinic.clinicName || 'Mediport Fertility Services' }}</div>
+        <div class="flex items-center gap-3 text-sm text-white/50 shrink-0">
+          <span>&copy; 2026 {{ clinic.clinicName || 'Mediport Fertility Services' }}</span>
+          <span class="text-white/20">&middot;</span>
+          <NuxtLink to="/privacy" target="_blank" class="hover:text-white/80 hover:underline underline-offset-2 transition-colors">Privacy</NuxtLink>
+        </div>
       </template>
     </div>
   </aside>

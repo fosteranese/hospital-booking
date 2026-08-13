@@ -28,6 +28,41 @@ const titleId = useId()
 const prefersReduced = useReducedMotion()
 let previouslyFocused: HTMLElement | null = null
 
+// Exit fade (audit finding, plan §7.1's Tier 2). Two approaches tried and
+// rejected before this one:
+//   - motion-v's AnimatePresence: confirmed unreliable earlier in this build
+//     (froze the DOM on nested or sequential re-keying — see
+//     BookingWizard.vue's comment).
+//   - A local `visible` flag driving Vue's native <Transition> for the leave
+//     only, with a plain CSS class supplying `opacity: 0`: built, then
+//     verified live that it does *nothing* visually — motion-v sets opacity
+//     via an inline style once the enter animation settles
+//     (`style="opacity: 1"`), which always wins over a class-based rule
+//     regardless of transition timing. Caught by sampling
+//     getComputedStyle().opacity every 30ms through a real close and seeing
+//     it hold at "1" for the entire leave-active window before the element
+//     just vanished.
+// What actually works: let motion-v itself own the exit, the same way it
+// owns the entrance — flip `closing` and hand its own :animate prop a new
+// target (opacity 0 / a slight downward slide). motion-v's
+// `onAnimationComplete` callback prop fires once that settles, and only
+// then does this emit 'close', which is the signal the parent's v-if is
+// actually waiting for to unmount this for real. `closing` guards the
+// callback so the *entrance* animation's own completion doesn't also
+// trigger it. Self-contained to this file: none of the 6 modals that use
+// ModalShell need to change.
+const closing = ref(false)
+function requestClose() {
+  if (prefersReduced.value) {
+    emit('close')
+    return
+  }
+  closing.value = true
+}
+function onBackdropAnimComplete() {
+  if (closing.value) emit('close')
+}
+
 // Queried by titleId rather than a template ref on the motion.div — motion-v
 // doesn't document whether its ref forwards to the underlying DOM node or a
 // component instance, and this dialog role is already uniquely addressable
@@ -53,7 +88,7 @@ function focusableEls(): HTMLElement[] {
 // shell predates the accessibility pass that added them.
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    emit('close')
+    requestClose()
     return
   }
   if (e.key !== 'Tab') return
@@ -85,19 +120,20 @@ onUnmounted(() => {
 <template>
   <motion.div
     :initial="{ opacity: 0 }"
-    :animate="{ opacity: 1 }"
+    :animate="{ opacity: closing ? 0 : 1 }"
     :transition="{ duration: prefersReduced ? 0 : 0.15 }"
+    :on-animation-complete="onBackdropAnimComplete"
     class="fixed inset-0 flex items-end sm:items-center justify-center bg-black/10 backdrop-blur-xs p-0 sm:p-4"
     :style="{ zIndex }"
-    @click="emit('close')"
+    @click="requestClose"
   >
     <motion.div
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
       :initial="{ y: prefersReduced ? 0 : 60, opacity: 0 }"
-      :animate="{ y: 0, opacity: 1 }"
-      :transition="{ duration: prefersReduced ? 0 : 0.2, ease: 'easeOut' }"
+      :animate="{ y: closing && !prefersReduced ? 24 : 0, opacity: closing ? 0 : 1 }"
+      :transition="{ duration: prefersReduced ? 0 : (closing ? 0.15 : 0.2), ease: closing ? 'easeIn' : 'easeOut' }"
       class="relative w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden max-h-[85vh]"
       @click.stop
     >
@@ -108,7 +144,7 @@ onUnmounted(() => {
           :disabled="closeDisabled"
           aria-label="Close"
           class="size-8 sm:size-9 flex items-center justify-center rounded-full hover:bg-muted/60 transition-colors disabled:opacity-40"
-          @click="emit('close')"
+          @click="requestClose"
         >
           <HugeIcon :icon="Cancel01Icon" :stroke-width="2" class="size-4 text-muted-foreground" />
         </button>

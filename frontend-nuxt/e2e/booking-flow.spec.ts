@@ -744,4 +744,37 @@ test.describe('Frontend integration', () => {
     await expect(page.locator('text=Welcome back, View')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('text=Dr.').first()).toBeVisible({ timeout: 15000 });
   });
+
+  test('17. Regression: a phone number typed with its customary leading trunk 0 still matches an existing patient', async ({ page, request }) => {
+    // Guards a real bug report: a patient whose phone is stored as
+    // +233243505598 (E.164 -- no leading 0, confirmed via
+    // GET /patients/check) typed their number the way Ghanaians normally
+    // write it -- "0243505598", with the leading trunk 0 -- and got routed
+    // through the *new*-patient flow instead of being recognized. Root
+    // cause: IdentifyStep.vue (and PatientForm.vue, EditProfileModal.vue)
+    // concatenated country code + raw digits with no normalization, so
+    // "+233" + "0243505598" produced "+2330243505598" -- one digit too many,
+    // silently never matching. Fixed centrally in lib/phone.ts's
+    // normalizePhone(), which strips exactly one leading 0 before
+    // prepending the country code, and wired into all three call sites.
+    //
+    // Uses the pre-existing +233243505598 fixture (also relied on by test 2)
+    // rather than a freshly-created patient, since the bug is specifically
+    // about *matching* an already-stored E.164 number, not about creation.
+    const known = await request.get(`${API}/api/patients/check?phone=%2B233243505598`);
+    test.skip(!(await known.json()), 'fixture patient +233243505598 not present in this environment');
+
+    await page.goto(APP, { waitUntil: 'networkidle' });
+    await expect(page.locator('h1:has-text("Welcome to Mediport")')).toBeVisible({ timeout: 15000 });
+
+    // Phone is the default identify method -- no "Use phone instead" click needed.
+    await page.fill('input[type="tel"]', '0243505598');
+    await page.click('button:has-text("Continue")');
+
+    // A match routes straight to 'verify' (unchanged single-step OTP screen);
+    // a miss would instead land on 'doctor' ("Choose your specialist").
+    await expect(page.locator('text=Check your phone')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=+233243505598')).toBeVisible();
+    await expect(page.locator('text=Choose your specialist')).not.toBeVisible();
+  });
 });

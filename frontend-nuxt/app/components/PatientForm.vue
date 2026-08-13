@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { COUNTRY_CODES } from '@/lib/country-codes'
 import { cn } from '@/lib/utils'
+import { normalizePhone } from '@/lib/phone'
 
 const props = defineProps<{
   defaultFirstName: string
@@ -67,7 +68,7 @@ watch([phoneNumber, countryCode, usedPhone], ([newPhone, code, isUsed]) => {
     phoneError.value = ''
     return
   }
-  const phone = `${code}${newPhone.replace(/\D/g, '')}`
+  const phone = normalizePhone(code, newPhone)
   clearTimeout(phoneTimer)
   phoneTimer = setTimeout(() => {
     checkingPhone.value = true
@@ -84,7 +85,7 @@ onUnmounted(() => {
   clearTimeout(phoneTimer)
 })
 
-const phone = computed(() => (phoneNumber.value ? `${countryCode.value}${phoneNumber.value.replace(/\D/g, '')}` : ''))
+const phone = computed(() => (phoneNumber.value ? normalizePhone(countryCode.value, phoneNumber.value) : ''))
 const allFilled = computed(() => !!firstName.value && !!lastName.value)
 const hasError = computed(() => (!!email.value && !!emailError.value) || (!!phone.value && !!phoneError.value))
 

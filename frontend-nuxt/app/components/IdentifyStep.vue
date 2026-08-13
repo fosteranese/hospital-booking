@@ -8,6 +8,7 @@
 // completeIdentify() and the plan's UX-audit fork writeup.
 import { Mail01Icon, CallIcon, Hospital01Icon } from '@hugeicons/core-free-icons'
 import { COUNTRY_CODES } from '@/lib/country-codes'
+import { normalizePhone } from '@/lib/phone'
 
 const booking = useBookingStore()
 const api = useApi()
@@ -36,7 +37,7 @@ function getIdentifier(): string | null {
   const code = countryCode.value.trim()
   const number = phoneNumber.value.trim()
   if (!isValidPhone(code, number)) return null
-  return `${code}${number.replace(/\D/g, '')}`
+  return normalizePhone(code, number)
 }
 
 function getFieldError(): string | null {
@@ -167,6 +168,11 @@ function switchMethod() {
       <Button variant="outline" class="w-full h-11 text-base" @click="switchMethod">
         {{ method === 'phone' ? 'Use email instead' : 'Use phone instead' }}
       </Button>
+
+      <p class="text-center text-xs text-muted-foreground/60">
+        By continuing, you agree to our
+        <NuxtLink to="/privacy" target="_blank" class="text-primary hover:underline underline-offset-2">privacy practices</NuxtLink>.
+      </p>
     </CardContent>
   </Card>
 </template>

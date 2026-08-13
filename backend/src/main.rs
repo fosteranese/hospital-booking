@@ -20,7 +20,7 @@ mod state;
 
 use crate::state::AppState;
 use crate::ratelimit::RateLimiter;
-use crate::services::{EmailService, SettingsService, SmsService, generate_slots, mark_missed_appointments};
+use crate::services::{EmailService, SettingsService, SmsService, generate_slots, mark_missed_appointments, send_appointment_reminders};
 
 async fn health() -> &'static str {
     "OK"
@@ -195,6 +195,26 @@ async fn main() {
         mutation_limiter: Arc::new(Mutex::new(RateLimiter::new(20, 60))),
         notification_email,
     };
+
+    // Background task: send appointment reminders ~24h ahead of the slot,
+    // checked every 15 minutes so every appointment's 1-hour reminder
+    // window (see reminders.rs) gets swept at least a few times before it
+    // passes. `reminder_sent` makes repeat sweeps a no-op for anything
+    // already handled.
+    let reminder_state = state.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(900)).await;
+            match send_appointment_reminders(&reminder_state).await {
+                Ok(count) => {
+                    if count > 0 {
+                        tracing::info!("Sent {} appointment reminders", count);
+                    }
+                }
+                Err(e) => tracing::error!("Failed to send appointment reminders: {:?}", e),
+            }
+        }
+    });
 
     let cors = {
         let origins: Vec<axum::http::HeaderValue> = std::env::var("CORS_ORIGIN")

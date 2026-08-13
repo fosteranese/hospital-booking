@@ -7,6 +7,7 @@ mod slots;
 mod password;
 mod totp;
 mod missed;
+mod reminders;
 
 pub use otp::*;
 pub use jwt::*;
@@ -17,3 +18,4 @@ pub use slots::*;
 pub use password::*;
 pub use totp::*;
 pub use missed::*;
+pub use reminders::*;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { motion } from 'motion-v'
 import type { Doctor } from '@/lib/api'
+import { getAvatarColor } from '@/lib/avatar'
 
 const props = defineProps<{ excludeDoctorId?: string }>()
 const emit = defineEmits<{ select: [doctorId: string | null, doctorName?: string] }>()
@@ -12,9 +13,21 @@ const loading = ref(true)
 onMounted(() => {
   api
     .getDoctors()
-    .then((data) => { doctors.value = data })
-    .catch(() => {})
-    .finally(() => { loading.value = false })
+    .then((data) => {
+      const list = props.excludeDoctorId ? data.filter((d) => d.id !== props.excludeDoctorId) : data
+      // A "choice" of one option isn't a choice — skip the screen entirely
+      // and go straight to the one doctor available, same as if the patient
+      // had picked them. Checked before ever setting loading=false, so the
+      // list UI never has a chance to flash on screen first.
+      if (list.length === 1) {
+        const only = list[0]!
+        emit('select', only.id, `Dr. ${only.first_name} ${only.last_name} (${only.specialization})`)
+        return
+      }
+      doctors.value = data
+      loading.value = false
+    })
+    .catch(() => { loading.value = false })
 })
 
 const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d) => d.id !== props.excludeDoctorId) : doctors.value))
@@ -33,7 +46,7 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
         <motion.div v-if="!excludeDoctorId" :initial="{ opacity: 0, y: 12 }" :animate="{ opacity: 1, y: 0 }" :transition="{ delay: 0 }">
           <Button
             variant="outline"
-            class="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
+            class="w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 bg-white"
             @click="emit('select', null)"
           >
             <div class="flex items-center gap-3 w-full min-w-0">
@@ -76,12 +89,12 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
           >
             <Button
               variant="outline"
-              class="w-full justify-start h-auto py-4 px-4 hover:border-primary/50 hover:bg-primary/5 transition-all bg-white/80"
+              class="w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 bg-white"
               @click="emit('select', doc.id, `Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization})`)"
             >
               <div class="flex items-center gap-3 w-full min-w-0">
-                <Avatar class="border-2 border-primary/10">
-                  <AvatarFallback class="bg-primary/10 text-primary text-xs font-semibold">
+                <Avatar class="border-2 border-white shadow-sm">
+                  <AvatarFallback :class="`text-xs font-semibold ${getAvatarColor(`${doc.first_name} ${doc.last_name}`).bg} ${getAvatarColor(`${doc.first_name} ${doc.last_name}`).text}`">
                     {{ doc.first_name[0] }}{{ doc.last_name[0] }}
                   </AvatarFallback>
                 </Avatar>

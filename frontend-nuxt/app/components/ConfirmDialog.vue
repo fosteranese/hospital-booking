@@ -3,6 +3,11 @@
 // appointment modals. First consumer is BookingWizard's "Sign out" — losing
 // an in-progress session (upcoming appointments still loaded, any unsaved
 // profile edit) with one accidental click had no confirmation at all.
+//
+// The icon+copy block matches CancelAppointmentDialog's gradient-card
+// pattern (icon badge, title, subtitle grouped in one row) rather than the
+// icon floating alone above a disconnected paragraph — the first version of
+// this component had exactly that disconnect and read as unfinished.
 import { motion } from 'motion-v'
 
 // @hugeicons/core-free-icons doesn't export this type — reconstructed here
@@ -33,21 +38,40 @@ function close() {
 
 <template>
   <ModalShell v-if="open" :title="title" :close-disabled="loading" @close="close">
-    <div class="px-5 pt-5 pb-1 space-y-4">
-      <div v-if="icon" class="flex items-center gap-3">
-        <motion.div
-          :initial="{ scale: 0, rotate: variant === 'destructive' ? 30 : -20 }"
-          :animate="{ scale: 1, rotate: 0 }"
-          :transition="{ type: 'spring', stiffness: 300, damping: 18, delay: 0.1 }"
-          :class="[
-            'size-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs',
-            variant === 'destructive' ? 'bg-destructive' : 'bg-primary',
-          ]"
-        >
-          <HugeIcon :icon="icon" :stroke-width="2" class="size-5 text-white" />
-        </motion.div>
+    <div class="px-5 pt-5 pb-1">
+      <div
+        :class="[
+          'relative px-4 py-4 rounded-xl overflow-hidden',
+          variant === 'destructive'
+            ? 'bg-gradient-to-br from-rose-50 via-rose-50/60 to-primary/8'
+            : 'bg-gradient-to-br from-amber-50 via-rose-50/50 to-primary/8',
+        ]"
+      >
+        <div
+          class="absolute inset-0"
+          :style="{
+            backgroundImage: `radial-gradient(circle at 30% 50%, oklch(${variant === 'destructive' ? '0.65 0.12 25' : '0.75 0.08 50'} / 0.1), transparent 60%)`,
+          }"
+        />
+        <div class="relative flex items-center gap-3">
+          <motion.div
+            v-if="icon"
+            :initial="{ scale: 0, rotate: variant === 'destructive' ? 30 : -20 }"
+            :animate="{ scale: 1, rotate: 0 }"
+            :transition="{ type: 'spring', stiffness: 300, damping: 18, delay: 0.1 }"
+            :class="[
+              'size-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs',
+              variant === 'destructive' ? 'bg-destructive' : 'bg-primary',
+            ]"
+          >
+            <HugeIcon :icon="icon" :stroke-width="2" class="size-5 text-white" />
+          </motion.div>
+          <div>
+            <p :class="['text-sm font-semibold', variant === 'destructive' ? 'text-destructive' : 'text-primary']">{{ title }}</p>
+            <p v-if="description" class="text-xs text-muted-foreground/70 mt-0.5">{{ description }}</p>
+          </div>
+        </div>
       </div>
-      <p v-if="description" class="text-sm text-muted-foreground">{{ description }}</p>
     </div>
 
     <template #footer>

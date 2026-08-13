@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { CheckmarkCircle02Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
+import { Calendar01Icon, ArrowRight02Icon } from '@hugeicons/core-free-icons'
 import type { AppointmentHistoryItem } from '@/lib/api'
 import { getAvatarColor } from '@/lib/avatar'
-import { formatTime } from '@/lib/format'
+import { formatDate, formatTime } from '@/lib/format'
 import type { AppointmentDetail } from './AppointmentDetailModal.vue'
 
 const props = defineProps<{
@@ -86,79 +86,67 @@ const selectedAsDetail = computed<AppointmentDetail | null>(() => {
         </button>
       </div>
 
-      <div v-else-if="history.length === 0" class="flex flex-col items-center gap-2 py-10 px-4">
-        <p class="text-xs text-muted-foreground">No past appointments</p>
+      <div v-else-if="history.length === 0" class="flex flex-col items-center gap-3 py-14 px-4">
+        <div class="size-12 rounded-full bg-muted/40 flex items-center justify-center">
+          <HugeIcon :icon="Calendar01Icon" :stroke-width="2" class="size-5 text-muted-foreground/50" />
+        </div>
+        <p class="text-sm text-muted-foreground">No past appointments yet</p>
+        <p class="text-xs text-muted-foreground/60 max-w-[26ch] text-center">Your visit history will show up here once you've completed your first appointment.</p>
       </div>
 
       <template v-else>
-        <div class="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <table class="w-full text-sm">
-            <thead class="sticky top-0 z-10">
-              <tr class="bg-muted/20 border-b border-foreground/5">
-                <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Doctor</th>
-                <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Date</th>
-                <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Time</th>
-                <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="item in paginatedHistory"
-                :key="item.id"
-                class="border-b border-foreground/5 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                @click="selectedAppointment = item"
-              >
-                <td class="px-5 py-3.5">
-                  <div class="flex items-center gap-2.5">
-                    <Avatar size="default">
-                      <AvatarFallback :class="`text-sm font-semibold ${getAvatarColor(item.doctor_name).bg} ${getAvatarColor(item.doctor_name).text}`">
-                        {{ item.doctor_name.split(' ').map((n) => n[0]).join('') }}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p class="font-medium text-foreground text-sm">Dr. {{ item.doctor_name }}</p>
-                      <p class="text-[11px] text-muted-foreground">{{ item.specialization }}</p>
-                      <p v-if="item.notes" class="text-[11px] text-muted-foreground/60 italic mt-0.5 sm:hidden">{{ item.notes }}</p>
-                    </div>
-                  </div>
-                  <p v-if="item.notes" class="text-[11px] text-muted-foreground/60 italic mt-1.5 hidden sm:block">{{ item.notes }}</p>
-                </td>
-                <td class="px-5 py-3.5 text-foreground">{{ item.slot_date }}</td>
-                <td class="px-5 py-3.5 text-muted-foreground">{{ formatTime(item.start_time) }}</td>
-                <td class="px-5 py-3.5 text-right">
-                  <Badge v-if="item.status === 'cancelled'" variant="outline" class="text-[10px] text-rose-600 border-rose-200 bg-rose-50">Cancelled</Badge>
-                  <Badge v-else-if="item.attended === true" variant="outline" class="text-[10px] border-emerald-300 text-emerald-700 bg-emerald-50 gap-1">
-                    <HugeIcon :icon="CheckmarkCircle02Icon" :stroke-width="2" class="size-3" />
-                    Attended
-                  </Badge>
-                  <Badge v-else-if="item.attended === false" variant="outline" class="text-[10px] border-rose-300 text-rose-700 bg-rose-50 gap-1">
-                    <HugeIcon :icon="Cancel01Icon" :stroke-width="2" class="size-3" />
-                    Missed
-                  </Badge>
-                  <span v-else-if="markingId === item.id" class="text-[10px] text-muted-foreground flex items-center gap-1 justify-end">
-                    <Spinner />
-                    Updating...
-                  </span>
-                  <div v-else class="flex items-center gap-2 justify-end">
-                    <button
-                      type="button"
-                      class="text-xs sm:text-sm font-medium text-emerald-600 underline-offset-2 hover:underline transition-colors py-1.5 px-1"
-                      @click.stop="handleMark(item.id, true)"
-                    >
-                      Attended
-                    </button>
-                    <button
-                      type="button"
-                      class="text-xs sm:text-sm font-medium text-rose-600 underline-offset-2 hover:underline transition-colors py-1.5 px-1"
-                      @click.stop="handleMark(item.id, false)"
-                    >
-                      Missed
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="divide-y divide-foreground/5 px-2 sm:px-3 py-2">
+          <div
+            v-for="item in paginatedHistory"
+            :key="item.id"
+            class="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer"
+            @click="selectedAppointment = item"
+          >
+            <Avatar size="default" class="shrink-0">
+              <AvatarFallback :class="`text-sm font-semibold ${getAvatarColor(item.doctor_name).bg} ${getAvatarColor(item.doctor_name).text}`">
+                {{ item.doctor_name.split(' ').map((n) => n[0]).join('') }}
+              </AvatarFallback>
+            </Avatar>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <p class="font-medium text-foreground text-sm truncate">Dr. {{ item.doctor_name }}</p>
+                <span class="text-xs text-muted-foreground/70 shrink-0">{{ item.specialization }}</span>
+              </div>
+              <p class="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>{{ formatDate(item.slot_date) }}</span>
+                <span class="text-muted-foreground/30">&middot;</span>
+                <span>{{ formatTime(item.start_time) }}</span>
+              </p>
+              <p v-if="item.notes" class="text-xs text-muted-foreground/60 italic mt-1 truncate">{{ item.notes }}</p>
+            </div>
+
+            <div class="shrink-0" @click.stop>
+              <StatusBadge v-if="item.status === 'cancelled' || item.attended !== null" :status="item.status" :attended="item.attended" />
+              <span v-else-if="markingId === item.id" class="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Spinner />
+                Updating...
+              </span>
+              <div v-else class="flex items-center gap-3">
+                <button
+                  type="button"
+                  class="text-xs font-medium text-emerald-600 underline-offset-2 hover:underline transition-colors py-1.5"
+                  @click="handleMark(item.id, true)"
+                >
+                  Attended
+                </button>
+                <button
+                  type="button"
+                  class="text-xs font-medium text-rose-600 underline-offset-2 hover:underline transition-colors py-1.5"
+                  @click="handleMark(item.id, false)"
+                >
+                  Missed
+                </button>
+              </div>
+            </div>
+
+            <HugeIcon :icon="ArrowRight02Icon" :stroke-width="2" class="size-3.5 text-muted-foreground/30 shrink-0 hidden sm:block group-hover:text-muted-foreground/60 transition-colors" />
+          </div>
         </div>
         <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-3 border-t border-foreground/5">
           <p class="text-[11px] text-muted-foreground">Page {{ page }} of {{ totalPages }}</p>
