@@ -155,10 +155,12 @@ function handleSubmit() {
               :model-value="phoneNumber"
               @update:model-value="(v) => (phoneNumber = v.replace(/[^\d\s\-()]/g, ''))"
               class="border-0 rounded-none shadow-none bg-white data-[size=xl]:pl-4"
+              :aria-invalid="!!phoneError"
+              :aria-describedby="phoneError ? 'phone-error' : undefined"
             />
           </div>
         </div>
-        <p v-if="phoneError" class="text-xs text-destructive">{{ checkingPhone ? 'Checking...' : phoneError }}</p>
+        <p v-if="phoneError" id="phone-error" aria-live="polite" class="text-xs text-destructive">{{ checkingPhone ? 'Checking...' : phoneError }}</p>
       </div>
 
       <div v-if="!usedEmail" class="space-y-2">
@@ -170,8 +172,10 @@ function handleSubmit() {
           placeholder="john@example.com"
           v-model="email"
           :class="cn('bg-white data-[size=xl]:pl-4', emailError && 'border-destructive focus-visible:ring-destructive/30')"
+          :aria-invalid="!!emailError"
+          :aria-describedby="emailError ? 'email-error' : undefined"
         />
-        <p v-if="emailError" class="text-xs text-destructive">{{ checkingEmail ? 'Checking...' : emailError }}</p>
+        <p v-if="emailError" id="email-error" aria-live="polite" class="text-xs text-destructive">{{ checkingEmail ? 'Checking...' : emailError }}</p>
       </div>
 
       <Button class="w-full h-11 text-base shadow-xs" :disabled="!allFilled || hasError" @click="handleSubmit">

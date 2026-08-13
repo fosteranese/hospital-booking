@@ -6,6 +6,7 @@ const props = withDefaults(
     message: string
     variant?: 'simple' | 'bordered'
     class?: string
+    id?: string
   }>(),
   { variant: 'simple' }
 )
@@ -13,6 +14,8 @@ const props = withDefaults(
 
 <template>
   <div
+    :id="props.id"
+    role="alert"
     :class="cn(
       props.variant === 'simple'
         ? 'rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive'

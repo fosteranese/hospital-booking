@@ -695,4 +695,53 @@ test.describe('Frontend integration', () => {
     await expect(page.locator('text=No open times on this date')).not.toBeVisible();
     await expect(page.locator('text=Available times')).toBeVisible({ timeout: 15000 });
   });
+
+  test('16. Regression: "View your bookings" after a first-time (pre-browsed) booking shows the real dashboard, not a blank page', async ({ page }) => {
+    // Guards a real bug reported after this build shipped: handleConfirm()
+    // (stores/booking.ts) created the patient via api.createPatient() to get
+    // a patient_id for the appointment, but only ever kept the id -- it threw
+    // away the rest of the response and never set `existingPatient`. SuccessStep's
+    // "View your bookings" button calls goToStep('review'), and BookingWizard's
+    // `v-else-if="step === 'review' && existingPatient"` guard silently renders
+    // nothing when existingPatient is still null -- a booking succeeds, the
+    // success screen shows correctly, but clicking through to view it lands on
+    // a blank page except for a "Sign out" button. Only reachable via the
+    // pre-browsed path (a brand-new patient's first booking) -- a returning
+    // patient always has existingPatient set already, from handleVerified.
+    const email = `e2e_viewbookings_${Date.now()}@example.com`;
+
+    await page.goto(APP, { waitUntil: 'networkidle' });
+    await expect(page.locator('h1:has-text("Welcome to Mediport")')).toBeVisible({ timeout: 15000 });
+    await page.click('button:has-text("Use email instead")');
+    await page.fill('input[type="email"]', email);
+    await page.click('button:has-text("Continue")');
+
+    // New email -> pre-browsed path -> straight to doctor selection, no OTP yet.
+    await expect(page.locator('text=Choose your specialist')).toBeVisible({ timeout: 15000 });
+    await page.click('button:has-text("Auto-assign")');
+    // Auto-assign leaves doctorId null, so BookingForm's title is "Pick a
+    // date" here, not "Choose your date & time" (that's the specific-doctor
+    // title) -- match on the slot list instead of the title.
+    // Pick whatever the first available slot is rather than a hardcoded time
+    // — which specific slots are open varies with how much other test/manual
+    // activity has already booked out that date.
+    await expect(page.locator('text=Available times')).toBeVisible({ timeout: 15000 });
+    await page.locator('button', { hasText: /—/ }).first().click();
+
+    // Verify (OTP), then patient details, then confirm.
+    await expect(page.locator('#otp')).toBeVisible({ timeout: 15000 });
+    await page.locator('#otp').fill('123456');
+    await page.fill('input[placeholder="John"]', 'View');
+    await page.fill('input[placeholder="Doe"]', 'Bookings');
+    await page.click('button:has-text("Continue")');
+    await expect(page.locator('text=Almost there')).toBeVisible({ timeout: 15000 });
+    await page.click('button:has-text("Confirm Booking")');
+    await expect(page.locator('h2:has-text("Appointment Booked!")')).toBeVisible({ timeout: 15000 });
+
+    // The actual regression: click through and confirm the dashboard renders
+    // for real, not a bare "Sign out" button on an otherwise-empty page.
+    await page.click('button:has-text("View your bookings")');
+    await expect(page.locator('text=Welcome back, View')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=Dr.').first()).toBeVisible({ timeout: 15000 });
+  });
 });

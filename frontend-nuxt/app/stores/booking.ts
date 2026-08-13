@@ -543,6 +543,17 @@ export const useBookingStore = defineStore('booking', () => {
             auth.token
           )
           pid = created.id
+          // A pre-browsed patient has no existingPatient set until now (they
+          // were never looked up — that's the whole point of the fork). Set
+          // it here so 'success' -> 'review' (via SuccessStep's "View your
+          // bookings") has a real patient to show instead of hitting
+          // BookingWizard's `v-else-if="step === 'review' && existingPatient"`
+          // guard and rendering nothing. doctorCount stays at its default
+          // (0) — ExistingPatientReview's "Book an appointment" vs
+          // "Continue" label and rebook shortcut both degrade gracefully
+          // with no lastDoctor/doctorCount set, same as any other patient
+          // whose secondary lookups haven't run yet.
+          existingPatient.value = created
         }
         await api.createAppointment(
           { doctor_id: doctorId.value!, slot_id: slotId.value, patient_id: pid, notes: notes.value || undefined },

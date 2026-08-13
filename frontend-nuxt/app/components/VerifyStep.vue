@@ -6,6 +6,8 @@
 // a request that could have gone stale. The shared "Back" button in
 // BookingWizard covers returning to the previous step; no separate back
 // affordance needed here.
+import { Shield01Icon } from '@hugeicons/core-free-icons'
+
 const emit = defineEmits<{ verified: [token: string, identifier: string, role: string] }>()
 
 const auth = useAuthStore()
@@ -121,6 +123,11 @@ function onOtpChange(v: string | undefined) {
       </div>
 
       <ErrorMessage v-if="error" :message="error" variant="bordered" />
+
+      <p class="flex items-center justify-center gap-1.5 text-xs text-muted-foreground/70">
+        <HugeIcon :icon="Shield01Icon" :stroke-width="2" class="size-3.5 shrink-0" />
+        This just confirms it's really you — we'll never share your contact details.
+      </p>
 
       <div class="text-center text-xs sm:text-sm text-muted-foreground">
         <p v-if="cooldown > 0">Didn't receive the code? <span class="text-foreground/60">Resend in {{ cooldown }}s</span></p>

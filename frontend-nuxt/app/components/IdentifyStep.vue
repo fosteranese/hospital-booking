@@ -125,6 +125,8 @@ function switchMethod() {
               :model-value="phoneNumber"
               @update:model-value="(v) => (phoneNumber = v.replace(/[^\d\s\-()]/g, ''))"
               class="bg-white"
+              :aria-invalid="!!error"
+              :aria-describedby="error ? 'identify-error' : undefined"
             />
           </div>
         </div>
@@ -133,11 +135,20 @@ function switchMethod() {
         <Label for="email">Email</Label>
         <div class="relative">
           <HugeIcon :icon="Mail01Icon" :stroke-width="2" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-          <Input id="email" type="email" input-size="xl" placeholder="email@example.com" v-model="email" class="bg-white" />
+          <Input
+            id="email"
+            type="email"
+            input-size="xl"
+            placeholder="email@example.com"
+            v-model="email"
+            class="bg-white"
+            :aria-invalid="!!error"
+            :aria-describedby="error ? 'identify-error' : undefined"
+          />
         </div>
       </div>
 
-      <ErrorMessage v-if="error" :message="error" />
+      <ErrorMessage v-if="error" id="identify-error" :message="error" />
 
       <Button class="w-full h-11 text-base shadow-xs" :disabled="loading || !identifier" @click="handleContinue">
         <span v-if="loading" class="flex items-center gap-2"><Spinner /><span>Just a moment...</span></span>

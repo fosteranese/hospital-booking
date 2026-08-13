@@ -5,14 +5,21 @@
 // returning patients verify first exactly as before. See booking store's
 // completeIdentify() and the plan's fork writeup for the full reasoning.
 import { motion } from 'motion-v'
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
+import { ArrowLeft01Icon, Logout03Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 
 const booking = useBookingStore()
 const auth = useAuthStore()
 const api = useApi()
+// useReducedMotion is motion-v's own composable, auto-imported via its Nuxt
+// module — returns a reactive Ref<boolean> directly (@vueuse/core's
+// useMediaQuery under the hood), no need for a hand-rolled version.
+const prefersReduced = useReducedMotion()
+
+const showSignOutConfirm = ref(false)
 
 function signOut() {
+  showSignOutConfirm.value = false
   if (auth.token) api.invalidateToken(auth.token).catch(() => {})
   booking.resetAll()
 }
@@ -34,7 +41,7 @@ const stepAnnouncement: Record<string, string> = {
 </script>
 
 <template>
-  <main class="flex-1 overflow-y-auto transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
+  <main id="main-content" tabindex="-1" class="flex-1 overflow-y-auto transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-50/30 via-rose-50/10 via-white to-primary/[0.03]">
     <span class="sr-only" role="status" aria-live="polite">{{ stepAnnouncement[booking.step] }}</span>
     <div class="flex min-h-full min-w-0">
       <div
@@ -48,7 +55,7 @@ const stepAnnouncement: Record<string, string> = {
             v-if="booking.step === 'review'"
             variant="ghost"
             class="h-10 text-muted-foreground hover:text-destructive"
-            @click="signOut"
+            @click="showSignOutConfirm = true"
           >
             Sign out
           </Button>
@@ -75,9 +82,9 @@ const stepAnnouncement: Record<string, string> = {
           -->
           <motion.div
             :key="booking.step"
-            :initial="{ opacity: 0, x: booking.direction * 24 }"
+            :initial="{ opacity: 0, x: prefersReduced ? 0 : booking.direction * 24 }"
             :animate="{ opacity: 1, x: 0 }"
-            :transition="{ duration: 0.2, ease: 'easeInOut' }"
+            :transition="{ duration: prefersReduced ? 0 : 0.2, ease: 'easeInOut' }"
           >
             <IdentifyStep v-if="booking.step === 'identify'" />
 
@@ -156,5 +163,15 @@ const stepAnnouncement: Record<string, string> = {
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      :open="showSignOutConfirm"
+      title="Sign out?"
+      description="You'll need to verify your identity again next time you want to manage your appointments."
+      confirm-label="Sign out"
+      :icon="Logout03Icon"
+      @update:open="showSignOutConfirm = $event"
+      @confirm="signOut"
+    />
   </main>
 </template>

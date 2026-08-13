@@ -53,5 +53,18 @@ const currentIdx = computed(() => displayIndex(props.step))
         )"
       />
     </div>
+
+    <!--
+      Below lg, LeftPanel's whole warm-welcome pane (tagline + "Since 2010"
+      trust marker) never renders at all -- MobileHeader used to show nothing
+      but the mark and wordmark here, which is most real traffic (Zocdoc: 70%+
+      of bookings are mobile) landing on a compact bar with an empty page
+      below it. A short version of the same messaging, shown only on the
+      first screen (once the wizard is underway the progress bar earns the
+      space instead).
+    -->
+    <p v-if="!showProgress" class="mt-3 text-sm text-white/75 leading-snug max-w-sm">
+      Compassionate fertility care, tailored to your journey.
+    </p>
   </header>
 </template>
