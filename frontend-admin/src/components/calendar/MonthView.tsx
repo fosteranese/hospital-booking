@@ -123,7 +123,7 @@ export function MonthView({ appointments, currentDate, loading, refreshing, onEv
                   <div
                     key={day.toISOString()}
                     onClick={() => onDayClick(day)}
-                    className={`min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 border-b border-r border-border cursor-pointer transition-colors hover:bg-muted/50 ${
+                    className={`aspect-square min-h-[70px] sm:min-h-0 p-1 sm:p-1.5 border-b border-r border-border cursor-pointer transition-colors hover:bg-muted/50 ${
                       !sameMonth ? 'bg-muted/30' : ''
                     } ${today ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}`}
                     role="button"
