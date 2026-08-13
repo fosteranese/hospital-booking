@@ -8,6 +8,7 @@ mod password;
 mod totp;
 mod missed;
 mod reminders;
+mod oauth;
 
 pub use otp::*;
 pub use jwt::*;
@@ -19,3 +20,4 @@ pub use password::*;
 pub use totp::*;
 pub use missed::*;
 pub use reminders::*;
+pub use oauth::*;

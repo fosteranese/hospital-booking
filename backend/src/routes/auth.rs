@@ -134,6 +134,75 @@ pub async fn verify_otp_handler(
     Ok(Json(VerifyOtpResponse { token, role }))
 }
 
+// ─── Social sign-in ──────────────────────────────────────────────────────
+//
+// Both routes end at the exact same place OTP verification does: a
+// {token, role, identifier} triple the frontend hands to the same
+// handleVerified() the OTP flow already calls. Neither provider gets a
+// bespoke session shape -- from here on, the rest of the app has no idea
+// (and doesn't need to know) which auth method actually ran. Identity
+// linking is simply "the verified email matches an existing patient
+// record's email", the same lookup OTP-verified email logins already use --
+// no separate linked-accounts table, because there's nothing to link beyond
+// what the identifier string itself already resolves to.
+
+#[derive(Deserialize)]
+pub struct OAuthRequest {
+    pub id_token: String,
+}
+
+#[derive(Serialize)]
+pub struct OAuthResponse {
+    pub token: String,
+    pub role: String,
+    pub identifier: String,
+}
+
+pub async fn oauth_google_handler(
+    State(state): State<AppState>,
+    Json(body): Json<OAuthRequest>,
+) -> Result<Json<OAuthResponse>, AppError> {
+    let google = state.google_oauth.as_ref().ok_or_else(|| {
+        AppError::ServiceUnavailable("Sign in with Google is not configured on this server".to_string())
+    })?;
+
+    let claims = google.verify(&body.id_token).await
+        .map_err(AppError::Unauthorized)?;
+    let identifier = claims.email.trim().to_lowercase();
+
+    sqlx::query(
+        "INSERT INTO users (identifier, role) VALUES ($1, 'patient') ON CONFLICT (identifier) DO NOTHING"
+    )
+    .bind(&identifier)
+    .execute(&state.pool)
+    .await
+    .map_err(|_| AppError::Internal("Failed to create user".to_string()))?;
+
+    let role: String = sqlx::query_scalar("SELECT role FROM users WHERE identifier = $1")
+        .bind(&identifier)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|_| AppError::Internal("Failed to get user role".to_string()))?;
+
+    let token = create_token(&identifier, &role, &state.jwt_secret)
+        .map_err(|_| AppError::Internal("Failed to create token. Please try again.".to_string()))?;
+
+    Ok(Json(OAuthResponse { token, role, identifier }))
+}
+
+// Sign in with Apple needs a paid Apple Developer Program membership plus a
+// Services ID, Key ID, Team ID, and private key generated in their portal --
+// none of which exist for this deployment yet. This route is real (the
+// frontend integration point isn't a stub), it just has nothing to verify
+// against until those credentials are configured, so it fails clearly
+// rather than either pretending to work or not existing at all.
+pub async fn oauth_apple_handler(
+    State(_state): State<AppState>,
+    Json(_body): Json<OAuthRequest>,
+) -> Result<Json<OAuthResponse>, AppError> {
+    Err(AppError::ServiceUnavailable("Sign in with Apple is not configured on this server".to_string()))
+}
+
 // ─── Existing token management handlers ─────────────────────────────────
 
 #[derive(Deserialize)]
@@ -1265,6 +1334,8 @@ pub fn auth_routes() -> axum::Router<AppState> {
     Router::new()
         .route("/api/auth/request-otp", post(request_otp))
         .route("/api/auth/verify-otp", post(verify_otp_handler))
+        .route("/api/auth/oauth/google", post(oauth_google_handler))
+        .route("/api/auth/oauth/apple", post(oauth_apple_handler))
         .route("/api/auth/refresh", post(refresh_token_handler))
         .route("/api/auth/invalidate", post(invalidate_token_handler))
         .route("/api/auth/login", post(login_handler))

@@ -12,6 +12,36 @@ import { normalizePhone } from '@/lib/phone'
 
 const booking = useBookingStore()
 const api = useApi()
+const { clientId: googleClientId, renderButton: renderGoogleButton } = useGoogleIdentity()
+const googleBtnEl = ref<HTMLElement | null>(null)
+const googleError = ref('')
+const googleLoading = ref(false)
+
+onMounted(() => {
+  if (!googleClientId || !googleBtnEl.value) return
+  renderGoogleButton(
+    googleBtnEl.value,
+    handleGoogleCredential,
+    (msg) => { googleError.value = msg }
+  )
+})
+
+// Reuses the exact same handleVerified() the OTP flow calls once it has a
+// token — Google having already proven the email is real stands in for the
+// OTP step entirely, so from here on the rest of the app can't tell (and
+// doesn't need to) which method actually authenticated this session.
+async function handleGoogleCredential(idToken: string) {
+  googleLoading.value = true
+  googleError.value = ''
+  try {
+    const res = await api.oauthGoogle(idToken)
+    await booking.handleVerified(res.token, res.identifier, res.role)
+  } catch (err: any) {
+    googleError.value = err.message
+  } finally {
+    googleLoading.value = false
+  }
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -168,6 +198,26 @@ function switchMethod() {
       <Button variant="outline" class="w-full h-11 text-base" @click="switchMethod">
         {{ method === 'phone' ? 'Use email instead' : 'Use phone instead' }}
       </Button>
+
+      <template v-if="googleClientId">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <span class="w-full border-t" />
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-background px-2 text-muted-foreground">or continue with</span>
+          </div>
+        </div>
+
+        <ErrorMessage v-if="googleError" :message="googleError" />
+
+        <div class="relative flex justify-center">
+          <div ref="googleBtnEl" :class="['transition-opacity', googleLoading && 'opacity-50 pointer-events-none']" />
+          <div v-if="googleLoading" class="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 rounded-full">
+            <Spinner />
+          </div>
+        </div>
+      </template>
 
       <p class="text-center text-xs text-muted-foreground/60">
         By continuing, you agree to our

@@ -191,6 +191,21 @@ export function createApiClient(auth: ApiAuth) {
         body: JSON.stringify({ identifier, code }),
       }),
 
+    // Same response shape as verifyOtp plus `identifier` (the verified
+    // email) — the caller doesn't already know it the way it does for
+    // OTP, since Google/Apple are the ones revealing it.
+    oauthGoogle: (idToken: string) =>
+      request<{ token: string; role: string; identifier: string }>('/auth/oauth/google', {
+        method: 'POST',
+        body: JSON.stringify({ id_token: idToken }),
+      }),
+
+    oauthApple: (idToken: string) =>
+      request<{ token: string; role: string; identifier: string }>('/auth/oauth/apple', {
+        method: 'POST',
+        body: JSON.stringify({ id_token: idToken }),
+      }),
+
     invalidateToken: (token: string) =>
       request<{ message: string }>('/auth/invalidate', {
         method: 'POST',

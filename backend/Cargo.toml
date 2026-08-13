@@ -30,3 +30,4 @@ bcrypt = "0.16"
 totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
 qrcode = { version = "0.14", features = ["svg"] }
 url = "2"
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }

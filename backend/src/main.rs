@@ -20,7 +20,7 @@ mod state;
 
 use crate::state::AppState;
 use crate::ratelimit::RateLimiter;
-use crate::services::{EmailService, SettingsService, SmsService, generate_slots, mark_missed_appointments, send_appointment_reminders};
+use crate::services::{EmailService, SettingsService, SmsService, GoogleOAuthService, generate_slots, mark_missed_appointments, send_appointment_reminders};
 
 async fn health() -> &'static str {
     "OK"
@@ -187,10 +187,22 @@ async fn main() {
     let patient_app_url = std::env::var("PATIENT_APP_URL")
         .unwrap_or_else(|_| "http://localhost:5176".to_string());
 
+    // Sign in with Google. GOOGLE_CLIENT_ID is a public identifier (it's
+    // embedded in the frontend bundle too, by design -- Google's own docs
+    // are explicit that it isn't a secret), so no secret-handling concerns
+    // here, unlike a classic OAuth client_secret. Absent means the feature
+    // is simply off: the route returns a clear error instead of failing to
+    // start, same graceful-degradation pattern as SMTP being unconfigured.
+    let google_oauth = std::env::var("GOOGLE_CLIENT_ID")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(|client_id| Arc::new(GoogleOAuthService::new(client_id)));
+
     let state = AppState {
         pool: pool.clone(),
         email_service: Arc::new(email_service),
         sms_service: Arc::new(sms_service),
+        google_oauth,
         jwt_secret,
         min_gap_minutes: Arc::new(RwLock::new(min_gap_minutes)),
         min_advance_days: Arc::new(RwLock::new(min_advance_days)),
