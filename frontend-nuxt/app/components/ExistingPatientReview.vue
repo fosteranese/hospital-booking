@@ -103,7 +103,7 @@ const rebookDoctor = computed(() => soonest.value ?? props.lastDoctor)
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
                   <h3 class="text-sm font-semibold leading-tight">{{ patient.first_name }} {{ patient.last_name }}</h3>
-                  <Badge variant="secondary" class="text-[10px] px-1.5 py-0 leading-4">Returning</Badge>
+                  <Badge variant="secondary" class="text-[10px] px-1.5 py-0 leading-4 bg-gold/15 text-gold-foreground">Returning</Badge>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap mt-0.5 text-xs text-muted-foreground">
                   <span class="flex items-center gap-1 min-w-0">

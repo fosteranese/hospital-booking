@@ -104,7 +104,7 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
           >
             <Button
               variant="outline"
-              class="w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 bg-white"
+              class="w-full justify-start h-auto py-4 px-4 rounded-xl shadow-sm hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 bg-white"
               @click="emit('select', doc.id, `Dr. ${doc.first_name} ${doc.last_name} (${doc.specialization})`)"
             >
               <div class="flex items-center gap-3.5 w-full min-w-0">
@@ -118,7 +118,7 @@ const filtered = computed(() => (props.excludeDoctorId ? doctors.value.filter((d
                   <p class="text-sm text-muted-foreground">{{ doc.specialization }}</p>
                   <div class="h-4 mt-1">
                     <div v-if="nextAvailable[doc.id] === undefined" class="h-3 w-24 rounded bg-muted animate-skeleton" />
-                    <p v-else-if="nextAvailable[doc.id]" class="text-xs font-medium text-primary">
+                    <p v-else-if="nextAvailable[doc.id]" class="text-xs font-semibold text-gold-foreground">
                       Next available {{ formatDateShort(nextAvailable[doc.id]!) }}
                     </p>
                     <p v-else class="text-xs text-muted-foreground/50">No upcoming availability</p>

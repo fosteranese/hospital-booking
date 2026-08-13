@@ -65,6 +65,10 @@ function stepStatus(i: number): 'completed' | 'current' | 'upcoming' {
       class="absolute inset-0 w-full h-full object-cover"
     />
     <div class="absolute inset-0 bg-gradient-to-r from-green-900/95 via-green-800/92 to-green-800/90" />
+    <div
+      class="absolute -left-24 top-1/3 size-[32rem] rounded-full opacity-60 blur-3xl pointer-events-none"
+      style="background: radial-gradient(circle, oklch(0.68 0.15 75 / 0.25), transparent 70%)"
+    />
     <div class="relative z-10 flex flex-col h-full px-12 py-10 animate-scale-in">
       <template v-if="step === 'identify' || step === 'success'">
         <div class="flex items-center gap-3 shrink-0">

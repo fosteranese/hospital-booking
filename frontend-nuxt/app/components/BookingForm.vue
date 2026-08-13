@@ -218,7 +218,7 @@ function handleSlotClick(slot: TimeSlot) {
       <motion.div v-else-if="availableSlots.length > 0" :initial="{ opacity: 0, y: 8 }" :animate="{ opacity: 1, y: 0 }" class="space-y-5">
         <div class="flex items-center justify-between">
           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Available times</p>
-          <Badge variant="secondary" class="text-[10px] px-1.5 py-0 rounded-full">
+          <Badge variant="secondary" class="text-[10px] px-1.5 py-0 rounded-full bg-gold/15 text-gold-foreground">
             {{ availableSlots.length }} slot{{ availableSlots.length > 1 ? 's' : '' }}
           </Badge>
         </div>

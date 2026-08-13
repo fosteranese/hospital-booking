@@ -27,6 +27,13 @@
   --color-accent-foreground: oklch(var(--accent-foreground));
   --color-destructive: oklch(var(--destructive));
   --color-destructive-foreground: oklch(var(--destructive-foreground));
+  /* Warm accent, second color in the brand system alongside primary green —
+     same hue (75) as the neutral background/border tokens' warm undertone,
+     just pushed to full chroma, so it reads as "in family" rather than an
+     arbitrary new color. Used sparingly: scarcity/highlight moments only
+     (next-available date, a status accent), never as a second primary. */
+  --color-gold: oklch(var(--gold));
+  --color-gold-foreground: oklch(var(--gold-foreground));
   --color-border: oklch(var(--border));
   --color-input: oklch(var(--input));
   --color-ring: oklch(var(--ring));
@@ -63,6 +70,8 @@
   --accent-foreground: 0.28 0.08 150;
   --destructive: 0.58 0.2 30;
   --destructive-foreground: 0.985 0 0;
+  --gold: 0.68 0.15 75;
+  --gold-foreground: 0.32 0.09 70;
   --border: 0.88 0.015 75;
   --input: 0.88 0.015 75;
   --ring: 0.63 0.17 155;
