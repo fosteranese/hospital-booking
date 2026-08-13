@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getAvatarColor } from '@/lib/avatar'
+import { formatDate, formatTime } from '@/lib/format'
 import type { UpcomingAppointment } from '@/lib/api'
 import type { AppointmentDetail } from './AppointmentDetailModal.vue'
 
@@ -62,61 +63,54 @@ const selectedAsDetail = computed<AppointmentDetail | null>(() => {
 <template>
   <ModalShell :title="`All upcoming appointments (${appointments.length})`" @close="emit('close')">
     <div class="overflow-y-auto flex-1">
-      <div class="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <table class="w-full text-sm">
-          <thead class="sticky top-0 z-10">
-            <tr class="bg-muted/20 border-b border-foreground/5">
-              <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Doctor</th>
-              <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Date</th>
-              <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Time</th>
-              <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-5 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="appt in paginatedAppointments"
-              :key="appt.id"
-              class="border-b border-foreground/5 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
-              @click="selectedAppointment = appt"
-            >
-              <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2.5">
-                  <Avatar size="default">
-                    <AvatarFallback :class="`text-sm font-semibold ${getAvatarColor(appt.doctor_name).bg} ${getAvatarColor(appt.doctor_name).text}`">
-                      {{ appt.doctor_name.split(' ').map((n) => n[0]).join('') }}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p class="font-medium text-foreground text-sm">Dr. {{ appt.doctor_name }}</p>
-                    <p class="text-[11px] text-muted-foreground">{{ appt.specialization }}</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-foreground">{{ appt.slot_date }}</td>
-              <td class="px-5 py-3.5 text-muted-foreground">{{ appt.start_time?.slice(0, 5) }}</td>
-              <td class="px-5 py-3.5 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    class="text-xs sm:text-sm font-medium text-primary underline-offset-2 hover:underline transition-colors py-1.5 px-1"
-                    @click.stop="emit('rescheduleTime', appt)"
-                  >
-                    Reschedule
-                  </button>
-                  <button
-                    type="button"
-                    :disabled="cancellingId === appt.id"
-                    class="text-xs sm:text-sm font-medium text-destructive underline-offset-2 hover:underline transition-colors disabled:opacity-40 py-1.5 px-1 inline-flex items-center gap-1"
-                    @click.stop="pendingCancelId = appt.id"
-                  >
-                    <template v-if="cancellingId === appt.id"><Spinner /><span>Cancelling...</span></template>
-                    <template v-else>Cancel</template>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="divide-y divide-foreground/5 px-2 sm:px-3 py-2">
+        <div
+          v-for="appt in paginatedAppointments"
+          :key="appt.id"
+          class="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer"
+          @click="selectedAppointment = appt"
+        >
+          <Avatar size="default" class="shrink-0">
+            <AvatarFallback :class="`text-sm font-semibold ${getAvatarColor(appt.doctor_name).bg} ${getAvatarColor(appt.doctor_name).text}`">
+              {{ appt.doctor_name.split(' ').map((n) => n[0]).join('') }}
+            </AvatarFallback>
+          </Avatar>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-2 flex-wrap">
+              <p class="font-medium text-foreground text-sm truncate">Dr. {{ appt.doctor_name }}</p>
+              <span class="text-xs text-muted-foreground/70 shrink-0">{{ appt.specialization }}</span>
+            </div>
+            <p class="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span>{{ formatDate(appt.slot_date) }}</span>
+              <span class="text-muted-foreground/30">&middot;</span>
+              <span>{{ formatTime(appt.start_time) }}</span>
+            </p>
+          </div>
+
+          <div class="shrink-0 flex items-center gap-3" @click.stop>
+            <span v-if="cancellingId === appt.id" class="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <Spinner />
+              Cancelling...
+            </span>
+            <template v-else>
+              <button
+                type="button"
+                class="hidden sm:inline text-xs font-medium text-primary underline-offset-2 hover:underline transition-colors py-1.5"
+                @click="emit('rescheduleTime', appt)"
+              >
+                Reschedule
+              </button>
+              <button
+                type="button"
+                class="hidden sm:inline text-xs font-medium text-destructive underline-offset-2 hover:underline transition-colors py-1.5"
+                @click="pendingCancelId = appt.id"
+              >
+                Cancel
+              </button>
+            </template>
+          </div>
+        </div>
       </div>
       <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-3 border-t border-foreground/5">
         <p class="text-[11px] text-muted-foreground">Page {{ page }} of {{ totalPages }}</p>

@@ -73,10 +73,10 @@ function handleClose() {
       </div>
 
       <div class="space-y-1.5">
-        <p class="text-xs font-medium text-foreground">Reason for cancellation</p>
+        <p class="text-xs font-medium text-foreground">Reason for cancellation <span class="text-muted-foreground/50 font-normal">(required)</span></p>
         <textarea
           v-model="reason"
-          placeholder="Please provide a reason..."
+          placeholder="Let us know why you're cancelling..."
           class="w-full min-h-[72px] resize-none rounded-lg border border-foreground/10 bg-transparent px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-colors"
         />
       </div>
