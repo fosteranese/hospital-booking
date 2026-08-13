@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { motion } from 'motion-v'
 import type { TimeSlot } from '@/lib/api'
-import { Calendar01Icon, Clock01Icon, CheckmarkCircle01Icon, ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
+import { Calendar01Icon, Clock01Icon, CheckmarkCircle01Icon, ArrowLeft01Icon, ArrowRight01Icon, CalendarBlock02Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 
 const props = withDefaults(
@@ -48,6 +48,14 @@ const slots = ref<TimeSlot[]>([])
 const loading = ref(true)
 const selectedSlot = ref<string | null>(null)
 const availableDates = ref<string[]>([])
+// Distinguishes "haven't heard back on this doctor's dates yet" from "heard
+// back, and there genuinely aren't any" -- without it, a doctor with zero
+// upcoming availability (reachable via the dashboard's "Rebook with Dr. X"
+// shortcut, which sends a doctorId straight to this step without ever going
+// through DoctorSelect's own no-availability guard) silently fell into the
+// "Pick a date to see available times" prompt with no date strip to pick
+// from -- a dead end with no explanation.
+const datesLoading = ref(true)
 const canScrollLeft = ref(false)
 const canScrollRight = ref(false)
 const stripRef = ref<HTMLDivElement | null>(null)
@@ -73,6 +81,7 @@ watch(
   (doctorId, _old, onCleanup) => {
     const abort = new AbortController()
     onCleanup(() => abort.abort())
+    datesLoading.value = true
     api
       .getAvailableDates(doctorId ?? undefined)
       .then((res) => {
@@ -82,6 +91,7 @@ watch(
         setTimeout(checkScroll, 50)
       })
       .catch(() => { if (!abort.signal.aborted) availableDates.value = [] })
+      .finally(() => { if (!abort.signal.aborted) datesLoading.value = false })
   },
   { immediate: true }
 )
@@ -210,7 +220,18 @@ function handleSlotClick(slot: TimeSlot) {
       </div>
 
       <!-- No AnimatePresence (see plan §7.1 finding) — plain v-if/else-if chain, each branch keeps its own enter animation. -->
-      <motion.div v-if="!date" :initial="{ opacity: 0 }" :animate="{ opacity: 1 }" class="flex flex-col items-center gap-2 pt-4 pb-2">
+      <motion.div
+        v-if="!datesLoading && availableDates.length === 0"
+        :initial="{ opacity: 0, y: 8 }"
+        :animate="{ opacity: 1, y: 0 }"
+        class="flex flex-col items-center gap-2 rounded-xl bg-white border-2 border-dashed border-foreground/10 py-10 px-4"
+      >
+        <HugeIcon :icon="CalendarBlock02Icon" :stroke-width="2" class="size-8 text-muted-foreground/30" />
+        <p class="text-sm text-muted-foreground">This doctor has no upcoming availability</p>
+        <p class="text-xs text-muted-foreground/60">Please go back and choose another doctor</p>
+      </motion.div>
+
+      <motion.div v-else-if="!date" :initial="{ opacity: 0 }" :animate="{ opacity: 1 }" class="flex flex-col items-center gap-2 pt-4 pb-2">
         <HugeIcon :icon="Calendar01Icon" :stroke-width="2" class="size-8 text-muted-foreground/30" />
         <p class="text-xs text-muted-foreground/60">Pick a date to see available times</p>
       </motion.div>

@@ -37,7 +37,6 @@ function openDirections() {
           <p class="text-sm font-medium text-foreground mt-0.5">Dr. {{ appointment.doctor_name }}</p>
           <p class="text-xs text-muted-foreground/60 mt-0.5">{{ appointment.specialization }}</p>
         </div>
-        <Badge variant="outline" class="text-[10px] font-normal shrink-0">{{ appointment.specialization }}</Badge>
       </div>
 
       <div class="grid grid-cols-2 divide-x divide-foreground/5">
