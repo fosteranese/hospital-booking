@@ -7,6 +7,15 @@ export function formatDate(dateStr: string): string {
   }
 }
 
+export function formatDateShort(dateStr: string): string {
+  try {
+    const d = new Date(dateStr + 'T12:00:00')
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
 export function formatTime(timeStr: string): string {
   try {
     const [h, m] = timeStr.split(':').map(Number) as [number, number]
