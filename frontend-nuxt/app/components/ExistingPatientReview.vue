@@ -3,7 +3,6 @@ import { motion } from 'motion-v'
 import {
   Mail01Icon,
   CallIcon,
-  Clock01Icon,
   Appointment01Icon,
   ArrowRight02Icon,
   Time02Icon,
@@ -93,59 +92,49 @@ const rebookDoctor = computed(() => soonest.value ?? props.lastDoctor)
         <CardDescription>Great to see you again — here's your information</CardDescription>
       </CardHeader>
       <CardContent class="px-0 space-y-5">
-        <Card class="overflow-hidden shadow-sm shadow-black/[0.03] border pt-0 relative">
-          <div class="h-24 bg-gradient-to-br from-amber-50 via-rose-50/60 to-primary/5" />
-          <div class="absolute top-3 right-3 z-10 flex items-center gap-2">
-            <Button variant="outline" size="sm" @click="showEditModal = true">
-              <HugeIcon :icon="Edit01Icon" :stroke-width="2" />
-              Edit profile
-            </Button>
-            <Button variant="outline" size="sm" @click="showHistoryModal = true">History</Button>
-          </div>
-          <CardContent class="relative pb-0">
-            <div class="flex flex-row items-start gap-5">
-              <Avatar class="border-4 border-[#ffffff] shadow-lg -mt-12 size-20 sm:size-28">
-                <AvatarFallback class="bg-slate-300 text-xl font-semibold text-slate-900">
+        <Card size="sm" class="shadow-sm shadow-black/[0.03] border">
+          <CardContent>
+            <div class="flex items-center gap-3">
+              <Avatar class="size-11 shrink-0">
+                <AvatarFallback class="bg-slate-200 text-sm font-semibold text-slate-700">
                   {{ getInitials(patient.first_name, patient.last_name) }}
                 </AvatarFallback>
               </Avatar>
-              <div class="flex-1 pb-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-lg font-semibold leading-tight">{{ patient.first_name }} {{ patient.last_name }}</h3>
-                  <Badge variant="secondary" class="text-[10px] px-2 py-0.5">Returning</Badge>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-sm font-semibold leading-tight">{{ patient.first_name }} {{ patient.last_name }}</h3>
+                  <Badge variant="secondary" class="text-[10px] px-1.5 py-0 leading-4">Returning</Badge>
                 </div>
-                <div class="space-y-0.5 pt-2 text-sm text-muted-foreground">
-                  <div class="flex items-center gap-3">
-                    <HugeIcon :icon="Mail01Icon" :stroke-width="2" class="size-4 shrink-0" />
+                <div class="flex items-center gap-3 flex-wrap mt-0.5 text-xs text-muted-foreground">
+                  <span class="flex items-center gap-1 min-w-0">
+                    <HugeIcon :icon="Mail01Icon" :stroke-width="2" class="size-3 shrink-0" />
                     <span class="truncate">{{ patient.email }}</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <HugeIcon :icon="CallIcon" :stroke-width="2" class="size-4 shrink-0" />
-                    <span>{{ patient.phone }}</span>
-                  </div>
+                  </span>
+                  <span class="flex items-center gap-1 shrink-0">
+                    <HugeIcon :icon="CallIcon" :stroke-width="2" class="size-3 shrink-0" />
+                    {{ patient.phone }}
+                  </span>
                 </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="showEditModal = true">
+                  <HugeIcon :icon="Edit01Icon" :stroke-width="2" class="size-3.5" />
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click="showHistoryModal = true">History</Button>
               </div>
             </div>
+
+            <div v-if="lastDoctor" class="flex items-center justify-between gap-3 flex-wrap mt-3 pt-3 border-t border-foreground/5 text-xs">
+              <div class="flex items-center gap-1.5 flex-wrap min-w-0 text-muted-foreground">
+                <HugeIcon :icon="Appointment01Icon" :stroke-width="2" class="size-3.5 text-primary shrink-0" />
+                <span class="shrink-0">Last visit</span>
+                <span class="text-foreground font-medium">Dr. {{ lastDoctor.doctor_name }}</span>
+                <span class="shrink-0 whitespace-nowrap">&middot; {{ lastDoctor.last_appointment_date }} &middot; {{ lastDoctor.last_appointment_time?.slice(0, 5) }}</span>
+              </div>
+              <Badge variant="outline" class="text-[10px] font-normal shrink-0">{{ lastDoctor.specialization }}</Badge>
+            </div>
           </CardContent>
-          <template v-if="lastDoctor">
-            <Separator />
-            <CardContent class="pt-5 space-y-3">
-              <div class="flex items-center gap-2">
-                <HugeIcon :icon="Appointment01Icon" :stroke-width="2" class="size-4 text-primary shrink-0" />
-                <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Last visit</span>
-              </div>
-              <div class="flex items-center justify-between gap-3">
-                <div class="space-y-0.5 min-w-0">
-                  <p class="text-sm font-semibold text-foreground">Dr. {{ lastDoctor.doctor_name }}</p>
-                  <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <HugeIcon :icon="Clock01Icon" :stroke-width="2" class="size-3.5 shrink-0" />
-                    <span>{{ lastDoctor.last_appointment_date }} &middot; {{ lastDoctor.last_appointment_time?.slice(0, 5) }}</span>
-                  </div>
-                </div>
-                <Badge variant="outline" class="text-[10px] font-normal shrink-0">{{ lastDoctor.specialization }}</Badge>
-              </div>
-            </CardContent>
-          </template>
         </Card>
 
         <div class="mt-6">
