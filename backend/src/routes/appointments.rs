@@ -1454,11 +1454,12 @@ async fn send_confirmation_email(
             &appointment.notes,
             &clinic_name,
             &clinic_address,
+            &state.patient_app_url,
         ).await
     } else if !patient.phone.trim().is_empty() {
         let body = format!(
-            "Hi {}, your appointment with {} at {} is confirmed for {} at {}. Please arrive 15 minutes early. Contact us to reschedule or cancel.",
-            patient.first_name, doctor_name, clinic_name, date, time,
+            "Hi {}, your appointment with {} at {} is confirmed for {} at {}. Please arrive 15 minutes early. Manage or cancel anytime: {}",
+            patient.first_name, doctor_name, clinic_name, date, time, state.patient_app_url,
         );
         state.sms_service.send_sms(&patient.phone, &body).await
     } else {

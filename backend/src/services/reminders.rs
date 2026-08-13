@@ -68,23 +68,25 @@ pub async fn send_appointment_reminders(state: &AppState) -> Result<u64, sqlx::E
             let subject = format!("Reminder: your appointment tomorrow at {}", clinic_name);
             let body = format!(
                 "Hi {},\n\nThis is a reminder that you have an appointment tomorrow with Dr. {} {} at {}.\n\n\
-                 Date: {}\nTime: {}\n\nIf you need to reschedule or cancel, please contact us as soon as possible.",
+                 Date: {}\nTime: {}\n\nNeed to reschedule or cancel? Manage your booking anytime at {}.",
                 row.patient_first_name,
                 row.doctor_first_name,
                 row.doctor_last_name,
                 clinic_name,
                 row.slot_date,
                 row.start_time.format("%H:%M"),
+                state.patient_app_url,
             );
             state.email_service.send_notification(&row.patient_email, &subject, &body).await;
         } else if !row.patient_phone.trim().is_empty() {
             let body = format!(
-                "Reminder: your appointment with Dr. {} {} at {} is tomorrow, {} at {}. Contact us to reschedule or cancel.",
+                "Reminder: your appointment with Dr. {} {} at {} is tomorrow, {} at {}. Manage or cancel: {}",
                 row.doctor_first_name,
                 row.doctor_last_name,
                 clinic_name,
                 row.slot_date,
                 row.start_time.format("%H:%M"),
+                state.patient_app_url,
             );
             if let Err(e) = state.sms_service.send_sms(&row.patient_phone, &body).await {
                 tracing::warn!("Failed to send SMS reminder for appointment {}: {}", row.appointment_id, e);

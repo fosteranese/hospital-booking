@@ -180,6 +180,13 @@ async fn main() {
 
     let notification_email = std::env::var("CLINIC_NOTIFICATION_EMAIL").ok();
 
+    // Where reminder/confirmation messages point patients to manage their own
+    // booking (audit finding #2: those messages used to just say "contact
+    // us", routing patients around the self-service reschedule/cancel flow
+    // that already exists in the app).
+    let patient_app_url = std::env::var("PATIENT_APP_URL")
+        .unwrap_or_else(|_| "http://localhost:5176".to_string());
+
     let state = AppState {
         pool: pool.clone(),
         email_service: Arc::new(email_service),
@@ -194,6 +201,7 @@ async fn main() {
         otp_limiter: Arc::new(Mutex::new(RateLimiter::new(5, 300))),
         mutation_limiter: Arc::new(Mutex::new(RateLimiter::new(20, 60))),
         notification_email,
+        patient_app_url,
     };
 
     // Background task: send appointment reminders ~24h ahead of the slot,

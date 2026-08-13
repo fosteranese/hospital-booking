@@ -79,6 +79,7 @@ impl EmailService {
         notes: &str,
         clinic_name: &str,
         clinic_address: &str,
+        manage_url: &str,
     ) -> Result<(), String> {
         let notes_section = if notes.is_empty() {
             String::new()
@@ -89,7 +90,10 @@ impl EmailService {
         let body = format!(
             "Dear {},\n\nYour appointment has been confirmed.\n\nDoctor: {}\nDate: {}\nTime: {}\n\nLocation: {}\n{}{}{}",
             patient_name, doctor_name, date, time, clinic_name, clinic_address, notes_section,
-            "\n\nPlease arrive 15 minutes before your scheduled time.\n\nIf you need to reschedule or cancel, please contact us at +233 24 138 2827."
+            format!(
+                "\n\nPlease arrive 15 minutes before your scheduled time.\n\nNeed to reschedule or cancel? Manage your booking anytime at {} — or call us at +233 24 138 2827.",
+                manage_url
+            )
         );
 
         if let Some(transport) = &self.transport {
