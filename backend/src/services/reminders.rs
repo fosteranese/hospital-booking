@@ -5,6 +5,7 @@ use crate::state::AppState;
 struct ReminderRow {
     appointment_id: uuid::Uuid,
     patient_email: String,
+    patient_phone: String,
     patient_first_name: String,
     doctor_first_name: String,
     doctor_last_name: String,
@@ -36,7 +37,7 @@ pub async fn send_appointment_reminders(state: &AppState) -> Result<u64, sqlx::E
     let pool: &PgPool = &state.pool;
 
     let rows = sqlx::query_as::<_, ReminderRow>(
-        "SELECT a.id AS appointment_id, p.email AS patient_email, p.first_name AS patient_first_name,
+        "SELECT a.id AS appointment_id, p.email AS patient_email, p.phone AS patient_phone, p.first_name AS patient_first_name,
                 d.first_name AS doctor_first_name, d.last_name AS doctor_last_name,
                 s.slot_date, s.start_time
          FROM appointments a
@@ -55,19 +56,42 @@ pub async fn send_appointment_reminders(state: &AppState) -> Result<u64, sqlx::E
     let mut sent = 0u64;
 
     for row in &rows {
-        let subject = format!("Reminder: your appointment tomorrow at {}", clinic_name);
-        let body = format!(
-            "Hi {},\n\nThis is a reminder that you have an appointment tomorrow with Dr. {} {} at {}.\n\n\
-             Date: {}\nTime: {}\n\nIf you need to reschedule or cancel, please contact us as soon as possible.",
-            row.patient_first_name,
-            row.doctor_first_name,
-            row.doctor_last_name,
-            clinic_name,
-            row.slot_date,
-            row.start_time.format("%H:%M"),
-        );
-
-        state.email_service.send_notification(&row.patient_email, &subject, &body).await;
+        // A patient identified by phone is never required to also give an
+        // email (see IdentifyStep/PatientForm) -- `patient_email` is then an
+        // empty string, which used to just get handed to lettre, fail to
+        // parse, and return early inside an untraced `EMAIL SKIP` log line
+        // nobody was watching. SmsService is already sending this same
+        // patient a verified OTP over `patient_phone` earlier in the same
+        // session, so it's the obvious fallback rather than a dropped
+        // reminder.
+        if !row.patient_email.trim().is_empty() {
+            let subject = format!("Reminder: your appointment tomorrow at {}", clinic_name);
+            let body = format!(
+                "Hi {},\n\nThis is a reminder that you have an appointment tomorrow with Dr. {} {} at {}.\n\n\
+                 Date: {}\nTime: {}\n\nIf you need to reschedule or cancel, please contact us as soon as possible.",
+                row.patient_first_name,
+                row.doctor_first_name,
+                row.doctor_last_name,
+                clinic_name,
+                row.slot_date,
+                row.start_time.format("%H:%M"),
+            );
+            state.email_service.send_notification(&row.patient_email, &subject, &body).await;
+        } else if !row.patient_phone.trim().is_empty() {
+            let body = format!(
+                "Reminder: your appointment with Dr. {} {} at {} is tomorrow, {} at {}. Contact us to reschedule or cancel.",
+                row.doctor_first_name,
+                row.doctor_last_name,
+                clinic_name,
+                row.slot_date,
+                row.start_time.format("%H:%M"),
+            );
+            if let Err(e) = state.sms_service.send_sms(&row.patient_phone, &body).await {
+                tracing::warn!("Failed to send SMS reminder for appointment {}: {}", row.appointment_id, e);
+            }
+        } else {
+            tracing::warn!("Appointment {} has no email or phone on file, reminder not sent", row.appointment_id);
+        }
 
         sqlx::query("UPDATE appointments SET reminder_sent = TRUE WHERE id = $1")
             .bind(row.appointment_id)

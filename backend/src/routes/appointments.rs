@@ -602,7 +602,7 @@ pub async fn create_appointment(
             .map(|(f, l)| format!("Dr. {} {}", f, l))
             .unwrap_or_else(|| "Unknown".to_string());
         let date = slot.slot_date.format("%A, %B %d, %Y").to_string();
-        let time = format!("{}:00 - {}:00", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
+        let time = format!("{} - {}", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
         let patient_name = format!("{} {}", patient.first_name, patient.last_name);
 
         let subject = format!("New Booking - {}", clinic_name);
@@ -1432,20 +1432,39 @@ async fn send_confirmation_email(
     let doctor_name = format!("Dr. {} {}", doctor.0, doctor.1);
     let patient_name = format!("{} {}", patient.first_name, patient.last_name);
     let date = slot.slot_date.format("%A, %B %d, %Y").to_string();
-    let time = format!("{}:00 - {}:00", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
+    let time = format!("{} - {}", slot.start_time.format("%I:%M %p"), slot.end_time.format("%I:%M %p"));
 
     let clinic_name = state.clinic_name();
     let clinic_address = state.clinic_address();
-    state.email_service.send_appointment_confirmation(
-        &patient.email,
-        &patient_name,
-        &doctor_name,
-        &date,
-        &time,
-        &appointment.notes,
-        &clinic_name,
-        &clinic_address,
-    ).await
+
+    // A patient identified by phone is never required to also give an email
+    // (see IdentifyStep/PatientForm), so `patient.email` can be an empty
+    // string here. That used to get handed straight to lettre, fail to
+    // parse, and bail out with nothing sent. SmsService already sends this
+    // same patient a verified OTP over `patient.phone` earlier in the same
+    // booking session, so it's the fallback rather than a dropped
+    // confirmation.
+    if !patient.email.trim().is_empty() {
+        state.email_service.send_appointment_confirmation(
+            &patient.email,
+            &patient_name,
+            &doctor_name,
+            &date,
+            &time,
+            &appointment.notes,
+            &clinic_name,
+            &clinic_address,
+        ).await
+    } else if !patient.phone.trim().is_empty() {
+        let body = format!(
+            "Hi {}, your appointment with {} at {} is confirmed for {} at {}. Please arrive 15 minutes early. Contact us to reschedule or cancel.",
+            patient.first_name, doctor_name, clinic_name, date, time,
+        );
+        state.sms_service.send_sms(&patient.phone, &body).await
+    } else {
+        tracing::warn!("Patient {} has no email or phone on file, confirmation not sent", patient.id);
+        Ok(())
+    }
 }
 
 pub fn appointment_routes() -> Router<AppState> {

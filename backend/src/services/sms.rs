@@ -13,4 +13,11 @@ impl SmsService {
         info!("[SMS MOCK] OTP sent to {}", to_phone);
         Ok(())
     }
+
+    pub async fn send_sms(&self, to_phone: &str, body: &str) -> Result<(), String> {
+        // Mock implementation - logs to console
+        // Replace with actual SMS provider (Twilio, etc.)
+        info!("[SMS MOCK] To {}: {}", to_phone, body);
+        Ok(())
+    }
 }
