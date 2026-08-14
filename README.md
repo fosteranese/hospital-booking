@@ -148,7 +148,7 @@ All routes are prefixed with `/api`.
 | Service | URL |
 |---------|-----|
 | Patient Portal (Vite) | http://localhost:5173 |
-| Patient Portal — Nuxt rewrite (SSR) | http://localhost:5176 |
+| Patient Portal — Nuxt rewrite (SSR) | https://localhost:5176 (locally-trusted mkcert cert; see `frontend-nuxt/README.md`) |
 | Staff Dashboard (Vite) | http://localhost:5174 |
 | Backend API (Axum) | http://localhost:3000 |
 

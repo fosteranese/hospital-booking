@@ -22,7 +22,10 @@ import { test, expect } from '@playwright/test';
 // contract.
 
 const API = 'http://127.0.0.1:3000';
-const APP = 'http://localhost:5176';
+// https, not http -- the dev server now runs on a locally-trusted mkcert
+// certificate (see nuxt.config.ts) rather than plain HTTP, since Sign in
+// with Apple has no localhost/HTTP allowance the way Google does.
+const APP = 'https://localhost:5176';
 
 test.describe('Frontend integration', () => {
   test('1. Page loads with no errors', async ({ page }) => {
@@ -40,7 +43,7 @@ test.describe('Frontend integration', () => {
     // only accounts.id.renderButton is called here, never .prompt()) that
     // behaves differently under Playwright's automated browser context than
     // a real one: confirmed absent in a real browser session at the
-    // identical http://localhost:5176 origin. When that probe's own request
+    // identical localhost:5176 origin. When that probe's own request
     // gets rejected, the browser logs a content-free "Failed to load
     // resource: ...403 ()" (cross-origin failures are redacted, no URL) right
     // alongside GSI's own "[GSI_LOGGER]" diagnostic -- matched on

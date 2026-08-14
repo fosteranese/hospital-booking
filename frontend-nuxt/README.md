@@ -14,8 +14,19 @@ Requires the backend running on `:3000` (`cd ../backend && cargo run`).
 
 ```bash
 npm install
-npm run dev        # http://localhost:5176
+npm run dev        # https://localhost:5176
 ```
+
+Runs on HTTPS with a locally-trusted certificate (via [mkcert](https://github.com/FiloSottile/mkcert)), not plain HTTP — Sign in with Apple has no localhost/HTTP allowance the way Google does, so a real trusted local origin is a genuine prerequisite, not just nice-to-have. One-time setup if `.certs/` doesn't already exist:
+
+```bash
+brew install mkcert
+mkcert -install   # installs a local CA into your system/browser trust store
+mkdir -p .certs
+mkcert -key-file .certs/localhost-key.pem -cert-file .certs/localhost-cert.pem localhost 127.0.0.1 ::1
+```
+
+`nuxt.config.ts` falls back to plain HTTP automatically if `.certs/` doesn't exist, so skipping this doesn't break anything — Google Sign-In still works fine over plain `http://localhost:5176` (Google treats any `localhost` origin as implicitly allowed regardless of scheme). Only Apple genuinely needs the HTTPS cert.
 
 Dev OTP code is always `123456` (see `../AGENTS.md`).
 

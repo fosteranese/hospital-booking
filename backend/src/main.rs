@@ -185,7 +185,7 @@ async fn main() {
     // us", routing patients around the self-service reschedule/cancel flow
     // that already exists in the app).
     let patient_app_url = std::env::var("PATIENT_APP_URL")
-        .unwrap_or_else(|_| "http://localhost:5176".to_string());
+        .unwrap_or_else(|_| "https://localhost:5176".to_string());
 
     // Sign in with Google. GOOGLE_CLIENT_ID is a public identifier (it's
     // embedded in the frontend bundle too, by design -- Google's own docs

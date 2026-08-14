@@ -1,4 +1,21 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
+
+// Locally-trusted HTTPS for dev, via mkcert (`mkcert -install` once, then
+// `mkcert -key-file .certs/localhost-key.pem -cert-file .certs/localhost-cert.pem
+// localhost 127.0.0.1 ::1` — see .certs/ which is gitignored, it's a private
+// key). Needed for Sign in with Apple in particular: Apple has no localhost
+// allowance the way Google does, so getting a real trusted HTTPS origin
+// locally is a real prerequisite, not just a nice-to-have. Falls back to
+// plain HTTP automatically if the cert files don't exist yet, so this
+// doesn't break anyone who hasn't run mkcert.
+const certDir = fileURLToPath(new URL('.certs', import.meta.url))
+const keyFile = `${certDir}/localhost-key.pem`
+const certFile = `${certDir}/localhost-cert.pem`
+const httpsConfig = existsSync(keyFile) && existsSync(certFile)
+  ? { key: readFileSync(keyFile, 'utf-8'), cert: readFileSync(certFile, 'utf-8') }
+  : undefined
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -42,6 +59,7 @@ export default defineNuxtConfig({
   // by this build) — using 5176 instead to avoid the conflict.
   devServer: {
     port: 5176,
+    https: httpsConfig,
   },
 
   // Equivalent of the old Vite proxy: '/api' -> localhost:3000, no rewrite.
