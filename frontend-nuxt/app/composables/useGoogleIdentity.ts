@@ -40,7 +40,7 @@ interface GoogleButtonConfig {
   theme: 'outline'
   size: 'large'
   shape: 'pill'
-  text: 'continue_with'
+  text: 'signin_with'
   logo_alignment: 'left'
   width?: number
 }
@@ -82,7 +82,12 @@ export function useGoogleIdentity() {
       theme: 'outline',
       size: 'large',
       shape: 'pill',
-      text: 'continue_with',
+      // 'signin_with' -> "Sign in with Google", deliberately not
+      // 'continue_with' ("Continue with Google") -- the e2e suite has
+      // several `button:has-text("Continue")` selectors for the real
+      // Continue button elsewhere on this same screen, and Playwright's
+      // strict mode throws on an ambiguous match rather than picking one.
+      text: 'signin_with',
       logo_alignment: 'left',
       width: el.clientWidth || undefined,
     })

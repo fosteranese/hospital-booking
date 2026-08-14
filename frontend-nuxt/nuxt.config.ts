@@ -18,16 +18,18 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  // Google's OAuth Client ID is a public identifier, not a secret (Google's
-  // own docs are explicit about this — it's meant to ship in the client
-  // bundle), so runtimeConfig.public is the right home for it. Unset in dev
-  // until a real Client ID is configured — IdentifyStep.vue hides the
-  // Google button entirely when this is empty, and the backend
-  // independently refuses the route too if GOOGLE_CLIENT_ID isn't set
-  // server-side, so neither half can end up half-wired on its own.
+  // Google's OAuth Client ID and Apple's Services ID are both public
+  // identifiers, not secrets (both providers' own docs are explicit about
+  // this — they're meant to ship in the client bundle), so runtimeConfig
+  // .public is the right home for them. Unset in dev until real values are
+  // configured — IdentifyStep.vue hides each button entirely when its id is
+  // empty, and the backend independently refuses the matching route too if
+  // its server-side env var isn't set, so neither half can end up
+  // half-wired on its own.
   runtimeConfig: {
     public: {
       googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      appleClientId: process.env.NUXT_PUBLIC_APPLE_CLIENT_ID || '',
     },
   },
 

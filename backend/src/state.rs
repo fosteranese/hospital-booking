@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock, PoisonError, Mutex};
 use sqlx::PgPool;
 use crate::error::AppError;
-use crate::services::{EmailService, SettingsService, SmsService, GoogleOAuthService};
+use crate::services::{EmailService, SettingsService, SmsService, GoogleOAuthService, AppleOAuthService};
 use crate::ratelimit::RateLimiter;
 
 #[derive(Clone)]
@@ -9,12 +9,14 @@ pub struct AppState {
     pub pool: PgPool,
     pub email_service: Arc<EmailService>,
     pub sms_service: Arc<SmsService>,
-    // None when GOOGLE_CLIENT_ID isn't set -- the route handler returns a
-    // clear "not configured" error rather than the button ever being able to
-    // reach a half-wired backend. The frontend independently hides the
-    // button when its own public client id isn't configured, so in practice
-    // this is a second, server-side backstop, not the only guard.
+    // None when GOOGLE_CLIENT_ID / APPLE_SERVICES_ID isn't set -- the route
+    // handler returns a clear "not configured" error rather than the button
+    // ever being able to reach a half-wired backend. The frontend
+    // independently hides the button when its own public client id isn't
+    // configured, so in practice this is a second, server-side backstop,
+    // not the only guard.
     pub google_oauth: Option<Arc<GoogleOAuthService>>,
+    pub apple_oauth: Option<Arc<AppleOAuthService>>,
     pub jwt_secret: String,
     pub min_gap_minutes: Arc<RwLock<i64>>,
     pub min_advance_days: Arc<RwLock<i64>>,

@@ -6,7 +6,7 @@
 // sends the visitor to browse doctor/datetime first and defers OTP until
 // they've picked a slot worth committing to. See booking store's
 // completeIdentify() and the plan's UX-audit fork writeup.
-import { Mail01Icon, CallIcon, Hospital01Icon } from '@hugeicons/core-free-icons'
+import { Mail01Icon, CallIcon, Hospital01Icon, AppleIcon } from '@hugeicons/core-free-icons'
 import { COUNTRY_CODES } from '@/lib/country-codes'
 import { normalizePhone } from '@/lib/phone'
 
@@ -27,9 +27,10 @@ onMounted(() => {
 })
 
 // Reuses the exact same handleVerified() the OTP flow calls once it has a
-// token — Google having already proven the email is real stands in for the
-// OTP step entirely, so from here on the rest of the app can't tell (and
-// doesn't need to) which method actually authenticated this session.
+// token — Google/Apple having already proven the email is real stands in
+// for the OTP step entirely, so from here on the rest of the app can't
+// tell (and doesn't need to) which method actually authenticated this
+// session.
 async function handleGoogleCredential(idToken: string) {
   googleLoading.value = true
   googleError.value = ''
@@ -40,6 +41,29 @@ async function handleGoogleCredential(idToken: string) {
     googleError.value = err.message
   } finally {
     googleLoading.value = false
+  }
+}
+
+const { clientId: appleClientId, signIn: appleSignIn } = useAppleIdentity()
+const appleError = ref('')
+const appleLoading = ref(false)
+
+async function handleAppleClick() {
+  appleLoading.value = true
+  appleError.value = ''
+  try {
+    const idToken = await appleSignIn()
+    const res = await api.oauthApple(idToken)
+    await booking.handleVerified(res.token, res.identifier, res.role)
+  } catch (err: any) {
+    // Apple's popup rejects with a plain string ("popup_closed_by_user",
+    // "user_cancelled_authorize") when the user just closes it themselves —
+    // that's not a failure worth an error banner, unlike a real
+    // verification or network failure.
+    const msg = typeof err === 'string' ? err : err?.message
+    if (msg && !/cancel|closed/i.test(msg)) appleError.value = msg
+  } finally {
+    appleLoading.value = false
   }
 }
 
@@ -199,7 +223,7 @@ function switchMethod() {
         {{ method === 'phone' ? 'Use email instead' : 'Use phone instead' }}
       </Button>
 
-      <template v-if="googleClientId">
+      <template v-if="googleClientId || appleClientId">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
             <span class="w-full border-t" />
@@ -210,12 +234,29 @@ function switchMethod() {
         </div>
 
         <ErrorMessage v-if="googleError" :message="googleError" />
+        <ErrorMessage v-if="appleError" :message="appleError" />
 
-        <div class="relative flex justify-center">
-          <div ref="googleBtnEl" :class="['transition-opacity', googleLoading && 'opacity-50 pointer-events-none']" />
-          <div v-if="googleLoading" class="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 rounded-full">
-            <Spinner />
+        <div class="space-y-3">
+          <div v-if="googleClientId" class="relative flex justify-center">
+            <div ref="googleBtnEl" :class="['transition-opacity', googleLoading && 'opacity-50 pointer-events-none']" />
+            <div v-if="googleLoading" class="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 rounded-full">
+              <Spinner />
+            </div>
           </div>
+
+          <Button
+            v-if="appleClientId"
+            variant="outline"
+            class="w-full h-11 text-base gap-2 bg-black text-white border-black hover:bg-black/90 hover:text-white"
+            :disabled="appleLoading"
+            @click="handleAppleClick"
+          >
+            <span v-if="appleLoading" class="flex items-center gap-2"><Spinner /><span>Just a moment...</span></span>
+            <template v-else>
+              <HugeIcon :icon="AppleIcon" :stroke-width="2" class="size-4" />
+              Sign in with Apple
+            </template>
+          </Button>
         </div>
       </template>
 

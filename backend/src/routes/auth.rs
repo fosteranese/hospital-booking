@@ -158,18 +158,12 @@ pub struct OAuthResponse {
     pub identifier: String,
 }
 
-pub async fn oauth_google_handler(
-    State(state): State<AppState>,
-    Json(body): Json<OAuthRequest>,
-) -> Result<Json<OAuthResponse>, AppError> {
-    let google = state.google_oauth.as_ref().ok_or_else(|| {
-        AppError::ServiceUnavailable("Sign in with Google is not configured on this server".to_string())
-    })?;
-
-    let claims = google.verify(&body.id_token).await
-        .map_err(AppError::Unauthorized)?;
-    let identifier = claims.email.trim().to_lowercase();
-
+// Shared by both providers once each has independently verified a token and
+// extracted a trustworthy email: upsert into `users`, issue the same app JWT
+// OTP verification issues, done. This is the one place that shape lives, so
+// a third provider later is a new verify() call into this, not a new copy
+// of the session-issuing logic.
+async fn issue_oauth_session(state: &AppState, identifier: String) -> Result<OAuthResponse, AppError> {
     sqlx::query(
         "INSERT INTO users (identifier, role) VALUES ($1, 'patient') ON CONFLICT (identifier) DO NOTHING"
     )
@@ -187,20 +181,48 @@ pub async fn oauth_google_handler(
     let token = create_token(&identifier, &role, &state.jwt_secret)
         .map_err(|_| AppError::Internal("Failed to create token. Please try again.".to_string()))?;
 
-    Ok(Json(OAuthResponse { token, role, identifier }))
+    Ok(OAuthResponse { token, role, identifier })
 }
 
-// Sign in with Apple needs a paid Apple Developer Program membership plus a
-// Services ID, Key ID, Team ID, and private key generated in their portal --
-// none of which exist for this deployment yet. This route is real (the
-// frontend integration point isn't a stub), it just has nothing to verify
-// against until those credentials are configured, so it fails clearly
-// rather than either pretending to work or not existing at all.
-pub async fn oauth_apple_handler(
-    State(_state): State<AppState>,
-    Json(_body): Json<OAuthRequest>,
+pub async fn oauth_google_handler(
+    State(state): State<AppState>,
+    Json(body): Json<OAuthRequest>,
 ) -> Result<Json<OAuthResponse>, AppError> {
-    Err(AppError::ServiceUnavailable("Sign in with Apple is not configured on this server".to_string()))
+    let google = state.google_oauth.as_ref().ok_or_else(|| {
+        AppError::ServiceUnavailable("Sign in with Google is not configured on this server".to_string())
+    })?;
+
+    let claims = google.verify(&body.id_token).await
+        .map_err(AppError::Unauthorized)?;
+    let identifier = claims.email.trim().to_lowercase();
+
+    Ok(Json(issue_oauth_session(&state, identifier).await?))
+}
+
+// "Sign in with Apple JS" hands the frontend a real, independently
+// verifiable Apple-signed id_token client-side -- verifying it needs only
+// APPLE_SERVICES_ID (the audience), not the Team ID / Key ID / private key
+// (those are only for the authorization-code exchange, which this app never
+// does). See services/oauth.rs's module comment for why, and for the one
+// real extra requirement Apple has that Google doesn't: a domain-verified
+// HTTPS origin registered in the Apple Developer portal (no localhost
+// allowance, unlike Google's "Authorized JavaScript origins").
+pub async fn oauth_apple_handler(
+    State(state): State<AppState>,
+    Json(body): Json<OAuthRequest>,
+) -> Result<Json<OAuthResponse>, AppError> {
+    let apple = state.apple_oauth.as_ref().ok_or_else(|| {
+        AppError::ServiceUnavailable("Sign in with Apple is not configured on this server".to_string())
+    })?;
+
+    let claims = apple.verify(&body.id_token).await
+        .map_err(AppError::Unauthorized)?;
+    let identifier = claims.email
+        .ok_or_else(|| AppError::Unauthorized("Apple did not include an email on this sign-in".to_string()))?
+        .trim()
+        .to_lowercase();
+
+    Ok(Json(issue_oauth_session(&state, identifier).await?))
 }
 
 // ─── Existing token management handlers ─────────────────────────────────

@@ -20,7 +20,7 @@ mod state;
 
 use crate::state::AppState;
 use crate::ratelimit::RateLimiter;
-use crate::services::{EmailService, SettingsService, SmsService, GoogleOAuthService, generate_slots, mark_missed_appointments, send_appointment_reminders};
+use crate::services::{EmailService, SettingsService, SmsService, GoogleOAuthService, AppleOAuthService, generate_slots, mark_missed_appointments, send_appointment_reminders};
 
 async fn health() -> &'static str {
     "OK"
@@ -198,11 +198,23 @@ async fn main() {
         .filter(|v| !v.trim().is_empty())
         .map(|client_id| Arc::new(GoogleOAuthService::new(client_id)));
 
+    // Sign in with Apple. APPLE_SERVICES_ID is what Apple calls the
+    // audience/client_id for this flow -- also not a secret, same
+    // public-identifier status as GOOGLE_CLIENT_ID. Verifying the
+    // client-side id_token needs nothing else (no Team ID, Key ID, or
+    // private key -- those are only for the authorization-code exchange,
+    // which this app never does).
+    let apple_oauth = std::env::var("APPLE_SERVICES_ID")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(|services_id| Arc::new(AppleOAuthService::new(services_id)));
+
     let state = AppState {
         pool: pool.clone(),
         email_service: Arc::new(email_service),
         sms_service: Arc::new(sms_service),
         google_oauth,
+        apple_oauth,
         jwt_secret,
         min_gap_minutes: Arc::new(RwLock::new(min_gap_minutes)),
         min_advance_days: Arc::new(RwLock::new(min_advance_days)),
